@@ -1,27 +1,27 @@
 {
   "best_theta": {
-    "L_cav_um": 4.077045903104059,
-    "t_SiN_um": 0.27674949974386676,
-    "t_SiO2_um": 0.10210938538562786,
-    "cell_margin_um": 0.0007593985504280318,
+    "t_SiN_um": 0.15873520236391858,
+    "t_SiO2_um": 0.3181370630849205,
+    "L_cav_um": 2.076054745992816,
+    "cell_margin_um": 0.0017176797023985679,
     "N_per": 3
   },
-  "score": 0.9276577954894843,
+  "score": 1.2273341689161463,
   "R_targets": {
-    "800nm": 0.14640141915934082,
-    "1550nm": 0.11815813537551949,
-    "1650nm": 0.6452341095546883
+    "800nm": 0.0019757420086241846,
+    "1550nm": 0.9487256296481326,
+    "1650nm": 0.020059347061779323
   },
   "sim": {
-    "resolution_px_per_um": 200,
+    "resolution_px_per_um": 100,
     "dpml_um": 1.0,
     "pad_air_um": 0.8,
     "pad_sub_um": 3.0,
-    "cell_z_um": 12.150958612431456
+    "cell_z_um": 10.739006018388249
   },
   "files": {
     "geometry_json": "optimized_geometry.json",
     "plot_png": "reflectance_plot.png"
   },
-  "notes": "Mirror+cavity optimization. Reflectance via two-run normalization (get_flux_data/load_minus_flux_data)."
+  "notes": "Mirror+cavity optimization with modal (Harminv) and reflectance constraints. Reflectance via incident-field subtraction (get_flux_data / load_minus_flux_data)."
 }

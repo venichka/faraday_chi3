@@ -170,7 +170,7 @@ sim.init_sim()
 # uses get_array(mp.Dielectric)
 plot_epsilon(sim, "Dielectric profile of the cavity")
 
-# ---------- 2) Find resonant modes around 0.8 μm and 1.6 μm with Harminv ----------
+# ---------- 2) Find resonant modes around 0.8 μm and 1.6 μm with Harminv ---
 
 
 def find_modes(wavelength, bandwidth_factor=0.2, run_time=400):
@@ -227,6 +227,84 @@ if len(freqs) > 0:
     plot_mode_profile(sim, freqs, dft, label="|Ex|(z) (DFT)")
 else:
     print("No stable modes found to plot.")
+
+
+# ---------- 3) Mode field profiles for ALL Harminv modes (robust to grid size)
+
+def _dedup_mode_freqs(hmodes, rel_tol=1e-4):
+    fs = sorted([m.freq for m in hmodes if np.isfinite(m.freq) and m.freq > 0])
+    uniq = []
+    for f in fs:
+        if not uniq or abs(f - uniq[-1]) / uniq[-1] > rel_tol:
+            uniq.append(f)
+    return uniq
+
+
+def gather_and_plot_modes(all_modes, use_cw_solver=False, tol=1e-9,
+                          max_iters=10000, bicgL=10):
+    """
+    For every Harminv-found mode, run an independent CW/DFT solve at that frequency
+    and plot |Ex|(z). z-grid length is taken from the returned data to avoid mismatch.
+    """
+    freqs = _dedup_mode_freqs(all_modes)
+    if not freqs:
+        print("[modes] No valid Harminv frequencies found.")
+        return
+
+    # monitor region (exclude PMLs by a small margin)
+    field_len = cell_z - 2*dpml - 0.02
+    vol = mp.Volume(center=mp.Vector3(), size=mp.Vector3(0, 0, field_len))
+
+    fig, ax = plt.subplots(figsize=(9, 3))
+
+    for f in freqs:
+        lam = 1.0 / f
+        # fresh sim per mode
+        src = [mp.Source(mp.ContinuousSource(f, width=0 if not use_cw_solver else 0.02*f),
+                         component=mp.Ex,
+                         center=mp.Vector3(0, 0, -0.5*cell_z + dpml + 0.2),
+                         amplitude=1.0)]
+        sim_mode = mp.Simulation(cell_size=cell,
+                                 geometry=geometry,
+                                 boundary_layers=[mp.PML(dpml)],
+                                 default_material=mp.air,
+                                 resolution=resolution,
+                                 dimensions=1,
+                                 sources=src,
+                                 force_complex_fields=use_cw_solver)
+
+        if use_cw_solver:
+            # Frequency-domain solver (steady-state at f)
+            sim_mode.init_sim()
+            sim_mode.solve_cw(tol, max_iters, bicgL)  # see Meep freq-domain tutorial
+            ex = sim_mode.get_array(vol=vol, component=mp.Ex)
+        else:
+            # Time-domain DFT at single frequency
+            dft = sim_mode.add_dft_fields([mp.Ex], f, 0, 1, where=vol)
+            Nperiods = 60
+            sim_mode.run(until=Nperiods / f)
+            ex = sim_mode.get_dft_array(dft, mp.Ex, 0)
+
+        # ensure 1D vector
+        ex = np.ravel(ex)
+        # build z-grid using the actual number of samples (avoid off-by-few mismatch)
+        N = ex.size
+        zgrid = np.linspace(-0.5*field_len, 0.5*field_len, N)
+
+        ax.plot(zgrid, np.abs(ex), label=f"λ={1e3*lam:.0f} nm")
+
+    ax.set_xlabel("z (μm)")
+    ax.set_ylabel("|Ex|(z)")
+    ax.legend(ncol=3, fontsize=8)
+    ax.set_title("Cavity mode profiles (all Harminv-found modes)")
+    fig.tight_layout()
+    plt.show()
+
+
+# Use all Harminv modes (probe + pump windows)
+all_harminv_modes = list(modes_probe) + list(modes_pump)
+gather_and_plot_modes(all_harminv_modes, use_cw_solver=False, tol=1e-9,
+                      max_iters=15000, bicgL=10)
 
 # ---------- 4) Reflectance spectrum ----------
 # Standard two-run normalization:
