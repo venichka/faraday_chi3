@@ -1,0 +1,552 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,bm}
+\usepackage{physics}
+\usepackage{mathtools}
+% \usepackage{hyperref}
+% \hypersetup{
+%     colorlinks=true,
+%     linkcolor=blue,
+%     filecolor=cyan,
+%     urlcolor=magenta,
+%     }
+
+\newcommand{\ii}{\mathrm{i}}
+\newcommand{\eps}{\varepsilon}
+
+\begin{document}
+
+\title{Particular case: Isotropic $\chi^{(3)}$ for counter- and co-rotating pumps}
+
+\maketitle
+
+\tableofcontents
+
+\section{Isotropic \(\chi^{(3)}\) with Counter-Rotating Pumps:
+Probe, Sidebands, and Cascaded Back-Action in Tensor Notation}
+
+\paragraph{Fields and basis.}
+Time convention \(e^{-\ii\omega t}\).
+Let \( \{e^+_i,e^-_i,e^z_i\} \) be the circular basis with
+\(e^+_i e^+_i=0\), \(e^-_i e^-_i=0\), \(e^+_i e^-_i=1\), and \((e^+_i)^*=e^-_i\).
+We take
+\[
+E^{(1)}_i=E_1 e^+_i,\qquad
+E^{(2)}_i=E_2 e^-_i,\qquad
+E^{(s)}_i=E_+ e^+_i+E_- e^-_i .
+\]
+Define \(\Omega_\pm:=\omega_s\pm\Delta\) with \(\Delta=\omega_1-\omega_2\).
+
+\paragraph{Isotropic \(\chi^{(3)}\) decomposition.}
+For any frequency tuple \(\Xi\) (explicitly indicated below),
+\[
+\chi^{(3)}_{ijkl}(\Xi)=A(\Xi)\,\delta_{ij}\delta_{kl}
+\;+\;B(\Xi)\,\delta_{ik}\delta_{jl}
+\;+\;C(\Xi)\,\delta_{il}\delta_{jk}.
+\]
+We will keep \(\,A,B,C\,\) \emph{distinct for each tuple}.
+
+\subsection{Direct third-order polarization at \(\omega_s\)}
+Keeping only terms linear in \(E^{(s)}\) (SPM on the probe and XPM from the pumps),
+\begin{align}
+P^{(3)}_i(\omega_s)
+=\frac{3}{4}\eps_0\sum_{m\in\{s,1,2\}}
+\Big[&A_s^{(m)}\,\delta_{ij}\delta_{kl} + B_s^{(m)}\,\delta_{ik}\delta_{jl}
++ C_s^{(m)}\,\delta_{il}\delta_{jk}\Big]\,
+E^{(s)}_j E^{(m)}_k E^{(m)*}_l,
+\label{eq:P3-omegaS-general}
+\end{align}
+with shorthand
+\[
+A_s^{(m)}:=A\!\big(-\omega_s;\omega_s,\omega_m,-\omega_m\big),\;\;\;
+B_s^{(m)}:=B\!\big(-\omega_s;\omega_s,\omega_m,-\omega_m\big),\;\;\;
+C_s^{(m)}:=C\!\big(-\omega_s;\omega_s,\omega_m,-\omega_m\big).
+\]
+Insert the pump/probe polarizations. Using
+\(
+|E^{(1)}|^2=|E_1|^2,\ |E^{(2)}|^2=|E_2|^2,\ 
+(E^{(s)}\!\cdot\!E^{(1)})=E_-E_1,\
+(E^{(s)}\!\cdot\!E^{(1)*})=E_+E_1^*,\
+(E^{(s)}\!\cdot\!E^{(2)})=E_+E_2,\
+(E^{(s)}\!\cdot\!E^{(2)*})=E_-E_2^*,
+\)
+and \(E^{(s)}\!\cdot\!E^{(s)}=2E_+E_-\), one finds
+\[
+P^{(3)}_i(\omega_s)=P_+\,e^+_i+P_-\,e^-_i,
+\]
+with scalar envelopes
+\begin{align}
+P_+&=\frac{3}{4}\eps_0\Big[
+(A_s^{(s)}+C_s^{(s)})\big(|E_+|^2+|E_-|^2\big)\,E_+
++ 2 B_s^{(s)}|E_-|^2 E_+
+\nonumber\\[-2pt]
+&\hspace{3.1em}
++ A_s^{(1)}|E_1|^2E_+ + A_s^{(2)}|E_2|^2E_+
++ B_s^{(1)}|E_1|^2 E_+ + C_s^{(2)}|E_2|^2 E_+
+\Big],\label{eq:Pplus-direct}
+\\[2pt]
+P_-&=\frac{3}{4}\eps_0\Big[
+(A_s^{(s)}+C_s^{(s)})\big(|E_+|^2+|E_-|^2\big)\,E_-
++ 2 B_s^{(s)}|E_+|^2 E_-
+\nonumber\\[-2pt]
+&\hspace{3.1em}
++ A_s^{(2)}|E_2|^2E_- + A_s^{(1)}|E_1|^2E_-
++ C_s^{(1)}|E_1|^2 E_- + B_s^{(2)}|E_2|^2 E_-
+\Big].\label{eq:Pminus-direct}
+\end{align}
+
+Thus, the $\chi^{(3)}_\mathrm{eff}$ in circular basis is diagonal, and the difference between the elements is (we omit nonlinear terms for probe, $E^{(s)}$):
+\begin{equation}
+    \chi_{++} - \chi_{--} = |E_1|^2 (B_s^{(1)}-C_s^{(1)}) - |E_2|^2 (B_s^{(2)}-C_s^{(2)})
+\end{equation}
+So, we can conlude that if $|E_1| = |E_2|$ or $B_s^{(m)} = C_s^{(m)}$, there is no Faraday rotation.
+
+\subsection{Probe sidebands at \(\Omega_\pm=\omega_s\pm\Delta\)}
+From the isotropic sideband formula (with distinct coefficients for the \emph{sideband-generation} tuples),
+\begin{align}
+\mathbf{P}^{(3)}(\Omega_+)
+&=\frac{3}{4}\eps_0\Big[
+A_+^{\rm sb}\,(E^{(1)}\!\cdot\!E^{(2)*})\,\mathbf{E}^{(s)}
++ B_+^{\rm sb}\,( \mathbf{E}^{(s)}\!\cdot\!E^{(2)*})\,\mathbf{E}^{(1)}
++ C_+^{\rm sb}\,( \mathbf{E}^{(s)}\!\cdot\!E^{(1)})\,\mathbf{E}^{(2)*}
+\Big],\label{eq:SBplus-start}\\
+\mathbf{P}^{(3)}(\Omega_-)
+&=\frac{3}{4}\eps_0\Big[
+A_-^{\rm sb}\,(E^{(2)}\!\cdot\!E^{(1)*})\,\mathbf{E}^{(s)}
++ B_-^{\rm sb}\,( \mathbf{E}^{(s)}\!\cdot\!E^{(1)*})\,\mathbf{E}^{(2)}
++ C_-^{\rm sb}\,( \mathbf{E}^{(s)}\!\cdot\!E^{(2)})\,\mathbf{E}^{(1)*}
+\Big],\label{eq:SBminus-start}
+\end{align}
+with
+\[
+\begin{aligned}
+&A_+^{\rm sb}:=A(-\Omega_+;\omega_s,\omega_1,-\omega_2),\ 
+B_+^{\rm sb}:=B(-\Omega_+;\omega_s,\omega_1,-\omega_2),\ 
+C_+^{\rm sb}:=C(-\Omega_+;\omega_s,\omega_1,-\omega_2),\\
+&A_-^{\rm sb}:=A(-\Omega_-;\omega_s,\omega_2,-\omega_1),\ 
+B_-^{\rm sb}:=B(-\Omega_-;\omega_s,\omega_2,-\omega_1),\ 
+C_-^{\rm sb}:=C(-\Omega_-;\omega_s,\omega_2,-\omega_1).
+\end{aligned}
+\]
+Using \(E^{(1)}\!\cdot\!E^{(2)*}=0\), \( (\mathbf{E}^{(s)}\!\cdot\!E^{(2)*})=E_-E_2^* \), \( (\mathbf{E}^{(s)}\!\cdot\!E^{(1)})=E_-E_1 \), and
+\(\mathbf{E}^{(1)}\parallel e^+,\ \mathbf{E}^{(2)*}\parallel e^+\),
+both \eqref{eq:SBplus-start} contributions align with \(e^+\):
+\[
+\boxed{\
+\mathbf{P}^{(3)}(\Omega_+)=\frac{3}{4}\eps_0\,(B_+^{\rm sb}+C_+^{\rm sb})\,E_1 E_2^*\,E_-\,\mathbf{e}^{+}.\
+}
+\]
+Similarly, using \( (\mathbf{E}^{(s)}\!\cdot\!E^{(1)*})=E_+E_1^*,\ (\mathbf{E}^{(s)}\!\cdot\!E^{(2)})=E_+E_2 \) and
+\(\mathbf{E}^{(2)}\parallel e^-,\ \mathbf{E}^{(1)*}\parallel e^-\), both terms in \eqref{eq:SBminus-start} align with \(e^-\):
+\[
+\boxed{\
+\mathbf{P}^{(3)}(\Omega_-)=\frac{3}{4}\eps_0\,(B_-^{\rm sb}+C_-^{\rm sb})\,E_2 E_1^*\,E_+\,\mathbf{e}^{-}.\
+}
+\]
+
+\paragraph{From sideband polarization to field.}
+Let \(\mathcal{G}_{ja}(\Omega)\) be the linear Green tensor. Define its circular projections
+\[
+G_{++}(\Omega):=e^{(+)\!*}_j\,\mathcal{G}_{ja}(\Omega)\,e^{(+)}_a,\qquad
+G_{--}(\Omega):=e^{(-)\!*}_j\,\mathcal{G}_{ja}(\Omega)\,e^{(-)}_a,
+\]
+(i.e., \(U^\dagger\mathcal{G}U\) and pick diagonal \(\pm\) elements). Then the generated sideband \emph{fields} are
+\[
+\boxed{\
+\mathbf{E}^{(s+)}=G_{++}(\Omega_+)\,\mathbf{P}^{(3)}(\Omega_+),\qquad
+\mathbf{E}^{(s-)}=G_{--}(\Omega_-)\,\mathbf{P}^{(3)}(\Omega_-).\
+}
+\]
+
+\subsection{Cascaded back-mixing to \(\omega_s\)}
+The sidebands mix with the \emph{opposite} pump pair:
+\[
+(\Omega_+)+\omega_2-\omega_1=\omega_s,\qquad
+(\Omega_-)+\omega_1-\omega_2=\omega_s.
+\]
+The cascaded polarization has two arms, each with its own \emph{mixing} coefficients
+\[
+\begin{aligned}
+&B_+^{\rm mx}:=B(-\omega_s;\Omega_+,\omega_2,-\omega_1),\quad
+C_+^{\rm mx}:=C(-\omega_s;\Omega_+,\omega_2,-\omega_1),\\
+&B_-^{\rm mx}:=B(-\omega_s;\Omega_-,\omega_1,-\omega_2),\quad
+C_-^{\rm mx}:=C(-\omega_s;\Omega_-,\omega_1,-\omega_2).
+\end{aligned}
+\]
+Using the isotropic contraction rules, the surviving terms are
+\begin{align}
+\mathbf{P}^{(3),\mathrm{casc}}(\omega_s)
+&=\frac{3}{4}\eps_0\Big\{
+B_+^{\rm mx}\,(\mathbf{E}^{(s+)}\!\cdot\!E^{(1)*})\,\mathbf{E}^{(2)}
++ C_+^{\rm mx}\,(\mathbf{E}^{(s+)}\!\cdot\!E^{(2)})\,\mathbf{E}^{(1)*}
+\nonumber\\[-2pt]
+&\hspace{6.2em}
++\,B_-^{\rm mx}\,(\mathbf{E}^{(s-)}\!\cdot\!E^{(2)*})\,\mathbf{E}^{(1)}
++ C_-^{\rm mx}\,(\mathbf{E}^{(s-)}\!\cdot\!E^{(1)})\,\mathbf{E}^{(2)*}
+\Big\}.
+\end{align}
+Since \(\mathbf{E}^{(s+)}\parallel e^+\), \(E^{(1)*}\parallel e^-\), \(E^{(2)}\parallel e^-\) and
+\(\mathbf{E}^{(s-)}\parallel e^-\), \(E^{(2)*}\parallel e^+\), \(E^{(1)}\parallel e^+\),
+all four dot products are unity and the \(A\)-channel vanishes. Substituting the sideband fields gives a diagonal correction in the circular basis:
+\[
+\boxed{\
+\begin{aligned}
+\mathbf{P}^{(3),\mathrm{casc}}(\omega_s)
+&=\Big(\frac{3}{4}\eps_0\Big)^{\!2}\,
+|E_1|^2|E_2|^2
+\Big[(B_+^{\rm mx})(B_+^{\rm sb}+C_+^{\rm sb})\,G_{++}(\Omega_+)\,E_-\,\mathbf{e}^-
+\\[-2pt]
+&\qquad\qquad\qquad\qquad\qquad
++(B_-^{\rm mx})(B_-^{\rm sb}+C_-^{\rm sb})\,G_{--}(\Omega_-)\,E_+\,\mathbf{e}^+ \Big]
+\\[2pt]
+&\quad+\Big(\frac{3}{4}\eps_0\Big)^{\!2}\,
+|E_1|^2|E_2|^2
+\Big[(C_+^{\rm mx})(B_+^{\rm sb}+C_+^{\rm sb})\,G_{++}(\Omega_+)\,E_-\,\mathbf{e}^-
+\\[-2pt]
+&\qquad\qquad\qquad\qquad\qquad
++(C_-^{\rm mx})(B_-^{\rm sb}+C_-^{\rm sb})\,G_{--}(\Omega_-)\,E_+\,\mathbf{e}^+ \Big].
+\end{aligned}}
+\]
+Equivalently, grouping \(B\) and \(C\) on each arm:
+\[
+\boxed{\
+\begin{aligned}
+\mathbf{P}^{(3),\mathrm{casc}}(\omega_s)
+&=\Big(\frac{3}{4}\eps_0\Big)^{\!2}\,|E_1|^2|E_2|^2
+\Big[
+\underbrace{(B_-^{\rm mx}+C_-^{\rm mx})(B_-^{\rm sb}+C_-^{\rm sb})\,G_{--}(\Omega_-)}_{\displaystyle \Pi_-(\Omega_-)}\,E_+\,\mathbf{e}^+
+\\[-2pt]
+&\qquad\qquad\qquad\qquad\qquad
++\underbrace{(B_+^{\rm mx}+C_+^{\rm mx})(B_+^{\rm sb}+C_+^{\rm sb})\,G_{++}(\Omega_+)}_{\displaystyle \Pi_+(\Omega_+)}\,E_-\,\mathbf{e}^-
+\Big].
+\end{aligned}}
+\]
+If we substitute the sideband fields (for TCMT), we get:
+\begin{equation}
+\begin{aligned}
+\mathbf{P}^{(3),\mathrm{casc}}(\omega_s)
+&=\frac{3}{4}\eps_0\,|E_1|^2|E_2|^2
+\Big[
+    (B_-^{\rm mx}+C_-^{\rm mx})\,E_{s-}^{(-)}\,\mathbf{e}^+ + (B_+^{\rm mx}+C_+^{\rm mx}) E_{s+}^{(+)}\,\mathbf{e}^-
+\Big].
+\end{aligned}
+\end{equation}
+
+\subsection{Total probe polarization at \(\omega_s\)}
+Writing \(\mathbf{P}(\omega_s)=P^{\rm tot}_+\,\mathbf{e}^+ + P^{\rm tot}_-\,\mathbf{e}^-\), we have
+\[
+\boxed{\
+\begin{aligned}
+P^{\rm tot}_+&=P_+ \;+\;\Big(\frac{3}{4}\eps_0\Big)^{\!2}|E_1|^2|E_2|^2\,\Pi_-(\Omega_-)\,E_+,
+\\[2pt]
+P^{\rm tot}_-&=P_- \;+\;\Big(\frac{3}{4}\eps_0\Big)^{\!2}|E_1|^2|E_2|^2\,\Pi_+(\Omega_+)\,E_-,
+\end{aligned}}
+\]
+with \(P_\pm\) from \eqref{eq:Pplus-direct}–\eqref{eq:Pminus-direct}. The cascaded factors
+\(\Pi_\pm\) explicitly carry the \emph{distinct} coefficients from sideband generation \((B_\pm^{\rm sb},C_\pm^{\rm sb})\), the back-mixing stage \((B_\pm^{\rm mx},C_\pm^{\rm mx})\), and the circular projections of the linear Green tensor \(G_{\pm\pm}(\Omega_\pm)\).
+
+\paragraph{Remarks.}
+\begin{itemize}
+\item No Kleinman symmetry was used; all \(A,B,C\) are evaluated at the specific frequency tuples indicated by the superscripts \({\rm sb}\) (sideband) and \({\rm mx}\) (mixing), and by the arm sign \(+\) or \(-\).
+\item The \(A\)-channel drops out of the cascaded step because \(E^{(2)}\!\cdot E^{(1)*}=0\) for counter-rotating pumps in the transverse circular basis.
+\item In gyrotropic or anisotropic backgrounds, keep the full \(2\times2\) circular block of \(\mathcal{G}\); here we used diagonal projections \(G_{\pm\pm}\).
+\end{itemize}
+
+
+\section{Co-rotating Pumps: Direct and Cascaded $P^{(3)}(\omega_s)$ in Isotropic Tensor Form}
+
+\paragraph{Setup and notation}
+
+Time convention \(e^{-\ii\omega t}\). Circular basis \(\{\mathbf e^{(+)},\mathbf e^{(-)},\mathbf e^{(z)}\}\) with
+\(\mathbf e^{(+)}\!\cdot\!\mathbf e^{(-)}=1\), \(\mathbf e^{(\pm)}\!\cdot\!\mathbf e^{(\pm)}=0\), and \((\mathbf e^{(+)})^*=\mathbf e^{(-)}\).
+Fields:
+\[
+E^{(1)}_i=E_1\,e^{(+)}_i,\qquad
+E^{(2)}_i=E_2\,e^{(+)}_i,\qquad
+E^{(s)}_i=E_+\,e^{(+)}_i+E_-\,e^{(-)}_i,
+\]
+and \(\Delta=\omega_1-\omega_2\), \(\Omega_\pm=\omega_s\pm\Delta\).
+
+\paragraph{Isotropic third-order tensor (frequency-tuple dependent).}
+For any frequency tuple \(\Xi\),
+\[
+\chi^{(3)}_{ijkl}(\Xi)
+=A(\Xi)\,\delta_{ij}\delta_{kl}+B(\Xi)\,\delta_{ik}\delta_{jl}+C(\Xi)\,\delta_{il}\delta_{jk}.
+\]
+We keep \(A,B,C\) distinct for each \(\Xi\).
+
+\subsection{Direct third-order polarization at $\omega_s$}
+
+Start from
+\begin{align}
+P^{(3)}_i(\omega_s)
+=\frac{3}{4}\eps_0\!\!\sum_{m\in\{s,1,2\}}\!\!
+\Big[A_s^{(m)}\delta_{ij}\delta_{kl}+B_s^{(m)}\delta_{ik}\delta_{jl}+C_s^{(m)}\delta_{il}\delta_{jk}\Big]\,
+E^{(s)}_j E^{(m)}_k E^{(m)*}_l,
+\label{eq:P3direct-start}
+\end{align}
+with \(A_s^{(m)}:=A(-\omega_s;\omega_s,\omega_m,-\omega_m)\) and similarly \(B_s^{(m)},C_s^{(m)}\).
+
+Write \(P^{(3)}_i(\omega_s)=P_+\,e^{(+)}_i+P_-\,e^{(-)}_i\). A straightforward contraction in the circular basis gives a diagonal result:
+\begin{align}
+\boxed{
+\begin{aligned}
+P_+&=\frac{3}{4}\eps_0\Big[
+(A_s^{(s)}+C_s^{(s)})(|E_+|^2+|E_-|^2)\,E_+ + 2B_s^{(s)}|E_-|^2\,E_+\\
+&\hspace{3.4em}
++(A_s^{(1)}+B_s^{(1)})|E_1|^2\,E_+ + (A_s^{(2)}+B_s^{(2)})|E_2|^2\,E_+\Big],\\[4pt]
+P_-&=\frac{3}{4}\eps_0\Big[
+(A_s^{(s)}+C_s^{(s)})(|E_+|^2+|E_-|^2)\,E_- + 2B_s^{(s)}|E_+|^2\,E_-\\
+&\hspace{3.4em}
++(A_s^{(1)}+C_s^{(1)})|E_1|^2\,E_- + (A_s^{(2)}+C_s^{(2)})|E_2|^2\,E_-\Big].
+\end{aligned}}
+\label{eq:P3direct-final}
+\end{align}
+
+\subsection{Probe sidebands at $\Omega_\pm=\omega_s\pm\Delta$}
+
+Using the isotropic contraction for triplets \((\omega_s,\omega_1,-\omega_2)\) and \((\omega_s,\omega_2,-\omega_1)\),
+\begin{align}
+\mathbf P^{(3)}(\Omega_+)
+&=\tfrac{3}{4}\eps_0\Big[
+A_+^{\rm sb}\,( \mathbf E^{(1)}\!\cdot\!\mathbf E^{(2)*})\,\mathbf E^{(s)}
++B_+^{\rm sb}\,( \mathbf E^{(s)}\!\cdot\!\mathbf E^{(2)*})\,\mathbf E^{(1)}
++C_+^{\rm sb}\,( \mathbf E^{(s)}\!\cdot\!\mathbf E^{(1)})\,\mathbf E^{(2)*}\Big],
+\\
+\mathbf P^{(3)}(\Omega_-)
+&=\tfrac{3}{4}\eps_0\Big[
+A_-^{\rm sb}\,( \mathbf E^{(2)}\!\cdot\!\mathbf E^{(1)*})\,\mathbf E^{(s)}
++B_-^{\rm sb}\,( \mathbf E^{(s)}\!\cdot\!\mathbf E^{(1)*})\,\mathbf E^{(2)}
++C_-^{\rm sb}\,( \mathbf E^{(s)}\!\cdot\!\mathbf E^{(2)})\,\mathbf E^{(1)*}\Big],
+\end{align}
+where, e.g., \(A_+^{\rm sb}:=A(-\Omega_+;\omega_s,\omega_1,-\omega_2)\), etc.
+
+For co-rotating pumps \(\mathbf E^{(1)}\parallel\mathbf e^{(+)}\), \(\mathbf E^{(2)}\parallel\mathbf e^{(+)}\):
+\[
+\mathbf E^{(1)}\!\cdot\!\mathbf E^{(2)*}=E_1E_2^*,\quad
+\mathbf E^{(s)}\!\cdot\!\mathbf E^{(2)*}=E_+E_2^*,\quad
+\mathbf E^{(s)}\!\cdot\!\mathbf E^{(1)}=E_-E_1.
+\]
+Decomposing along \(\mathbf e^{(\pm)}\) gives
+\begin{align}
+\boxed{
+\mathbf P^{(3)}(\Omega_+)
+=\tfrac{3}{4}\eps_0\,E_1E_2^*
+\Big[(A_+^{\rm sb}+B_+^{\rm sb})\,E_+\,\mathbf e^{(+)}
++(A_+^{\rm sb}+C_+^{\rm sb})\,E_-\,\mathbf e^{(-)}\Big],}
+\label{eq:SBplus}\\
+\boxed{
+\mathbf P^{(3)}(\Omega_-)
+=\tfrac{3}{4}\eps_0\,E_2E_1^*
+\Big[(A_-^{\rm sb}+B_-^{\rm sb})\,E_+\,\mathbf e^{(+)}
++(A_-^{\rm sb}+C_-^{\rm sb})\,E_-\,\mathbf e^{(-)}\Big].}
+\label{eq:SBminus}
+\end{align}
+
+\paragraph{From sideband polarization to field.}
+Let the circular-basis Green block be
+\[
+\mathbf G(\Omega)=
+\begin{pmatrix}
+G_{++}(\Omega) & G_{+-}(\Omega)\\
+G_{-+}(\Omega) & G_{--}(\Omega)
+\end{pmatrix},
+\quad
+G_{\alpha\beta}(\Omega):=e^{(\alpha)\!*}_j\,\mathcal G_{ja}(\Omega)\,e^{(\beta)}_a .
+\]
+Define column vectors
+\[
+\mathbf S^{(+)}=
+\begin{bmatrix}
+(A_+^{\rm sb}+B_+^{\rm sb})\,E_+\\[2pt]
+(A_+^{\rm sb}+C_+^{\rm sb})\,E_-
+\end{bmatrix},\qquad
+\mathbf S^{(-)}=
+\begin{bmatrix}
+(A_-^{\rm sb}+B_-^{\rm sb})\,E_+\\[2pt]
+(A_-^{\rm sb}+C_-^{\rm sb})\,E_-
+\end{bmatrix}.
+\]
+Then
+\begin{align}
+\begin{bmatrix}E^{(s+)}_+\\ E^{(s+)}_-\end{bmatrix}
+&=\tfrac{3}{4}\eps_0\,(E_1E_2^*)\,\mathbf G(\Omega_+)\,\mathbf S^{(+)},\qquad
+\begin{bmatrix}E^{(s-)}_+\\ E^{(s-)}_-\end{bmatrix}
+=\tfrac{3}{4}\eps_0\,(E_2E_1^*)\,\mathbf G(\Omega_-)\,\mathbf S^{(-)}.
+\label{eq:SBfields}
+\end{align}
+
+
+\subsection{Cascaded back-mixing to $\omega_s$}
+
+\paragraph{Frequencies and coefficients.}
+The cascaded back-mixing paths satisfy
+\((\Omega_+)+\omega_2-\omega_1=\omega_s\) and \((\Omega_-)+\omega_1-\omega_2=\omega_s\).
+For the \emph{mixing} stage define
+\[
+\begin{aligned}
+&A_+^{\rm mx}:=A(-\omega_s;\Omega_+,\omega_2,-\omega_1),\quad
+B_+^{\rm mx}:=B(-\omega_s;\Omega_+,\omega_2,-\omega_1),\quad
+C_+^{\rm mx}:=C(-\omega_s;\Omega_+,\omega_2,-\omega_1),\\
+&A_-^{\rm mx}:=A(-\omega_s;\Omega_-,\omega_1,-\omega_2),\quad
+B_-^{\rm mx}:=B(-\omega_s;\Omega_-,\omega_1,-\omega_2),\quad
+C_-^{\rm mx}:=C(-\omega_s;\Omega_-,\omega_1,-\omega_2).
+\end{aligned}
+\]
+
+\paragraph{Upper arm (\(+\)).}
+Using $E^{(2)}\!\parallel\!\mathbf e^{(+)}$, $E^{(1)*}\!\parallel\!\mathbf e^{(-)}$, the mixing at $\Omega_+$ preserves the sideband’s circular index within each channel, so the two channels \((A,B)\) add on the \(+\) component and \((A,C)\) add on the \(-\) component:
+\[
+\begin{aligned}
+P^{(3),\mathrm{casc}}_{(+),+}
+&=\tfrac{3}{4}\varepsilon_0\,\big(A_+^{\rm mx}\!+B_+^{\rm mx}\big)\,E_2E_1^*\,E^{(s+)}_{+},\\
+P^{(3),\mathrm{casc}}_{(+),-}
+&=\tfrac{3}{4}\varepsilon_0\,\big(A_+^{\rm mx}\!+C_+^{\rm mx}\big)\,E_2E_1^*\,E^{(s+)}_{-}.
+\end{aligned}
+\]
+
+\paragraph{Lower arm (\(-\)).}
+Using $E^{(1)}\!\parallel\!\mathbf e^{(+)}$, $E^{(2)*}\!\parallel\!\mathbf e^{(-)}$, the mixing at $\Omega_-$ gives
+\[
+\begin{aligned}
+P^{(3),\mathrm{casc}}_{(-),+}
+&=\tfrac{3}{4}\varepsilon_0\,\big(A_-^{\rm mx}\!+B_-^{\rm mx}\big)\,E_1E_2^*\,E^{(s-)}_{+},\\
+P^{(3),\mathrm{casc}}_{(-),-}
+&=\tfrac{3}{4}\varepsilon_0\,\big(A_-^{\rm mx}\!+C_-^{\rm mx}\big)\,E_1E_2^*\,E^{(s-)}_{-}.
+\end{aligned}
+\]
+
+\paragraph{Collected result.}
+Summing the two arms and projecting on $\{\mathbf e^{(+)},\mathbf e^{(-)}\}$ gives
+\[
+\boxed{
+\begin{aligned}
+P^{(3),\mathrm{casc}}_{+}
+&=(A_+^{\rm mx}\!+B_+^{\rm mx})\,E_2E_1^{*}\,E^{(s+)}_{+}
++(A_-^{\rm mx}\!+B_-^{\rm mx})\,E_1E_2^{*}\,E^{(s-)}_{+},\\[2pt]
+P^{(3),\mathrm{casc}}_{-}
+&=(A_+^{\rm mx}\!+C_+^{\rm mx})\,E_2E_1^{*}\,E^{(s+)}_{-}
++(A_-^{\rm mx}\!+C_-^{\rm mx})\,E_1E_2^{*}\,E^{(s-)}_{-}.
+\end{aligned}}
+\]
+
+\paragraph{Cascaded back-mixing with sideband fields included.}
+From \eqref{eq:SBfields},
+\[
+\begin{bmatrix}E^{(s+)}_+\\ E^{(s+)}_-\end{bmatrix}
+=\tfrac{3}{4}\varepsilon_0\,(E_1E_2^*)\,\mathbf G(\Omega_+)\,\mathbf S^{(+)},\qquad
+\begin{bmatrix}E^{(s-)}_+\\ E^{(s-)}_-\end{bmatrix}
+=\tfrac{3}{4}\varepsilon_0\,(E_2E_1^*)\,\mathbf G(\Omega_-)\,\mathbf S^{(-)}.
+\]
+Using the collected mixing relations
+\[
+\begin{aligned}
+P^{(3),\mathrm{casc}}_{+}
+&=(A_+^{\rm mx}\!+B_+^{\rm mx})\,E_2E_1^{*}\,E^{(s+)}_{+}
++(A_-^{\rm mx}\!+B_-^{\rm mx})\,E_1E_2^{*}\,E^{(s-)}_{+},\\
+P^{(3),\mathrm{casc}}_{-}
+&=(A_+^{\rm mx}\!+C_+^{\rm mx})\,E_2E_1^{*}\,E^{(s+)}_{-}
++(A_-^{\rm mx}\!+C_-^{\rm mx})\,E_1E_2^{*}\,E^{(s-)}_{-},
+\end{aligned}
+\]
+we obtain the compact block form
+\[
+\boxed{
+\begin{bmatrix}
+P^{\mathrm{casc}}_{+}\\[2pt]
+P^{\mathrm{casc}}_{-}
+\end{bmatrix}
+=\Big(\tfrac{3}{4}\varepsilon_0\Big)^{\!2}
+|E_1|^2|E_2|^2\!
+\left[
+\mathbf D^{(+)} \,\mathbf G(\Omega_+)\,\mathbf S^{(+)}
++
+\mathbf D^{(-)} \,\mathbf G(\Omega_-)\,\mathbf S^{(-)}
+\right]\!,
+}
+\]
+where
+\[
+\mathbf S^{(+)}=
+\begin{bmatrix}
+(A_+^{\rm sb}\!+B_+^{\rm sb})\,E_+\\[2pt]
+(A_+^{\rm sb}\!+C_+^{\rm sb})\,E_-
+\end{bmatrix},\qquad
+\mathbf S^{(-)}=
+\begin{bmatrix}
+(A_-^{\rm sb}\!+B_-^{\rm sb})\,E_+\\[2pt]
+(A_-^{\rm sb}\!+C_-^{\rm sb})\,E_-
+\end{bmatrix}
+\]
+and
+\begin{equation}
+  \mathbf D^{(+)} =  \begin{pmatrix}
+A_+^{\rm mx}\!+B_+^{\rm mx} & 0\\[2pt]
+0 & A_+^{\rm mx}\!+C_+^{\rm mx}
+\end{pmatrix},\qquad
+  \mathbf D^{(-)} =  \begin{pmatrix}
+A_-^{\rm mx}\!+B_-^{\rm mx} & 0\\[2pt]
+0 & A_-^{\rm mx}\!+C_-^{\rm mx}
+\end{pmatrix},\qquad
+\end{equation}
+
+\paragraph{Scalar expansions.}
+Writing $\mathbf G(\Omega)=\begin{psmallmatrix}G_{++}&G_{+-}\\G_{-+}&G_{--}\end{psmallmatrix}$,
+\[
+\boxed{
+\begin{aligned}
+P^{(3),\mathrm{casc}}_{+}
+&=\Big(\tfrac{3}{4}\varepsilon_0\Big)^{\!2}|E_1|^2|E_2|^2\Big[
+(A_+^{\rm mx}\!+B_+^{\rm mx})\big(G_{++}(\Omega_+)\,S^{(+)}_1+G_{+-}(\Omega_+)\,S^{(+)}_2\big)\\[-2pt]
+&\hspace{6.2cm}+(A_-^{\rm mx}\!+B_-^{\rm mx})\big(G_{++}(\Omega_-)\,S^{(-)}_1+G_{+-}(\Omega_-)\,S^{(-)}_2\big)\Big],\\[4pt]
+P^{(3),\mathrm{casc}}_{-}
+&=\Big(\tfrac{3}{4}\varepsilon_0\Big)^{\!2}|E_1|^2|E_2|^2\Big[
+(A_+^{\rm mx}\!+C_+^{\rm mx})\big(G_{-+}(\Omega_+)\,S^{(+)}_1+G_{--}(\Omega_+)\,S^{(+)}_2\big)\\[-2pt]
+&\hspace{6.2cm}+(A_-^{\rm mx}\!+C_-^{\rm mx})\big(G_{-+}(\Omega_-)\,S^{(-)}_1+G_{--}(\Omega_-)\,S^{(-)}_2\big)\Big],
+\end{aligned}}
+\]
+with
+\[
+S^{(+)}_1=(A_+^{\rm sb}\!+B_+^{\rm sb})\,E_+,\quad
+S^{(+)}_2=(A_+^{\rm sb}\!+C_+^{\rm sb})\,E_-,\quad
+S^{(-)}_1=(A_-^{\rm sb}\!+B_-^{\rm sb})\,E_+,\quad
+S^{(-)}_2=(A_-^{\rm sb}\!+C_-^{\rm sb})\,E_-.
+\]
+
+\paragraph{Notes.}
+(i) The pump products combine as $(E_2E_1^*)(E_1E_2^*)=|E_1|^2|E_2|^2$, so all residual phase sensitivity resides in $\mathbf G(\Omega_\pm)$ and the probe $E_\pm$. 
+(ii) Off-diagonal $G_{\pm\mp}$ terms are the channels that convert circular components and are the ones that ultimately drive polarization rotation in the probe.
+
+\subsection{Total probe polarization at $\omega_s$}
+
+Let \(P^{\rm dir}_\pm\) denote the direct terms from \eqref{eq:P3direct-final}. The full result is
+\[
+\boxed{
+\begin{bmatrix}
+P^{\rm tot}_+\\[2pt]
+P^{\rm tot}_-
+\end{bmatrix}
+=
+\begin{bmatrix}
+P^{\rm dir}_+\\[2pt]
+P^{\rm dir}_-
+\end{bmatrix}
++\Big(\tfrac{3}{4}\eps_0\Big)^{\!2}
+\left[
+\mathbf D^{(+)}\,\mathbf G(\Omega_+)\,\mathbf S^{(+)}
++\mathbf D^{(-)}\,\mathbf G(\Omega_-)\,\mathbf S^{(-)}
+\right].
+}
+\]
+
+\paragraph{Remarks.}
+\begin{itemize}
+\item No Kleinman symmetry was used; every \(A,B,C\) carries its own frequency tuple:
+\(\{ -\omega_s;\omega_s,\omega_m,-\omega_m\}\) for the direct term,
+\(\{-\Omega_\pm;\omega_s,\omega_{1/2},-\omega_{2/1}\}\) for sideband generation,
+and \(\{-\omega_s;\Omega_\pm,\omega_{2/1},-\omega_{1/2}\}\) for back-mixing.
+\item In homogeneous isotropic propagation, \(\mathbf G(\Omega_\pm)\) reduces to a diagonal scalar times \(\mathbf I_{2}\), simplifying the cascaded matrices.
+\item The direct term is strictly diagonal in \(\{+,-\}\) (no mixing); any \(+\leftrightarrow-\) coupling at \(\omega_s\) here originates from the cascaded pathway and/or off-diagonal \(G_{\alpha\beta}\).
+\end{itemize}
+
+\end{document}

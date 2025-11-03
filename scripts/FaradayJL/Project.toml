@@ -1,0 +1,16 @@
+name = "FaradayJL"
+uuid = "300ec87b-ffb5-4cf9-b9e4-c555f2b26191"
+version = "0.1.0"
+authors = ["Nikita <nefedkin@phystech.edu>"]
+
+[deps]
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
+DifferentialEquations = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
+
+[compat]
+CairoMakie = "0.15.6"
+DifferentialEquations = "7.17.0"
+LinearAlgebra = "1.12.0"
+Revise = "3.11.0"

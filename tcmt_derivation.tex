@@ -1,0 +1,420 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath, amssymb, bm, physics}
+
+\newcommand{\ii}{\mathrm{i}}
+
+\title{TCMT for Faraday-Rotation FWM in Isotropic $\chi^{(3)}$}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+\tableofcontents
+
+\section{Maxwell wave equation in time domain and setup}
+
+We work in nonmagnetic media $\mu=\mu_0$ and split polarization into a linear part (absorbed into $\epsilon$) and a nonlinear part $\mathbf P_{\mathrm{NL}}$.
+The \emph{time-domain} electric-field wave equation is
+\begin{equation}
+\label{eq:time-wave}
+\nabla\times\nabla\times \mathbf E(\mathbf r,t) + \mu_0 \epsilon(\mathbf r)\,\partial_t^2 \mathbf E(\mathbf r,t)
+= -\,\mu_0\,\partial_t^2 \mathbf P_{\mathrm{NL}}(\mathbf r,t),
+\end{equation}
+with the usual outgoing-radiation boundary conditions. For frequency components $e^{-\ii\omega t}$ this becomes
+\begin{equation}
+\label{eq:freq-wave}
+\nabla\times\mu_0^{-1}\nabla\times \mathbf E(\mathbf r,\omega) - \frac{\omega^2}{c^2}\,\epsilon(\mathbf r,\omega)\mathbf E(\mathbf r,\omega)
+= \omega^2\mu_0\,\mathbf P_{\mathrm{NL}}(\mathbf r,\omega).
+\end{equation}
+
+\paragraph{Fields and carriers.}
+We consider five carriers with slowly varying envelopes (SVEA): pumps at $\omega_1=\omega_p+\Delta/2$ and $\omega_2=\omega_p-\Delta/2$, probe at $\omega_s$, and probe-generated sidebands at $\Omega_\pm=\omega_s\pm\Delta$. Circular basis $\{\mathbf e^{(+)},\mathbf e^{(-)}\}$ with $\mathbf e^{(+)}\!\cdot\!\mathbf e^{(-)}=1$, $\mathbf e^{(\pm)}\!\cdot\!\mathbf e^{(\pm)}=0$.
+
+\paragraph{Polarizations.}
+Counter-rotating pumps and probe:
+\[
+\mathbf E^{(1)}=E_1\,\mathbf e^{(+)},\quad
+\mathbf E^{(2)}=E_2\,\mathbf e^{(-)},\quad
+\mathbf E^{(s)}=E_+\,\mathbf e^{(+)}+E_-\,\mathbf e^{(-)} ,
+\]
+with $|E_\pm|\ll |E_{1,2}|$. We keep only terms linear in the probe envelopes.
+
+\section{Eigenmodes and normalization}
+
+Let $\{\mathbf u_\mu(\mathbf r),\omega_\mu\}$ denote (quasi-normal) cavity eigenmodes solving the source-free frequency-domain problem
+\begin{equation}
+\label{eq:eigen}
+\nabla\times\mu_0^{-1}\nabla\times \mathbf u_\mu(\mathbf r)
+= \frac{\omega_\mu^2}{c^2}\,\epsilon(\mathbf r,\omega_\mu)\, \mathbf u_\mu(\mathbf r),
+\end{equation}
+with outgoing-radiation boundary conditions. We expand the field near each carrier as
+\[
+\mathbf E_\mu(\mathbf r,t)= x_\mu(t)\,\mathbf u_\mu(\mathbf r)\,e^{-\ii\omega_\mu t}+\text{c.c.}
+\]
+We adopt the energy normalization
+\begin{equation}
+\label{eq:Umu}
+U_\mu=\frac{1}{4}\int\!\Big[\epsilon\,\mathbf u_\mu\!\cdot\!\mathbf u_\mu^{*}+\mu_0\,\mathbf h_\mu\!\cdot\!\mathbf h_\mu^{*}\Big]\,dV=1,
+\end{equation}
+so that $|x_\mu|^2$ equals the energy stored in mode $\mu$. \emph{If $U_\mu\neq1$ is used, then \textbf{all} nonlinear overlap coefficients below must be divided by $U_\mu$ accordingly.}
+
+\paragraph{Modes and ports.}
+Linear radiative/absorptive losses are captured by total decay rates $\kappa_\mu$; coupling to external ports $p$ is described by rates $\kappa_{\mu,p}$ with $\kappa_\mu=\kappa_{\mu,\mathrm{i}}+\sum_p\kappa_{\mu,p}$.
+
+\section{Isotropic $\chi^{(3)}$ tensor bookkeeping}
+
+For any frequency tuple $\Xi$ we use the Maker--Terhune decomposition
+\begin{equation}
+\chi^{(3)}_{ijkl}(\Xi)=A(\Xi)\,\delta_{ij}\delta_{kl}+B(\Xi)\,\delta_{ik}\delta_{jl}+C(\Xi)\,\delta_{il}\delta_{jk},
+\end{equation}
+with distinct $\{A,B,C\}$ for each tuple; no Kleinman symmetry is assumed. Contractions are performed in the circular basis.
+
+\section{Counter-rotating pumps}
+
+\subsection{Direct third-order polarization at $\omega_s$}
+
+Keeping only terms linear in probe,
+\begin{align}
+P^{(3)}_i(\omega_s)
+=\frac{3}{4}\varepsilon_0\!\!\sum_{m\in\{s,1,2\}}\!\!
+\Big[A_s^{(m)}\delta_{ij}\delta_{kl}+B_s^{(m)}\delta_{ik}\delta_{jl}+C_s^{(m)}\delta_{il}\delta_{jk}\Big]\,
+E^{(s)}_j E^{(m)}_k E^{(m)*}_l,
+\end{align}
+where $A_s^{(m)}:=A(-\omega_s;\omega_s,\omega_m,-\omega_m)$ and similarly for $B_s^{(m)},C_s^{(m)}$.
+In $\{\mathbf e^{(+)},\mathbf e^{(-)}\}$ this is diagonal:
+\[
+\mathbf P^{(3)}(\omega_s)=P_+\,\mathbf e^{(+)}+P_-\,\mathbf e^{(-)},
+\]
+with $P_+$ containing $(A_s^{(1)}+B_s^{(1)})|E_1|^2E_+$ and $(A_s^{(2)}+C_s^{(2)})|E_2|^2E_+$, and $P_-$ the $(+)\!\leftrightarrow(-)$ counterparts. Thus the \emph{direct} Kerr action is circular-diagonal.
+
+\subsection{Probe sidebands at $\Omega_\pm$}
+
+With $\Omega_\pm=\omega_s\pm\Delta$ and counter-rotating pumps one finds
+\begin{align}
+\mathbf P^{(3)}(\Omega_+)&=\frac{3}{4}\varepsilon_0\,(B^{\rm sb}_+{+}C^{\rm sb}_+)\,E_1 E_2^*\,E_-\,\mathbf e^{(+)},\\
+\mathbf P^{(3)}(\Omega_-)&=\frac{3}{4}\varepsilon_0\,(B^{\rm sb}_- {+} C^{\rm sb}_-)\,E_2 E_1^*\,E_+\,\mathbf e^{(-)},
+\end{align}
+where, e.g., $B^{\rm sb}_+:=B(-\Omega_+;\omega_s,\omega_1,-\omega_2)$.
+
+\subsection{TCMT from Maxwell projection}
+
+Projecting \eqref{eq:freq-wave} onto $\mathbf u_\nu^*$ and using \eqref{eq:Umu} gives, under SVEA and RWA,
+\begin{equation}
+\label{eq:tcmt-skeleton}
+\dot x_\nu=(\ii\Delta_\nu-\tfrac{\kappa_\nu}{2})x_\nu+\sum_p\sqrt{\kappa_{\nu,p}}\,s_{\nu p,\mathrm{in}}
++ F_\nu,\qquad
+F_\nu=\ii\frac{\omega_\nu}{2U_\nu}\int \mathbf u_\nu^*(\mathbf r)\!\cdot\!\mathbf P_{\mathrm{NL}}(\mathbf r,\omega_\nu)\,dV .
+\end{equation}
+We now instantiate \eqref{eq:tcmt-skeleton} for the five carriers with envelopes
+\[
+\{A_1\leftrightarrow\omega_1,\; A_2\leftrightarrow\omega_2,\; a_\pm\leftrightarrow\omega_s,\; b_+\leftrightarrow\Omega_+,\; b_-\leftrightarrow\Omega_-\}.
+\]
+
+\subsection{Pumps}
+\begin{equation}
+\dot A_1=(\ii\Delta_1-\tfrac{\kappa_1}{2})A_1+\sum_p\sqrt{\kappa_{1,p}}\,s_{1p,\mathrm{in}},\qquad
+\dot A_2=(\ii\Delta_2-\tfrac{\kappa_2}{2})A_2+\sum_p\sqrt{\kappa_{2,p}}\,s_{2p,\mathrm{in}}.
+\end{equation}
+
+\subsection{Probe at $\omega_s$ (direct Kerr)}
+Projecting the direct $\mathbf P^{(3)}(\omega_s)$ onto the probe mode profiles $\mathbf u_{s\pm}$ yields
+\begin{align}
+\dot a_+&=\Big[\ii\Delta_s-\tfrac{\kappa_s}{2}\Big]a_+ + \ii\alpha_1 |A_1|^2 a_+ + \ii\alpha_2 |A_2|^2 a_+ + \sum_p\sqrt{\kappa_{s,p}^{(+)}}\,s_{sp,\mathrm{in}}^{(+)},\\
+\dot a_-&=\Big[\ii\Delta_s-\tfrac{\kappa_s}{2}\Big]a_- + \ii\tilde\alpha_1 |A_1|^2 a_- + \ii\tilde\alpha_2 |A_2|^2 a_- + \sum_p\sqrt{\kappa_{s,p}^{(-)}}\,s_{sp,\mathrm{in}}^{(-)},
+\end{align}
+with overlap coefficients (for $U_{s\pm}=U_{1,2}=1$)
+\begin{align}
+\alpha_1&=\frac{3\omega_s\varepsilon_0}{8}\!\int (A_s^{(1)}{+}B_s^{(1)})\,|\mathbf u_{s+}|^2\,|\mathbf u_{1+}|^2\,dV,
+&
+\alpha_2&=\frac{3\omega_s\varepsilon_0}{8}\!\int (A_s^{(2)}{+}C_s^{(2)})\,|\mathbf u_{s+}|^2\,|\mathbf u_{2-}|^2\,dV,\\
+\tilde\alpha_1&=\frac{3\omega_s\varepsilon_0}{8}\!\int (A_s^{(1)}{+}C_s^{(1)})\,|\mathbf u_{s-}|^2\,|\mathbf u_{1+}|^2\,dV,
+&
+\tilde\alpha_2&=\frac{3\omega_s\varepsilon_0}{8}\!\int (A_s^{(2)}{+}B_s^{(2)})\,|\mathbf u_{s-}|^2\,|\mathbf u_{2-}|^2\,dV.
+\end{align}
+\emph{If $U_\mu\neq1$, divide each coefficient by the corresponding $U$ factors from \eqref{eq:tcmt-skeleton}.}
+
+\subsection{Sidebands at $\Omega_\pm$ (generation)}
+Using $\mathbf P^{(3)}(\Omega_\pm)$ and projecting onto $\mathbf u_{b\pm}$,
+\begin{align}
+\dot b_+&=\Big(\ii\Delta_{b+}-\tfrac{\kappa_{b+}}{2}\Big)b_+ + \ii\,\zeta_+\,(A_1A_2^*)\,a_-,
+\\
+\dot b_-&=\Big(\ii\Delta_{b-}-\tfrac{\kappa_{b-}}{2}\Big)b_- + \ii\,\zeta_-\,(A_2A_1^*)\,a_+,
+\end{align}
+with
+\begin{align}
+\zeta_+&=\frac{3\Omega_+\varepsilon_0}{8}\!\int (B_+^{\rm sb}{+}C_+^{\rm sb})\,(\mathbf u_{b+}^*\!\cdot\!\mathbf u_{1+})\,(\mathbf u_{2-}^*\!\cdot\!\mathbf u_{s-})\,dV,\\
+\zeta_-&=\frac{3\Omega_-\varepsilon_0}{8}\!\int (B_-^{\rm sb}{+}C_-^{\rm sb})\,(\mathbf u_{b-}^*\!\cdot\!\mathbf u_{2-})\,(\mathbf u_{1+}^*\!\cdot\!\mathbf u_{s+})\,dV.
+\end{align}
+
+\subsection{Cascaded back-mixing into the probe}
+The sidebands mix with the opposite pump pair to return to $\omega_s$, producing \emph{off-diagonal} probe drives:
+\begin{align}
+\dot a_+&=\cdots + \ii\,\eta_-\, b_-,
+&
+\dot a_-&=\cdots + \ii\,\eta_+\, b_+,
+\end{align}
+with
+\begin{align}
+\eta_+&=\frac{3\omega_s\varepsilon_0}{8}\!\int (B_+^{\rm mx}{+}C_+^{\rm mx})\,(\mathbf u_{s-}^*\!\cdot\!\mathbf u_{2-})\,(\mathbf u_{1+}^*\!\cdot\!\mathbf u_{b+})\,dV,\\
+\eta_-&=\frac{3\omega_s\varepsilon_0}{8}\!\int (B_-^{\rm mx}{+}C_-^{\rm mx})\,(\mathbf u_{s+}^*\!\cdot\!\mathbf u_{1+})\,(\mathbf u_{2-}^*\!\cdot\!\mathbf u_{b-})\,dV.
+\end{align}
+In the counter-rotating isotropic case the $A$-channel cancels in the cascade.
+
+\subsection{Adiabatic elimination of sidebands and effective coupling}
+If sidebands are fast ($\abs{\Delta_{b\pm}-\ii \kappa_{b\pm}/2}$ large), set $\dot b_\pm\simeq 0$:
+\[
+b_+\simeq \frac{\zeta_+}{\tfrac{\kappa_{b+}}{2}-\ii\Delta_{b+}}(A_1A_2^*)\,a_-,
+\qquad
+b_-\simeq \frac{\zeta_-}{\tfrac{\kappa_{b-}}{2}-\ii\Delta_{b-}}(A_2A_1^*)\,a_+.
+\]
+Then the probe obeys
+\begin{equation}
+\boxed{
+\begin{aligned}
+\dot a_+&=\Big[\ii(\Delta_s+\Phi_+)-\tfrac{\kappa_s}{2}\Big]a_+ + \ii\,g_{\mathrm{eff}}\,a_-,
+\\
+\dot a_-&=\Big[\ii(\Delta_s+\Phi_-)-\tfrac{\kappa_s}{2}\Big]a_- + \ii\,g_{\mathrm{eff}}^{*}\,a_+,
+\end{aligned}}
+\end{equation}
+with direct self-phase shifts $\Phi_+=\alpha_1|A_1|^2+\alpha_2|A_2|^2$ and $\Phi_-=\tilde\alpha_1|A_1|^2+\tilde\alpha_2|A_2|^2$, and cascaded \emph{mixing} strength
+\begin{equation}
+\boxed{
+g_{\mathrm{eff}}=
+\eta_+\frac{\zeta_+}{\tfrac{\kappa_{b+}}{2}-\ii\Delta_{b+}}(A_1A_2^*)
+=
+\eta_-^{*}\frac{\zeta_-^{*}}{\tfrac{\kappa_{b-}}{2}+\ii\Delta_{b-}}(A_1A_2^*).
+}
+\end{equation}
+Polarization rotation of the probe arises from $g_{\mathrm{eff}}$ (off-diagonal coupling) and any circular-birefringent difference $\Phi_+-\Phi_-$.
+
+\subsection{Ports and observables}
+For port $p$ coupled to mode $\mu$, the usual input--output relation is
+\[
+s_{p,\mathrm{out}}=\sum_{p'}C_{pp'}\,s_{p',\mathrm{in}}+\sqrt{\kappa_{\mu,p}}\;x_\mu,
+\]
+with unitary direct scattering matrix $C$ fixed by energy conservation and time reversal. The transmitted/reflected Jones vector of the probe follows from $a_\pm$ and yields the rotation angle.
+
+\paragraph{Notes.}
+(i) All overlap coefficients inherit the frequency-tuple labels of $A,B,C$; no Kleinman symmetry is assumed. (ii) In homogeneous isotropic propagation, the dyadic Green tensor reduces to a diagonal scalar, which is consistent with the single-mode $b_\pm$ description used here. (iii) If $U_\mu\neq1$, remember to divide each nonlinear overlap by $U_\mu$ as indicated below \eqref{eq:tcmt-skeleton}.
+
+
+\section{Co-rotating Pumps: Direct and Cascaded $\chi^{(3)}$ Paths in TCMT}
+
+We now take co-rotating pumps,
+\[
+\mathbf E^{(1)}=E_1\,\mathbf e^{(+)},\qquad
+\mathbf E^{(2)}=E_2\,\mathbf e^{(+)},\qquad
+\Delta=\omega_1-\omega_2,\quad \Omega_\pm=\omega_s\pm \Delta,
+\]
+and the probe $\mathbf E^{(s)}=E_+\,\mathbf e^{(+)}+E_-\,\mathbf e^{(-)}$ with $|E_\pm|\ll|E_{1,2}|$.  The isotropic tensor is kept in Maker--Terhune form with tuple-dependent $A,B,C$ and no Kleinman symmetry.
+
+\paragraph{Direct Kerr at $\omega_s$.}
+As in the counter-rotating case, the direct third-order polarization is diagonal in $\{\mathbf e^{(+)},\mathbf e^{(-)}\}$:
+\[
+\mathbf P^{(3)}(\omega_s)=P^{\rm dir}_+\,\mathbf e^{(+)}+P^{\rm dir}_-\,\mathbf e^{(-)},
+\]
+with
+\begin{align}
+P^{\rm dir}_+&=\tfrac{3}{4}\varepsilon_0\Big[(A_s^{(s)}{+}C_s^{(s)})(|E_+|^2{+}|E_-|^2)E_+ + 2B_s^{(s)}|E_-|^2E_+ +\\ \nonumber
+             &(A_s^{(1)}{+}B_s^{(1)})|E_1|^2 E_+ + (A_s^{(2)}{+}B_s^{(2)})|E_2|^2 E_+\Big],\\
+P^{\rm dir}_-&=\tfrac{3}{4}\varepsilon_0\Big[(A_s^{(s)}{+}C_s^{(s)})(|E_+|^2{+}|E_-|^2)E_- + 2B_s^{(s)}|E_+|^2E_- +\\ \nonumber
+             &(A_s^{(1)}{+}C_s^{(1)})|E_1|^2 E_- + (A_s^{(2)}{+}C_s^{(2)})|E_2|^2 E_-\Big],
+\end{align}
+where $A_s^{(m)}:=A(-\omega_s;\omega_s,\omega_m,-\omega_m)$ etc. (As before, with modal energy normalization $U_\mu\neq 1$, divide each nonlinear overlap coefficient by $U_\mu$.)
+
+\paragraph{Sideband generation at $\Omega_\pm$.}
+For co-rotating pumps, both circular components of the sideband polarization survive:
+\begin{align}
+\mathbf P^{(3)}(\Omega_+)
+&=\tfrac{3}{4}\varepsilon_0\,E_1E_2^*\Big[(A_+^{\rm sb}{+}B_+^{\rm sb})E_+\,\mathbf e^{(+)} + (A_+^{\rm sb}{+}C_+^{\rm sb})E_-\,\mathbf e^{(-)}\Big],\\
+\mathbf P^{(3)}(\Omega_-)
+&=\tfrac{3}{4}\varepsilon_0\,E_2E_1^*\Big[(A_-^{\rm sb}{+}B_-^{\rm sb})E_+\,\mathbf e^{(+)} + (A_-^{\rm sb}{+}C_-^{\rm sb})E_-\,\mathbf e^{(-)}\Big],
+\end{align}
+with, e.g., $A^{\rm sb}_+:=A(-\Omega_+;\omega_s,\omega_1,-\omega_2)$.
+
+\paragraph{Sideband vectorization and compact TCMT}
+
+We group the two circular polarizations of each arm into vectors
+\[
+\bm b_{+}=
+\begin{bmatrix}
+b_{+,+}\\ b_{+,-}
+\end{bmatrix}
+\!\leftrightarrow\!\Omega_+,
+\qquad
+\bm b_{-}=
+\begin{bmatrix}
+b_{-,+}\\ b_{-,-}
+\end{bmatrix}
+\!\leftrightarrow\!\Omega_-,
+\qquad
+\bm a=
+\begin{bmatrix}
+a_+\\ a_-
+\end{bmatrix}
+\!\leftrightarrow\!\omega_s.
+\]
+Here, \(b_{\sigma,\tau}\) denotes the sideband at arm \(\sigma\in\{+,-\}\) with circular polarization \(\tau\in\{+,-\}\).
+We also allow a general \emph{linear} \(2\times2\) sideband block for each arm,
+\[
+\mathbf K_{b\pm} \equiv
+\begin{bmatrix}
+\frac{\kappa_{b\pm,+}}{2}-\ii\,\Delta_{b\pm,+} & -\ii\,\Lambda_{b\pm}\\[2pt]
+-\ii\,\Lambda_{b\pm}^* & \frac{\kappa_{b\pm,-}}{2}-\ii\,\Delta_{b\pm,-}
+\end{bmatrix},
+\]
+which captures distinct linewidths/detunings for \(+\) and \(-\) and any linear cross-polarization mixing
+(\(\Lambda_{b\pm}=0\) for an isotropic cavity without linear \(+\!\leftrightarrow\!-\) coupling).
+
+\paragraph{Sideband generation (vector form).}
+Projecting the isotropic \(\chi^{(3)}\) sideband polarizations onto the sideband modes gives
+\begin{equation}
+\label{eq:vec-gen}
+\dot{\bm b}_{+} \;=\; -\,\mathbf K_{b+}\,\bm b_{+} \;+\; \ii\,(A_1A_2^*)\,\mathbf Z^{(+)}\,\bm a,
+\qquad
+\dot{\bm b}_{-} \;=\; -\,\mathbf K_{b-}\,\bm b_{-} \;+\; \ii\,(A_2A_1^*)\,\mathbf Z^{(-)}\,\bm a,
+\end{equation}
+with \(2\times 2\) \emph{generation} matrices
+\[
+\mathbf Z^{(+)} =
+\begin{bmatrix}
+\zeta^{(+)}_{++} & \zeta^{(+)}_{+-}\\
+\zeta^{(+)}_{-+} & \zeta^{(+)}_{--}
+\end{bmatrix},
+\qquad
+\mathbf Z^{(-)} =
+\begin{bmatrix}
+\zeta^{(-)}_{++} & \zeta^{(-)}_{+-}\\
+\zeta^{(-)}_{-+} & \zeta^{(-)}_{--}
+\end{bmatrix}.
+\]
+For \emph{co-rotating} pumps in an isotropic medium the only nonzero entries are the \emph{diagonals}
+\begin{align}
+    \zeta^{(+)}_{++}=&\frac{3\Omega_+\varepsilon_0}{8U_{b+}}
+\!\int\!(A_+^{\rm sb}{+}B_+^{\rm sb})\,(\mathbf u_{b+,+}^*\!\cdot\!\mathbf u_{1+})
+(\mathbf u_{2+}^*\!\cdot\!\mathbf u_{s+})\,dV, \\
+    \zeta^{(+)}_{--}=&\frac{3\Omega_+\varepsilon_0}{8U_{b+}}
+\!\int\!(A_+^{\rm sb}{+}C_+^{\rm sb})\,(\mathbf u_{b+,-}^*\!\cdot\!\mathbf u_{1+})
+(\mathbf u_{2+}^*\!\cdot\!\mathbf u_{s-})\,dV,
+\end{align}
+(and \(\zeta^{(+)}_{+-}=\zeta^{(+)}_{-+}=0\)); similarly at \(\Omega_-\) with the tuples \((-\Omega_-;\omega_s,\omega_2,-\omega_1)\).
+For \emph{counter-rotating} pumps, \(\mathbf Z^{(+)}\) and \(\mathbf Z^{(-)}\) are diagonal but with only one nonzero element each:
+\(b_{+,+}\!\leftarrow a_-\) and \(b_{-,-}\!\leftarrow a_+\), exactly matching the contractions in your earlier note.
+
+\paragraph{Back-mixing into the probe (vector form).}
+Projecting the cascaded polarization onto the probe modes yields
+\begin{equation}
+\label{eq:vec-mix}
+\dot{\bm a} \;=\;
+\Big[\ii(\Delta_s\mathbf I+\bm{\Phi})-\tfrac{\kappa_s}{2}\mathbf I\Big]\bm a
+\;+\; \ii\,(A_2A_1^*)\,\mathbf M^{(+)}\,\bm b_{+}
+\;+\; \ii\,(A_1A_2^*)\,\mathbf M^{(-)}\,\bm b_{-}
+\;+\; \text{(probe inputs)},
+\end{equation}
+with \(\bm{\Phi}=\mathrm{diag}(\Phi_+,\Phi_-)\) the direct (diagonal) Kerr shifts and \(2\times 2\) \emph{mixing} matrices
+\[
+\mathbf M^{(+)}=
+\begin{bmatrix}
+\eta^{(+)}_{+,+} & \eta^{(+)}_{+,-}\\
+\eta^{(+)}_{-,+} & \eta^{(+)}_{-,-}
+\end{bmatrix},
+\qquad
+\mathbf M^{(-)}=
+\begin{bmatrix}
+\eta^{(-)}_{+,+} & \eta^{(-)}_{+,-}\\
+\eta^{(-)}_{-,+} & \eta^{(-)}_{-,-}
+\end{bmatrix}.
+\]
+In the \emph{co-rotating, isotropic} case these are again diagonal,
+\begin{align}
+    \eta^{(+)}_{+,+}=&\frac{3\omega_s\varepsilon_0}{8U_{s+}}
+\!\int\!(A_+^{\rm mx}{+}B_+^{\rm mx})\,(\mathbf u_{s+}^*\!\cdot\!\mathbf u_{2+})
+(\mathbf u_{1+}^*\!\cdot\!\mathbf u_{b+,+})\,dV,\; \\
+    \eta^{(+)}_{-,-}=&\frac{3\omega_s\varepsilon_0}{8U_{s-}}
+\!\int\!(A_+^{\rm mx}{+}C_+^{\rm mx})\,(\mathbf u_{s-}^*\!\cdot\!\mathbf u_{2+})
+(\mathbf u_{1+}^*\!\cdot\!\mathbf u_{b+,-})\,dV,
+\end{align}
+(and \(\eta^{(+)}_{+,-}=\eta^{(+)}_{-,+}=0\)); similarly for \(\mathbf M^{(-)}\) with tuples \((-\omega_s;\Omega_-,\omega_1,-\omega_2)\).
+If the cavity exhibits linear circular mixing at the sideband (nonzero \(\Lambda_{b\pm}\)), \(\mathbf K_{b\pm}\) accounts for it and the diagonality of \(\mathbf M^{(\pm)}\) and \(\mathbf Z^{(\pm)}\) still holds for an isotropic \(\chi^{(3)}\).
+
+\paragraph{Adiabatic elimination and effective probe coupling.}
+When \(\mathbf K_{b\pm}\) are “fast” (sidebands off-resonant or strongly damped), set \(\dot{\bm b}_\pm\simeq \bm 0\) in \eqref{eq:vec-gen}:
+\[
+\bm b_{+}\;\simeq\; \ii\,(A_1A_2^*)\,\mathbf K_{b+}^{-1}\,\mathbf Z^{(+)}\,\bm a,
+\qquad
+\bm b_{-}\;\simeq\; \ii\,(A_2A_1^*)\,\mathbf K_{b-}^{-1}\,\mathbf Z^{(-)}\,\bm a.
+\]
+Substituting into \eqref{eq:vec-mix} gives
+\begin{align}
+\label{eq:Geff-matrix}
+    \dot{\bm a}=&
+\Big[\ii(\Delta_s\mathbf I+\bm{\Phi})-\tfrac{\kappa_s}{2}\mathbf I\Big]\bm a
+\;+\;\ii\,\mathbf G_{\mathrm{eff}}\,\bm a,\\
+    \mathbf G_{\mathrm{eff}}=&
+\mathbf M^{(+)}\mathbf K_{b+}^{-1}\mathbf Z^{(+)}|A_1|^2|A_2|^2
+\;+\;
+\mathbf M^{(-)}\mathbf K_{b-}^{-1}\mathbf Z^{(-)}|A_1|^2|A_2|^2.
+\end{align}
+In isotropic co-rotating pumps, \(\mathbf Z^{(\pm)}\) and \(\mathbf M^{(\pm)}\) are diagonal, so \(\mathbf G_{\mathrm{eff}}\) acquires off-diagonal terms \emph{only} through the linear sideband block \(\mathbf K_{b\pm}^{-1}\) (i.e., via \(\Lambda_{b\pm}\neq 0\)) or through asymmetry between the two arms. In counter-rotating pumps, only a single element in each \(\mathbf Z^{(\pm)}\) is nonzero, reproducing the simpler two-equation form in the main text.
+
+
+
+\appendix
+\section{Ports, Transmission/Reflection, and Polarization Rotation Angle}
+
+\subsection*{Input--output relations}
+For a mode $\mu$ coupled to one (left) and/or two (left/right) external waveguide ports with rates $\kappa_{\mu,L},\kappa_{\mu,R}$, the standard input--output relations are
+\begin{align}
+s_{L,\mathrm{out}}&=c_{LL}\,s_{L,\mathrm{in}}+c_{LR}\,s_{R,\mathrm{in}}+\sqrt{\kappa_{\mu,L}}\,x_\mu,\\
+s_{R,\mathrm{out}}&=c_{RL}\,s_{L,\mathrm{in}}+c_{RR}\,s_{R,\mathrm{in}}+\sqrt{\kappa_{\mu,R}}\,x_\mu,
+\end{align}
+with a unitary direct-scattering matrix $C=[c_{pq}]$ fixed by energy conservation and time-reversal.  For a single-ended cavity (only left port driven), $s_{R,\mathrm{in}}=0$ and $c_{LL}\!=\!-1$ (conventionally).
+
+For the probe, one uses the two circular components $(+,-)$:
+\[
+\bm s_{\mathrm{out}}=
+C\,\bm s_{\mathrm{in}} +
+\begin{bmatrix}\sqrt{\kappa_{s,L}^{(+)}}&0\\0&\sqrt{\kappa_{s,L}^{(-)}}\end{bmatrix}
+\begin{bmatrix}a_+\\ a_-\end{bmatrix}
+\quad\text{(left port)},
+\qquad
+\text{and analogously for the right port.}
+\]
+
+\subsection*{Transmission and reflection (single-ended example)}
+Driving from the left with circular components $\bm s_{\mathrm{in}}=[s_{\mathrm{in},+},s_{\mathrm{in},-}]^T$, the transmitted Jones vector is
+\[
+\bm t(\omega_s)=
+\frac{\bm s_{R,\mathrm{out}}}{\bm s_{\mathrm{in}}}
+=
+C_{R:}\,\mathbf e_L\;+\;
+\begin{bmatrix}\sqrt{\kappa_{s,R}^{(+)}}&0\\0&\sqrt{\kappa_{s,R}^{(-)}}\end{bmatrix}
+\Big(-\mathbf M^{-1}\Big)
+\begin{bmatrix}\sqrt{\kappa_{s,L}^{(+)}}&0\\0&\sqrt{\kappa_{s,L}^{(-)}}\end{bmatrix},
+\]
+where $\mathbf e_L=[1,0]^T$, $C_{R:}$ is the row of $C$ for the right port, and
+\[
+\mathbf M = \Big[\tfrac{\kappa_s}{2}-\ii(\Delta_s\mathbf I+\bm\Phi)\Big]-\ii\,\bm G_{\mathrm{eff}}
+\]
+is the $2\times2$ dynamical matrix of the probe at steady state (with pumps fixed).  The reflection matrix $\bm r(\omega_s)$ follows by replacing the right-port couplings by the left ones in the second factor and using $C_{LL}$ in the direct term.
+
+\subsection*{Polarization rotation angle from circular components}
+Let the transmitted probe Jones vector in the circular basis be $\bm E^{\mathrm{(out)}}=[E^{\mathrm{(out)}}_+,E^{\mathrm{(out)}}_-]^T$.  Define the complex ratio
+\[
+\rho=\frac{E^{\mathrm{(out)}}_+}{E^{\mathrm{(out)}}_-}.
+\]
+The polarization ellipse satisfies
+\[
+\text{rotation angle}\quad \psi=\tfrac{1}{2}\arg(\rho),\qquad
+\text{ellipticity angle}\quad \chi=\tfrac{1}{2}\arcsin\!\left(\frac{|E^{\mathrm{(out)}}_+|^2-|E^{\mathrm{(out)}}_-|^2}{|E^{\mathrm{(out)}}_+|^2+|E^{\mathrm{(out)}}_-|^2}\right).
+\]
+Equivalently, one may compute Stokes parameters
+\[
+S_0=|E_+|^2+|E_-|^2,\;\; S_1=2\,\Re(E_+E_-^*),\;\; S_2=2\,\Im(E_+E_-^*),\;\; S_3=|E_+|^2-|E_-|^2,
+\]
+then $\psi=\tfrac{1}{2}\arctan2(S_2,S_1)$ and $\chi=\tfrac{1}{2}\arcsin(S_3/S_0)$.
+For small rotation (nearly linear, $|E_+|\simeq|E_-|$), $\psi\simeq \tfrac{1}{2}\Im\!\left[\ln(\rho)\right]$.
+
+
+\end{document}
+

@@ -1,0 +1,186 @@
+
+% ===============================================================
+% Sideband-dressed effective susceptibility at the carrier \omega_s
+% (uses the same notation and conventions as this file)
+% ===============================================================
+\subsection*{Sideband-dressed $\underline{\underline{\chi}}^{\,\mathrm{eff}}(\omega_s)$ and Faraday rotation}
+
+\paragraph{Set-up and selection rules.}
+We consider two strong tones at $\omega_{p\pm}=\omega_p\pm\Delta/2$ (Sec.~1)
+and a weak probe at $\omega_s$. Cross-tone contractions of $\chi^{(3)}_{ijkl}$
+with the pumps generate probe \emph{sidebands} at $\omega_s\pm\Delta$, cf.\ Sec.~``Cross-Tone (Beat) Terms.''
+Retaining only the first sidebands and working to linear order in the probe,
+the probe spectral amplitudes $E_s(\omega_s)$, $E_{s,\pm}\equiv E_s(\omega_s\pm\Delta)$ obey a $3\times 3$
+coupled system. Eliminating $E_{s,\pm}$ yields a \emph{sideband-dressed} effective tensor
+at the carrier $\omega_s$. Below we give the explicit algebra in our isotropic-tensor notation.
+
+\paragraph{Coupled system and elimination.}
+In frequency space the wave equation can be written schematically as
+$\mathcal{D}(\omega)\,E_i(\omega)=(\omega^2/\varepsilon_0 c^2)\,P^{(3)}_i(\omega)$.
+Near $\omega_s$ we define lumped complex detunings
+\begin{equation}
+\mathcal D_0\equiv \mathcal D(\omega_s),\qquad
+\mathcal D_\pm\equiv \mathcal D(\omega_s\pm\Delta)=\Gamma_s\mp i\Delta,
+\end{equation}
+where $\Gamma_s>0$ is the probe's linear loss (phenomenological).
+
+Write the cross-tone third-order polarization pieces that connect the probe
+to its sidebands in the compact \emph{tensor-contracted} form (keeping only terms linear in $\mathbf E_s$):
+\begin{align}
+P^{(3)}_i(\omega_s) &\supset \varepsilon_0\,
+\Big[\,\mathcal M^{(-)}_{ij}\,E_{s,-,j}+\mathcal M^{(+)}_{ij}\,E_{s,+,j}\,\Big],\\
+P^{(3)}_i(\omega_s\pm\Delta) &\supset \varepsilon_0\,
+\Big[\,\widetilde{\mathcal M}^{(\pm)}_{ij}\,E_{s,j}\,\Big],
+\end{align}
+with the \emph{mixing tensors} (from the isotropic decomposition \eqref{eq:isotropic_decomp})
+\begin{equation}
+\boxed{~
+\mathcal M^{(\pm)}_{ij}
+=\sum_{m=A,B,C}\!\chi^{(m)}_{(\mp 1)}(\omega_s;\omega_{p+},-\omega_{p-},\omega_s\pm\Delta)\;\,
+\mathcal T^{(m)}_{ij}\big[\mathbf E^{(1)},\mathbf E^{(2)}\big],
+\qquad
+\widetilde{\mathcal M}^{(\pm)}_{ij}
+=\sum_{m=A,B,C}\!\chi^{(m)}_{(\pm 1)}(\omega_s\pm\Delta;\omega_{p+},-\omega_{p-},\omega_s)\;\,
+\mathcal T^{(m)}_{ij}\big[\mathbf E^{(1)},\mathbf E^{(2)}\big],
+~}
+\label{eq:M-mixers}
+\end{equation}
+where $\chi^{(m)}_{(\pm1)}$ denote the \emph{Floquet blocks} of the third-order kernel indexed by the modulation harmonic $\pm 1$,
+and $\mathcal T^{(A,B,C)}_{ij}$ are the contractions produced by the three isotropic invariants:
+\begin{equation}
+\mathcal T^{(A)}_{ij}=(\mathbf E^{(1)}\!\cdot\mathbf E^{(2)\!*})\,\delta_{ij},\quad
+\mathcal T^{(B)}_{ij}=E^{(1)}_{i}E^{(2)\!*}_{j},\quad
+\mathcal T^{(C)}_{ij}=E^{(1)\!*}_{i}E^{(2)}_{j}.
+\end{equation}
+
+Collect the three probe unknowns as $\mathbfcal E\equiv\big(E_{s,i},E_{s,+,i},E_{s,-,i}\big)^{\mathsf T}$.
+To first order one obtains
+\begin{equation}
+\begin{pmatrix}
+\mathcal D_0\,\delta_{ij} & -\mathcal K^{(+)}_{ij} & -\mathcal K^{(-)}_{ij} \\[2pt]
+-\widetilde{\mathcal K}^{(+)}_{ij} & \mathcal D_{+}\,\delta_{ij} & 0 \\[2pt]
+-\widetilde{\mathcal K}^{(-)}_{ij} & 0 & \mathcal D_{-}\,\delta_{ij}
+\end{pmatrix}
+\!
+\begin{pmatrix}
+E_{s,j}\\ E_{s,+,j}\\ E_{s,-,j}
+\end{pmatrix}
+=
+\begin{pmatrix}
+S_{s,i}\\ 0\\ 0
+\end{pmatrix},
+\qquad
+\mathcal K^{(\pm)}_{ij}\equiv \frac{\omega_s^2}{c^2}\,\mathcal M^{(\pm)}_{ij},\quad
+\widetilde{\mathcal K}^{(\pm)}_{ij}\equiv \frac{(\omega_s\pm\Delta)^2}{c^2}\,\widetilde{\mathcal M}^{(\pm)}_{ij}.
+\label{eq:3by3-system}
+\end{equation}
+Assuming $||\mathcal K^{(\pm)}||,||\widetilde{\mathcal K}^{(\pm)}||\ll |\mathcal D_\pm|$ (weak sideband excitation),
+solve the lower rows for the sidebands and substitute back:
+\begin{equation}
+E_{s,\pm,i}\approx \big(\mathcal D_\pm^{-1}\,\widetilde{\mathcal K}^{(\pm)}\big)_{ij}E_{s,j}.
+\end{equation}
+The resulting \emph{sideband-dressed} constitutive relation at $\omega_s$ is
+\begin{equation}
+P^{(3)}_i(\omega_s)=\varepsilon_0\Big[\chi^{\mathrm{eff}}_{ij}(\omega_s)
++\delta\chi^{(+)}_{ij}(\omega_s)+\delta\chi^{(-)}_{ij}(\omega_s)\Big]E_{s,j},
+\end{equation}
+with the corrections
+\begin{equation}
+\boxed{~
+\delta\chi^{(\pm)}_{ij}(\omega_s)
+=\frac{c^2}{\omega_s^2}\,
+\big(\mathcal K^{(\pm)}\,\mathcal D_\pm^{-1}\,\widetilde{\mathcal K}^{(\pm)}\big)_{ij}
+=\frac{1}{\mathcal D_\pm}\,
+\mathcal M^{(\pm)}_{ik}\,\widetilde{\mathcal M}^{(\pm)}_{kj}
+\quad\propto\quad \frac{|E^{(1)}|^2|E^{(2)}|^2}{\Gamma_s\mp i\Delta}\,.
+~}
+\label{eq:dchi-final}
+\end{equation}
+Equations \eqref{eq:M-mixers}--\eqref{eq:dchi-final} are the sought \emph{same-notation} expression for the
+sideband-dressed effective tensor at the carrier.
+
+\paragraph{Circular basis: diagonal elements.}
+Projecting \eqref{eq:dchi-final} onto the circular eigenbasis $\{\hat{\mathbf e}_\pm\}$
+and assuming collinear propagation (our Sec.~``Specialization to Circular Pumps''), the effective
+diagonal elements become
+\begin{equation}
+\boxed{~
+\chi^{\mathrm{eff,SB}}_{\pm\pm}(\omega_s)
+=\chi^{\mathrm{eff}}_{\pm\pm}(\omega_s)
++\big[\delta\chi^{(+)}_{\pm\pm}(\omega_s)+\delta\chi^{(-)}_{\pm\pm}(\omega_s)\big],
+\qquad
+\delta\chi^{(\pm)}_{\alpha\alpha}=\hat e_{\alpha,i}\,\delta\chi^{(\pm)}_{ij}\,\hat e_{\alpha,j}^{\!*}\ \ (\alpha=\pm).
+~}
+\label{eq:chi-eff-SB-diag}
+\end{equation}
+
+\paragraph{Cases: $\sigma^+\sigma^-$ and $\sigma^+\sigma^+$ pumps.}
+Let $\mathbf E^{(1)}=E^{(1)}_{+}\hat{\mathbf e}_+$ and $\mathbf E^{(2)}=E^{(2)}_{-}\hat{\mathbf e}_-$ for the
+$\sigma^+\sigma^-$ case, and $\mathbf E^{(1)}=E^{(1)}_{+}\hat{\mathbf e}_+$,
+$\mathbf E^{(2)}=E^{(2)}_{+}\hat{\mathbf e}_+$ for the $\sigma^+\sigma^+$ case (the $\sigma^-\sigma^-$
+case follows by $+\leftrightarrow-$). Using the isotropic contractions:
+\begin{align}
+\sigma^+\sigma^-:\qquad
+&\mathcal T^{(A)}_{ij}=E^{(1)}_{+}E^{(2)}_{-}\,\delta_{ij},\ \
+\mathcal T^{(B)}_{ij}=E^{(1)}_{+}E^{(2)}_{-}\,(\hat e_+)_{i}(\hat e_-)_{j},\ \
+\mathcal T^{(C)}_{ij}=E^{(1)}_{+}E^{(2)}_{-}\,(\hat e_-)_{i}(\hat e_+)_{j},\\
+\sigma^+\sigma^+:\qquad
+&\mathcal T^{(A)}_{ij}=E^{(1)}_{+}E^{(2)}_{+}\,\delta_{ij},\ \
+\mathcal T^{(B)}_{ij}=E^{(1)}_{+}E^{(2)}_{+}\,(\hat e_+)_{i}(\hat e_+)_{j},\ \
+\mathcal T^{(C)}_{ij}=E^{(1)}_{+}E^{(2)}_{+}\,(\hat e_-)_{i}(\hat e_-)_{j}.
+\end{align}
+Substituting into \eqref{eq:M-mixers}–\eqref{eq:chi-eff-SB-diag} gives compact diagonal results:
+\begin{align}
+\boxed{~
+\sigma^+\sigma^-:\quad
+\begin{aligned}
+\delta\chi^{(\pm)}_{++}&=\frac{|E^{(1)}_{+}E^{(2)}_{-}|^2}{\mathcal D_\pm}
+\Big[\chi^{(+)}_{(\mp1),B}+\chi^{(+)}_{(\mp1),C}\Big]\Big[\chi^{(+)}_{(\pm1),B}+\chi^{(+)}_{(\pm1),C}\Big],\\
+\delta\chi^{(\pm)}_{--}&=\frac{|E^{(1)}_{+}E^{(2)}_{-}|^2}{\mathcal D_\pm}
+\Big[\chi^{(-)}_{(\mp1),B}+\chi^{(-)}_{(\mp1),C}\Big]\Big[\chi^{(-)}_{(\pm1),B}+\chi^{(-)}_{(\pm1),C}\Big],
+\end{aligned}
+~}
+\label{eq:SB-pm}
+\\[4pt]
+\boxed{~
+\sigma^+\sigma^+:\quad
+\begin{aligned}
+\delta\chi^{(\pm)}_{++}&=\frac{|E^{(1)}_{+}E^{(2)}_{+}|^2}{\mathcal D_\pm}
+\Big[\chi^{(+)}_{(\mp1),A}+\chi^{(+)}_{(\mp1),B}+\chi^{(+)}_{(\mp1),C}\Big]
+\Big[\chi^{(+)}_{(\pm1),A}+\chi^{(+)}_{(\pm1),B}+\chi^{(+)}_{(\pm1),C}\Big],\\
+\delta\chi^{(\pm)}_{--}&=\frac{|E^{(1)}_{+}E^{(2)}_{+}|^2}{\mathcal D_\pm}
+\Big[\chi^{(-)}_{(\mp1),A}-(\chi^{(-)}_{(\mp1),B}+\chi^{(-)}_{(\mp1),C})\Big]
+\Big[\chi^{(-)}_{(\pm1),A}-(\chi^{(-)}_{(\pm1),B}+\chi^{(-)}_{(\pm1),C})\Big].
+\end{aligned}
+~}
+\label{eq:SB-pp}
+\end{align}
+Here $\chi^{(\pm)}_{(\cdot),m}$ are the scalar amplitudes multiplying the isotropic $A,B,C$ contractions for the
+Floquet-harmonic blocks that couple the indicated circular component. (The precise microscopic values
+follow from the density-matrix calculation used elsewhere in this file.)
+
+\paragraph{Faraday rotation at the carrier.}
+For small nonlinearities, $n_\pm(\omega_s)\simeq 1+\tfrac{1}{2}\mathrm{Re}\,\chi_{\pm\pm}(\omega_s)$.
+A linearly polarized probe thus acquires the rotation
+\begin{equation}
+\boxed{~
+\theta_F(\omega_s)=\frac{k_0 L}{4}\,
+\mathrm{Re}\!\left\{\big[\chi^{\mathrm{eff}}_{++}-\chi^{\mathrm{eff}}_{--}\big]
++\big[\delta\chi^{(+)}_{++}-\delta\chi^{(+)}_{--}\big]
++\big[\delta\chi^{(-)}_{++}-\delta\chi^{(-)}_{--}\big]\right\}_{\omega_s}.
+~}
+\label{eq:thetaF-final}
+\end{equation}
+\emph{Discussion.} (i) For \underline{$\sigma^+\sigma^-$ pumps} with equal intensities and an isotropic, parity-symmetric medium,
+the stationary DC contribution satisfies $\chi^{\mathrm{eff}}_{++}=\chi^{\mathrm{eff}}_{--}$ (Sec.~``Specialization to Circular Pumps''),
+so $\theta_F$ stems solely from the sideband loops in \eqref{eq:SB-pm} and is
+\emph{dispersive}, $\propto \mathrm{Re}(1/\mathcal D_\pm)$; it vanishes for $\Delta\to\infty$ and is maximal near $|\Delta|\sim\Gamma_s$.\\
+(ii) For \underline{$\sigma^+\sigma^+$ pumps} (or $\sigma^-\sigma^-$) the stationary term already yields
+$\chi^{\mathrm{eff}}_{++}\neq \chi^{\mathrm{eff}}_{--}$ (Sec.~``Same-helicity pumps''), producing a nonzero $\theta_F$ even without sidebands.
+Equations \eqref{eq:SB-pp}–\eqref{eq:thetaF-final} quantify the additional sideband dressing; the sign of
+$\mathrm{Re}\,[\delta\chi_{++}-\delta\chi_{--}]$ flips with $\Delta$ and with pump helicity.
+
+\medskip
+The expressions above are fully consistent with the isotropic-tensor contraction in Eq.~\eqref{eq:isotropic_decomp} and the
+circular-basis diagonalization in Eq.~\eqref{eq:chi_eff_final}, while incorporating the cross-tone sidebands through
+the elimination procedure \eqref{eq:3by3-system}–\eqref{eq:dchi-final}.

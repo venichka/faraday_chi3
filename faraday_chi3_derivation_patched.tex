@@ -1,0 +1,886 @@
+\documentclass[11pt]{article}
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsfonts,bm}
+\usepackage{physics}
+\usepackage{hyperref}
+\usepackage{titlesec}
+\usepackage{graphicx}
+\usepackage{mathtools}
+
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{0.6em}{}
+\title{Faraday Rotation from $\chi^{(3)}$ in an Isotropic Film}
+
+\author{}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We derive the effective third-order susceptibility $\underline{\underline{\chi}}^{\,\mathrm{eff}}(\omega_s)$ experienced by a weak, linearly polarized signal at frequency $\omega_s$ propagating through a homogeneous, centrosymmetric, isotropic film in the $xy$ plane. The medium is driven by two
+strong circularly polarized pumps: pump~1 (helicity $\sigma^+$) at $\omega_{p+}=\omega_p+\Delta/2$, and pump~2 (helicity $\sigma^-$) at $\omega_{p-}=\omega_p-\Delta/2$. Keeping all phase factors and frequency selection rules explicit, we reduce the isotropic rank-4 tensor $\chi^{(3)}_{ijkl}$ to
+scalar and axial invariants, construct $\underline{\underline{\chi}}^{\,\mathrm{eff}}$, and extract the circular eigenindices $n_\pm$ and the Faraday rotation angle $\theta_F$ at the carrier. Cross-tone (beating) terms are shown to generate sidebands at $\omega_s\pm\Delta$ and are not part of $\underline{\underline{\chi}}^{\,\mathrm{eff}}(\omega_s)$.
+\end{abstract}
+
+\section{Fields, Frequencies, and Conventions}
+We work with analytic electric fields; physical fields are the real parts (let's not forget:). Cartesian indices $i,j,k,l\in\{x,y,z\}$ are summed when repeated (again, good to remember:).
+
+\paragraph{Signal (probe).} A weak probe (or signal) at $\omega_s$:
+\begin{equation}
+E_{s,i}(t)=E_{s,i}(\omega_s)\,e^{-i\omega_s t}.
+\end{equation}
+
+\paragraph{Pumps.} Two strong tones
+\begin{align}
+E^{(1)}_{k}(t)&=E^{(1)}_{k}(\omega_{p+})\,e^{-i\omega_{p+} t},\qquad \omega_{p+}=\omega_p+\frac{\Delta}{2},\\
+E^{(2)}_{k}(t)&=E^{(2)}_{k}(\omega_{p-})\,e^{-i\omega_{p-} t},\qquad \omega_{p-}=\omega_p-\frac{\Delta}{2}.
+\end{align}
+In the frequency domain,
+\begin{equation}
+E_{p,k}(\omega)=E^{(1)}_k(\omega)\,+\,E^{(2)}_k(\omega),\qquad
+E^{(j)}_k(\omega)=E^{(j)}_k(\omega_{p j})\,\delta(\omega-\omega_{p j}).
+\end{equation}
+
+\paragraph{Circular basis.} Define $\hat{\mathbf e}_\pm=(\hat{\mathbf x}\mp i\hat{\mathbf y})/\sqrt{2}$, with $\hat{\mathbf e}_\pm\!\cdot\!\hat{\mathbf e}_\pm=1$ and $\hat{\mathbf e}_+\!\cdot\!\hat{\mathbf e}_-=0$. For the specific case considered later we set
+\begin{equation}
+\mathbf E^{(1)}=E^{(1)}_{+}\,\hat{\mathbf e}_+,\qquad
+\mathbf E^{(2)}=E^{(2)}_{-}\,\hat{\mathbf e}_-.
+\end{equation}
+
+\section{Third-Order Polarization at a Specified Output Frequency}
+The frequency-resolved third-order polarization is
+\begin{equation}\label{eq:P3_general}
+P^{(3)}_i(\omega)=\varepsilon_0\!\!\sum_{\omega_1,\omega_2,\omega_3}\!
+\chi^{(3)}_{ijkl}\!\left(-\omega;\omega_1,\omega_2,\omega_3\right)
+E_j(\omega_1)E_k(\omega_2)E_l(\omega_3)\,
+\delta\!\big(\omega-\omega_1-\omega_2-\omega_3\big).
+\end{equation}
+For cross-phase modulation (XPM) of the signal at $\omega=\omega_s$, we keep the pathway $(-\omega_s;\,\omega_s,\omega_a,-\omega_b)$:
+\begin{equation}\label{eq:P3_signal}
+P^{(3)}_i(\omega_s)=\varepsilon_0\sum_{\omega_a,\omega_b}
+\chi^{(3)}_{ijkl}\!\left(-\omega_s;\omega_s,\omega_a,-\omega_b\right)
+E_{s,j}(\omega_s)\,E_{p,k}(\omega_a)\,E^\ast_{p,l}(\omega_b)\,
+\delta(\omega_a-\omega_b).
+\end{equation}
+The delta function enforces $\omega_a=\omega_b$, so \emph{only same-tone pump pairs contribute at the carrier $\omega_s$}. Cross-tone products with $\omega_a\neq\omega_b$ produce time factors $e^{\mp i\Delta t}$ and appear at $\omega_s\pm\Delta$ (sidebands), not at $\omega_s$. With two tones $\omega_{p+}$ and $\omega_{p-}$, Eq.~\eqref{eq:P3_signal} reduces to
+\begin{equation}\label{eq:P3_two_tones}
+P^{(3)}_i(\omega_s)=\varepsilon_0\sum_{m=1}^2
+\chi^{(3,j)}_{ijkl}\,
+E_{s,j}(\omega_s)\,E^{(j)}_{k}(\omega_{p j})\,E^{(j)\,\ast}_{l}(\omega_{p j}),
+\quad
+\chi^{(3,j)}_{ijkl}\equiv\chi^{(3)}_{ijkl}\!\left(-\omega_s;\omega_s,\omega_{p j},-\omega_{p j}\right).
+\end{equation}
+
+\section{Isotropic $\chi^{(3)}$ and Cartesian Contractions}
+For a homogeneous isotropic centrosymmetric medium (off resonance), the rank-4 tensor decomposes into three scalar coefficients (often denoted $\chi_A,\chi_B,\chi_C$) built from Kronecker deltas:
+\begin{equation}\label{eq:isotropic_decomp}
+\chi^{(3,j)}_{ijkl}
+=\chi_A^{(j)}\,\delta_{ij}\delta_{kl}
++\chi_B^{(j)}\,\delta_{ik}\delta_{jl}
++\chi_C^{(j)}\,\delta_{il}\delta_{jk}.
+\end{equation}
+Insert \eqref{eq:isotropic_decomp} into \eqref{eq:P3_two_tones} and contract indices (Einstein summation understood). For each tone $j$:
+\begin{align}
+\text{(A)}:\quad & \chi_A^{(j)}\,\delta_{ij}\delta_{kl}\,E_{s,j}\,E^{(j)}_{k}E^{(j)\,\ast}_{l}
+=\chi_A^{(j)}\,(\mathbf E^{(j)}\!\cdot \mathbf E^{(j)\,\ast})\,E_{s,i},\\
+\text{(B)}:\quad & \chi_B^{(j)}\,\delta_{ik}\delta_{jl}\,E_{s,j}\,E^{(j)}_{k}E^{(j)\,\ast}_{l}
+=\chi_B^{(j)}\,E^{(j)}_{i}\,(\mathbf E_s\!\cdot \mathbf E^{(j)\,\ast}),\\
+\text{(C)}:\quad & \chi_C^{(j)}\,\delta_{il}\delta_{jk}\,E_{s,j}\,E^{(j)}_{k}E^{(j)\,\ast}_{l}
+=\chi_C^{(j)}\,E^{(j)\,\ast}_{i}\,(\mathbf E_s\!\cdot \mathbf E^{(j)}).
+\end{align}
+Summing $j=1,2$,
+\begin{equation}\label{eq:P3_operator}
+P^{(3)}_i(\omega_s)=\varepsilon_0\sum_{m=1}^2
+\Big[
+\chi_A^{(j)}(\mathbf E^{(j)}\!\cdot \mathbf E^{(j)\,\ast})\,E_{s,i}
++\chi_B^{(j)}\,E^{(j)}_{i}\,(\mathbf E_s\!\cdot \mathbf E^{(j)\,\ast})
++\chi_C^{(j)}\,E^{(j)\,\ast}_{i}\,(\mathbf E_s\!\cdot \mathbf E^{(j)})
+\Big].
+\end{equation}
+Equation~\eqref{eq:P3_operator} is linear in $\mathbf E_s$; thus we identify the \emph{effective} rank-2 tensor
+\begin{equation}\label{eq:chi_eff_tensor}
+\boxed{~
+\chi^{\mathrm{eff}}_{ij}(\omega_s)=\sum_{m=1}^2\Big[
+\chi_A^{(m)}(\mathbf E^{(m)}\!\cdot \mathbf E^{(m)\,\ast})\,\delta_{ij}
++\chi_B^{(m)}\,E^{(m)}_{i}\,E^{(m)\,\ast}_{j}
++\chi_C^{(m)}\,E^{(m)\,\ast}_{i}\,E^{(m)}_{j}
+\Big],
+~}
+\end{equation}
+such that $P^{(3)}_i=\varepsilon_0\,\chi^{\mathrm{eff}}_{ij}E_{s,j}$. All fast phase factors are contained in the frequency labels of $\chi^{(3)}$ and the phasors; no residual time dependence remains at $\omega_s$ because of the $\delta(\omega_a-\omega_b)$ selection.
+
+\section{Specialization to Circular Pumps and Circular Eigenbasis}
+Let the beams propagate along $+\hat{\mathbf z}$. With
+$\mathbf E^{(1)}=E^{(1)}_+\,\hat{\mathbf e}_+$ and
+$\mathbf E^{(2)}=E^{(2)}_-\,\hat{\mathbf e}_-$, the scalar products are
+$\mathbf E^{(1)}\!\cdot \mathbf E^{(1)\,\ast}=|E^{(1)}_+|^2$ and
+$\mathbf E^{(2)}\!\cdot \mathbf E^{(2)\,\ast}=|E^{(2)}_-|^2$.
+The dyadics are
+$E^{(1)}_{i}E^{(1)\,\ast}_{j}=|E^{(1)}_+|^2\,(\hat e_+)_i(\hat e_+)^\ast_j$ and
+$E^{(2)}_{i}E^{(2)\,\ast}_{j}=|E^{(2)}_-|^2\,(\hat e_-)_i(\hat e_-)^\ast_j$,
+and similarly with $i\leftrightarrow j$.
+In the circular basis $\{\hat{\mathbf e}_+,\hat{\mathbf e}_-\}$, $\underline{\underline{\chi}}^{\,\mathrm{eff}}(\omega_s)$ is diagonal at the carrier:
+\begin{equation}\label{eq:chi_eff_diag}
+\boxed{~
+\begin{aligned}
+\chi^{\mathrm{eff}}_{++}&=\sum_{m=1}^2\chi_A^{(j)}|E^{(j)}|^2+(\chi_B^{(1)}+\chi_C^{(1)})|E^{(1)}_+|^2,\\
+\chi^{\mathrm{eff}}_{--}&=\sum_{m=1}^2\chi_A^{(j)}|E^{(j)}|^2+(\chi_B^{(2)}+\chi_C^{(2)})|E^{(2)}_-|^2,\\
+\chi^{\mathrm{eff}}_{+-}&=\chi^{\mathrm{eff}}_{-+}=0.
+\end{aligned}
+~}
+\end{equation}
+It is convenient to regroup (per tone) into scalar and axial combinations
+\begin{equation}\label{eq:iso_circ_defs}
+\chi_{\mathrm{iso}}^{(j)}\equiv \chi_A^{(j)}+\frac{\chi_B^{(j)}+\chi_C^{(j)}}{2},
+\qquad
+\chi_{\mathrm{circ}}^{(j)}\equiv \frac{\chi_B^{(j)}+\chi_C^{(j)}}{2},
+\end{equation}
+and to define tone-summed pump invariants at the carrier
+\begin{equation}\label{eq:Itot_S3}
+I_{\mathrm{tot}}\equiv |E^{(1)}_+|^2+|E^{(2)}_-|^2,
+\qquad
+S_3^{\mathrm{DC}}\equiv |E^{(1)}_+|^2-|E^{(2)}_-|^2\ \propto\ i(\mathbf E_p\times\mathbf E_p^\ast)\!\cdot\hat{\mathbf z}.
+\end{equation}
+Equation~\eqref{eq:chi_eff_diag} becomes
+\begin{equation}\label{eq:chi_eff_final}
+\boxed{~
+\chi^{\mathrm{eff}}_{\pm\pm}(\omega_s)
+=\Big[\sum_{m=1}^2 \chi_{\mathrm{iso}}^{(j)}\Big]\ I_{\mathrm{tot}}
+\ \pm\ 
+\Big[\sum_{m=1}^2 \chi_{\mathrm{circ}}^{(j)}\Big]\ S_3^{\mathrm{DC}}.
+~}
+\end{equation}
+The first term is a true scalar (Kerr/XPM), while the second is an axial pseudoscalar (helicity or inverse Faraday effect), which splits the circular eigenmodes ($\sigma^\pm$), i.e.\ produces circular birefringence.
+
+% ----------------------------------------------------------------
+% Same-helicity pumps (σ+σ+ and σ−σ−): explicit tensor substitution
+% ----------------------------------------------------------------
+\subsection*{Same-helicity pumps (\texorpdfstring{$\sigma{+}\sigma{+}$}{sigma+ sigma+} and \texorpdfstring{$\sigma{-}\sigma{-}$}{sigma- sigma-})}
+
+We substitute the pump fields directly into the effective third-order tensor
+\begin{equation}
+\chi^{\mathrm{eff}}_{ij}(\omega_s)
+=\sum_{m=1}^2\!\left[
+\chi_A^{(m)}\!\left(\mathbf E^{(m)}\!\cdot\!\mathbf E^{(m)\!*}\right)\delta_{ij}
++\chi_B^{(m)} E^{(m)}_{i} E^{(m)\!*}_{j}
++\chi_C^{(m)} E^{(m)\!*}_{i} E^{(m)}_{j}
+\right],
+\label{eq:chi-eff-samehelicity-start}
+\end{equation}
+which follows from contracting the isotropic rank-4 tensor
+$\chi^{(3)}_{ijkl}=\chi_A\,\delta_{ij}\delta_{kl}+\chi_B\,\delta_{ik}\delta_{jl}+\chi_C\,\delta_{il}\delta_{jk}$
+with one signal factor and \emph{same-tone} pump--pump factors at the signal carrier $\omega_s$.
+Here $\chi_{A,B,C}^{(m)}\equiv\chi_{A,B,C}(-\omega_s;\omega_s,\omega_{p m},-\omega_{p m})$ and the tone
+frequencies are $\omega_{p1}=\omega_p+\Delta/2$, $\omega_{p2}=\omega_p-\Delta/2$.
+Only terms with $\omega_a=\omega_b$ contribute at $\omega_s$; cross-tone products generate sidebands at $\omega_s\pm\Delta$ and are excluded from $\chi^{\mathrm{eff}}(\omega_s)$.
+
+\paragraph{Circular basis.}
+Let $\hat{\mathbf e}_\pm=(\hat{\mathbf x}\mp i\hat{\mathbf y})/\sqrt{2}$,
+$\hat{\mathbf e}_\pm\!\cdot\!\hat{\mathbf e}_\pm=1$, $\hat{\mathbf e}_+\!\cdot\!\hat{\mathbf e}_-=0$,
+and note $\hat{\mathbf e}_+^{\,*}=\hat{\mathbf e}_-$, $\hat{\mathbf e}_-^{\,*}=\hat{\mathbf e}_+$.
+
+% ------------------------------
+% Case A: sigma+ sigma+
+% ------------------------------
+\subsubsection*{Case A: $\sigma{+}\sigma{+}$ (both pumps right-circular)}
+Pumps:
+\begin{equation}
+\mathbf E^{(1)}=E^{(1)}_{+}\,\hat{\mathbf e}_+,\qquad
+\mathbf E^{(2)}=E^{(2)}_{+}\,\hat{\mathbf e}_+ .
+\end{equation}
+Per tone,
+\begin{equation}
+\mathbf E^{(m)}\!\cdot\!\mathbf E^{(m)\!*}=|E^{(m)}_{+}|^2,\quad
+E^{(m)}_{i}E^{(m)\!*}_{j}=|E^{(m)}_{+}|^2\,(\hat e_{+})_i(\hat e_{-})_j,\quad
+E^{(m)\!*}_{i}E^{(m)}_{j}=|E^{(m)}_{+}|^2\,(\hat e_{-})_i(\hat e_{+})_j .
+\end{equation}
+Insert into \eqref{eq:chi-eff-samehelicity-start} and sum $m=1,2$:
+\begin{equation}
+\chi^{\mathrm{eff}}_{ij}(\omega_s)=
+\underbrace{\Big(\sum_{m}\chi_A^{(m)}|E^{(m)}_{+}|^2\Big)}_{\displaystyle \Xi_A^{(+)}}
+\delta_{ij}
++\underbrace{\Big(\sum_{m}\chi_B^{(m)}|E^{(m)}_{+}|^2\Big)}_{\displaystyle \Xi_B^{(+)}}
+(\hat e_{+})_i(\hat e_{-})_j
++\underbrace{\Big(\sum_{m}\chi_C^{(m)}|E^{(m)}_{+}|^2\Big)}_{\displaystyle \Xi_C^{(+)}}
+(\hat e_{-})_i(\hat e_{+})_j .
+\end{equation}
+In the circular basis $\{\hat{\mathbf e}_+,\hat{\mathbf e}_-\}$ the matrix representation is
+\begin{equation}
+\big[\chi^{\mathrm{eff}}(\omega_s)\big]_{\mathrm{(circ)}}^{(++)}=
+\begin{pmatrix}
+\Xi_{++}^{(+)} & 0\\[2pt]
+0 & \Xi_{--}^{(+)}
+\end{pmatrix},,
+\qquad
+\Xi_{A,B,C}^{(+)}=\sum_{m=1}^{2}\chi_{A,B,C}^{(m)}\,|E_{+}^{(m)}|^2 .
+\label{eq:chi-eff-matrix-plusplus}
+\end{equation}
+
+Here the diagonal entries in the circular basis are
+\begin{equation}
+\Xi_{++}^{(+)}=\Xi_A^{(+)}+\Xi_B^{(+)}+\Xi_C^{(+)},\qquad
+\Xi_{--}^{(+)}=\Xi_A^{(+)}-(\Xi_B^{(+)}+\Xi_C^{(+)}).
+\end{equation}
+% ------------------------------
+% Case B: sigma- sigma-
+% ------------------------------
+\subsubsection*{Case B: $\sigma{-}\sigma{-}$ (both pumps left-circular)}
+Pumps:
+\begin{equation}
+\mathbf E^{(1)}=E^{(1)}_{-}\,\hat{\mathbf e}_-,\qquad
+\mathbf E^{(2)}=E^{(2)}_{-}\,\hat{\mathbf e}_- .
+\end{equation}
+Per tone,
+\begin{equation}
+\mathbf E^{(m)}\!\cdot\!\mathbf E^{(m)\!*}=|E^{(m)}_{-}|^2,\quad
+E^{(m)}_{i}E^{(m)\!*}_{j}=|E^{(m)}_{-}|^2\,(\hat e_{-})_i(\hat e_{+})_j,\quad
+E^{(m)\!*}_{i}E^{(m)}_{j}=|E^{(m)}_{-}|^2\,(\hat e_{+})_i(\hat e_{-})_j .
+\end{equation}
+Insert into \eqref{eq:chi-eff-samehelicity-start} and sum $m=1,2$:
+\begin{equation}
+\chi^{\mathrm{eff}}_{ij}(\omega_s)=
+\underbrace{\Big(\sum_{m}\chi_A^{(m)}|E^{(m)}_{-}|^2\Big)}_{\displaystyle \Xi_A^{(-)}}
+\delta_{ij}
++\underbrace{\Big(\sum_{m}\chi_B^{(m)}|E^{(m)}_{-}|^2\Big)}_{\displaystyle \Xi_B^{(-)}}
+(\hat e_{-})_i(\hat e_{+})_j
++\underbrace{\Big(\sum_{m}\chi_C^{(m)}|E^{(m)}_{-}|^2\Big)}_{\displaystyle \Xi_C^{(-)}}
+(\hat e_{+})_i(\hat e_{-})_j .
+\end{equation}
+In the circular basis $\{\hat{\mathbf e}_+,\hat{\mathbf e}_-\}$ the matrix representation is
+\begin{equation}
+\big[\chi^{\mathrm{eff}}(\omega_s)\big]_{\mathrm{(circ)}}^{(--)}=
+\begin{pmatrix}
+\Xi_{++}^{(-)} & 0\\[2pt]
+0 & \Xi_{--}^{(-)}
+\end{pmatrix},,
+\qquad
+\Xi_{A,B,C}^{(-)}=\sum_{m=1}^{2}\chi_{A,B,C}^{(m)}\,|E_{-}^{(m)}|^2 .
+\label{eq:chi-eff-matrix-minusminus}
+\end{equation}
+
+Analogously,
+\begin{equation}
+\Xi_{++}^{(-)}=\Xi_A^{(-)}+\Xi_B^{(-)}+\Xi_C^{(-)},\qquad
+\Xi_{--}^{(-)}=\Xi_A^{(-)}-(\Xi_B^{(-)}+\Xi_C^{(-)}).
+\end{equation}
+
+\paragraph{Remarks.}
+(i) In an axially symmetric (same-helicity) pump configuration the circular basis diagonalizes the tensor, so $\chi^{\mathrm{eff}}_{+-}=\chi^{\mathrm{eff}}_{-+}=0$ at the carrier; off-diagonal terms vanish.
+(ii) Any axial, time-reversal-odd (Faraday-active) contribution appears as a \emph{difference of circular eigenvalues}
+in the circular basis; it is tied to the pump helicity density $i\,\mathbf E\times\mathbf E^{\!*}$ and produces
+circular birefringence $(n_+\neq n_-)$ and a carrier Faraday rotation $\theta_F=\tfrac{k_0 L}{2}(n_+-n_-)$.
+
+\paragraph{Units and intensity conversion.}
+We use $|E|^2 = 2I/(n\,\varepsilon_0 c)$ to connect intensities to field amplitudes. Accordingly, the Kerr index coefficients obey $n_{2,\cdot} = \tfrac{3}{4 n_0 n_p\,\varepsilon_0 c}\,\mathrm{Re}[\chi_{\cdot}^{(3)}]$ under isotropy (Kleinman), with $n_0$ the probe index and $n_p$ the pump index at their respective frequencies.
+
+
+\section{Eigenindices and Faraday Rotation}
+Treat the pump-dressed probe response as effectively linear at $\omega_s$:
+\begin{equation}
+D_i(\omega_s)=\varepsilon_0\Big[\varepsilon^{(1)}_{ij}(\omega_s)+\chi^{\mathrm{eff}}_{ij}(\omega_s)\Big]E_{s,j}(\omega_s).
+\end{equation}
+For small nonlinearity,
+\begin{equation}\label{eq:n_linearize}
+n_\pm^2(\omega_s)\simeq n_0^2(\omega_s)+\mathrm{Re}\,\chi^{\mathrm{eff}}_{\pm\pm}(\omega_s)
+\quad\Rightarrow\quad
+\delta n_\pm\simeq \frac{\mathrm{Re}\,\chi^{\mathrm{eff}}_{\pm\pm}}{2\,n_0}.
+\end{equation}
+Converting field to intensity via $I=(n_0\varepsilon_0 c/2)|E|^2$, it is convenient to define Kerr coefficients (SI units)
+\begin{equation}\label{eq:n2_def}
+n_{2,\{\mathrm{iso},\mathrm{circ}\}}
+=\frac{3}{4\,n_0\,n_0'\,\varepsilon_0 c}\,
+\mathrm{Re}\Big[\sum_{j}\chi_{\{\mathrm{iso},\mathrm{circ}\}}^{(j)}(-\omega_s;\omega_s,\omega_{p j},-\omega_{p j})\Big],
+\end{equation}
+so that
+\begin{equation}\label{eq:npm_final}
+\boxed{~
+n_\pm(\omega_s)=n_0(\omega_s)\ +\ n_{2,\mathrm{iso}}\,I_{\mathrm{tot}}
+\ \pm\ n_{2,\mathrm{circ}}\,S_3^{\mathrm{DC}}.
+~}
+\end{equation}
+A linearly polarized probe (equal $\sigma^\pm$ superposition) accumulates a relative phase
+\begin{equation}\label{eq:delta_phi}
+\Delta\phi=k_0 L\,[n_+-n_-]=2k_0L\,n_{2,\mathrm{circ}}\,S_3^{\mathrm{DC}},\qquad k_0=\omega_s/c,
+\end{equation}
+so the Faraday rotation (carrier component) is
+\begin{equation}\label{eq:thetaF}
+\boxed{~
+\theta_F^{\mathrm{(carrier)}}=\frac{\Delta\phi}{2}
+=\frac{k_0 L}{2}\,[n_+-n_-]
+= k_0 L\,n_{2,\mathrm{circ}}\,S_3^{\mathrm{DC}}.
+~}
+\end{equation}
+If the two counter-helicity pumps have equal intensities, $S_3^{\mathrm{DC}}=0\Rightarrow \theta_F^{\mathrm{(carrier)}}=0$. Flipping which helicity is stronger flips the sign of $S_3^{\mathrm{DC}}$ and hence of $\theta_F$ (inverse Faraday effect sign).
+
+\section{Cross-Tone (Beat) Terms and Sidebands}
+Keeping cross-tone contractions in Eq.~\eqref{eq:P3_general} produces terms $\propto E^{(1)} E^{(2)\ast}e^{\mp i\Delta t}$ that contribute to $\mathbf P^{(3)}(\omega_s\pm\Delta)$. Physically, these modulate the probe phase/polarization at $\Delta$ and generate sidebands; they are \emph{excluded} from the carrier effective tensor by the selection rule $\delta(\omega_a-\omega_b)$ in Eq.~\eqref{eq:P3_signal}. Time-resolved polarimetry with bandwidth $\gtrsim \Delta$ can observe an oscillatory rotation, but its spectral home is the sidebands, not $\omega_s$.
+
+% ===============================================================
+% Sideband-dressed effective susceptibility at the carrier \omega_s
+% (uses the same notation and conventions as this file)
+% ===============================================================
+\section{Sideband-dressed $\underline{\underline{\chi}}^{\,\mathrm{eff}}(\omega_s)$ and Faraday rotation}
+
+\paragraph{Set-up and selection rules.}
+We consider two strong tones at $\omega_{p\pm}=\omega_p\pm\Delta/2$ (Sec.~1)
+and a weak probe at $\omega_s$. Cross-tone contractions of $\chi^{(3)}_{ijkl}$
+with the pumps generate probe \emph{sidebands} at $\omega_s\pm\Delta$, cf.\ Sec.~``Cross-Tone (Beat) Terms.''
+Retaining only the first sidebands and working to linear order in the probe,
+the probe spectral amplitudes $E_s(\omega_s)$, $E_{s,\pm}\equiv E_s(\omega_s\pm\Delta)$ obey a $3\times 3$
+coupled system. Eliminating $E_{s,\pm}$ yields a \emph{sideband-dressed} effective tensor
+at the carrier $\omega_s$. Below we give the explicit algebra in our isotropic-tensor notation.
+
+\paragraph{Coupled system and elimination.}
+In frequency space the wave equation can be written schematically as
+$\mathcal{D}(\omega)\,E_i(\omega)=(\omega^2/\varepsilon_0 c^2)\,P^{(3)}_i(\omega)$.
+Near $\omega_s$ we define lumped complex detunings
+\begin{equation}
+\mathcal D_0\equiv \mathcal D(\omega_s),\qquad
+\mathcal D_\pm\equiv \mathcal D(\omega_s\pm\Delta)=\Gamma_s\mp i\Delta,
+\end{equation}
+where $\Gamma_s>0$ is the probe's linear loss (phenomenological).
+
+Write the cross-tone third-order polarization pieces that connect the probe
+to its sidebands in the compact \emph{tensor-contracted} form (keeping only terms linear in $\mathbf E_s$):
+\begin{align}
+P^{(3)}_i(\omega_s) &\supset \varepsilon_0\,
+\Big[\,\mathcal M^{(-)}_{ij}\,E_{s,-,j}+\mathcal M^{(+)}_{ij}\,E_{s,+,j}\,\Big],\\
+P^{(3)}_i(\omega_s\pm\Delta) &\supset \varepsilon_0\,
+\Big[\,\widetilde{\mathcal M}^{(\pm)}_{ij}\,E_{s,j}\,\Big],
+\end{align}
+with the \emph{mixing tensors} (from the isotropic decomposition \eqref{eq:isotropic_decomp})
+\begin{align}
+\mathcal M^{(\pm)}_{ij}
+&=\sum_{m=A,B,C}\!\chi^{(m)}_{(\mp 1)}(\omega_s;\omega_{p+},-\omega_{p-},\omega_s\pm\Delta)\;\,
+\mathcal T^{(m)}_{ij}\big[\mathbf E^{(1)},\mathbf E^{(2)}\big],\\
+\widetilde{\mathcal M}^{(\pm)}_{ij}
+&=\sum_{m=A,B,C}\!\chi^{(m)}_{(\pm 1)}(\omega_s\pm\Delta;\omega_{p+},-\omega_{p-},\omega_s)\;\,
+\mathcal T^{(m)}_{ij}\big[\mathbf E^{(1)},\mathbf E^{(2)}\big],
+\label{eq:M-mixers}
+\end{align}
+where $\chi^{(m)}_{(\pm1)}$ denote the \emph{Floquet blocks} of the third-order kernel indexed by the modulation harmonic $\pm 1$,
+and $\mathcal T^{(A,B,C)}_{ij}$ are the contractions produced by the three isotropic invariants:
+\begin{equation}
+\mathcal T^{(A)}_{ij}=(\mathbf E^{(1)}\!\cdot\mathbf E^{(2)\!*})\,\delta_{ij},\quad
+\mathcal T^{(B)}_{ij}=E^{(1)}_{i}E^{(2)\!*}_{j},\quad
+\mathcal T^{(C)}_{ij}=E^{(1)\!*}_{i}E^{(2)}_{j}.
+\end{equation}
+
+Collect the three probe unknowns as $\mathcal E\equiv\big(E_{s,i},E_{s,+,i},E_{s,-,i}\big)^{\mathrm T}$.
+To first order one obtains
+\begin{equation}
+\begin{pmatrix}
+\mathcal D_0\,\delta_{ij} & -\mathcal K^{(+)}_{ij} & -\mathcal K^{(-)}_{ij} \\[2pt]
+-\widetilde{\mathcal K}^{(+)}_{ij} & \mathcal D_{+}\,\delta_{ij} & 0 \\[2pt]
+-\widetilde{\mathcal K}^{(-)}_{ij} & 0 & \mathcal D_{-}\,\delta_{ij}
+\end{pmatrix}
+\!
+\begin{pmatrix}
+E_{s,j}\\ E_{s,+,j}\\ E_{s,-,j}
+\end{pmatrix}
+=
+\begin{pmatrix}
+S_{s,i}\\ 0\\ 0
+\end{pmatrix},
+\qquad
+\mathcal K^{(\pm)}_{ij}\equiv \frac{\omega_s^2}{c^2}\,\mathcal M^{(\pm)}_{ij},\quad
+\widetilde{\mathcal K}^{(\pm)}_{ij}\equiv \frac{(\omega_s\pm\Delta)^2}{c^2}\,\widetilde{\mathcal M}^{(\pm)}_{ij}.
+\label{eq:3by3-system}
+\end{equation}
+Here $S_{s,i}$ is the external probe drive at $\omega_s$ (port/boundary excitation).
+Assuming $||\mathcal K^{(\pm)}||,||\widetilde{\mathcal K}^{(\pm)}||\ll |\mathcal D_\pm|$ (weak sideband excitation),
+solve the lower rows for the sidebands and substitute back:
+\begin{equation}
+E_{s,\pm,i}\approx \big(\mathcal D_\pm^{-1}\,\widetilde{\mathcal K}^{(\pm)}\big)_{ij}E_{s,j}.
+\end{equation}
+The resulting \emph{sideband-dressed} constitutive relation at $\omega_s$ is
+\begin{equation}
+P^{(3)}_i(\omega_s)=\varepsilon_0\Big[\chi^{\mathrm{eff}}_{ij}(\omega_s)
++\delta\chi^{(+)}_{ij}(\omega_s)+\delta\chi^{(-)}_{ij}(\omega_s)\Big]E_{s,j},
+\end{equation}
+with the corrections
+\begin{equation}
+\boxed{~
+\delta\chi^{(\pm)}_{ij}(\omega_s)
+=\frac{c^2}{\omega_s^2}\,
+\big(\mathcal K^{(\pm)}\,\mathcal D_\pm^{-1}\,\widetilde{\mathcal K}^{(\pm)}\big)_{ij}
+=\frac{1}{\mathcal D_\pm}\,
+\mathcal M^{(\pm)}_{ik}\,\widetilde{\mathcal M}^{(\pm)}_{kj}
+\quad\propto\quad \frac{|E^{(1)}|^2|E^{(2)}|^2}{\Gamma_s\mp i\Delta}\,.
+~}
+\label{eq:dchi-final}
+\end{equation}
+Equations \eqref{eq:M-mixers}--\eqref{eq:dchi-final} are the sought \emph{same-notation} expression for the
+sideband-dressed effective tensor at the carrier.
+
+\paragraph{Circular basis: diagonal elements.}
+Projecting \eqref{eq:dchi-final} onto the circular eigenbasis $\{\hat{\mathbf e}_\pm\}$
+and assuming collinear propagation (our Sec.~``Specialization to Circular Pumps''), the effective
+diagonal elements become
+\begin{equation}
+\boxed{~
+\chi^{\mathrm{eff,SB}}_{\pm\pm}(\omega_s)
+=\chi^{\mathrm{eff}}_{\pm\pm}(\omega_s)
++\big[\delta\chi^{(+)}_{\pm\pm}(\omega_s)+\delta\chi^{(-)}_{\pm\pm}(\omega_s)\big],
+\qquad
+\delta\chi^{(\pm)}_{\alpha\alpha}=\hat e_{\alpha,i}\,\delta\chi^{(\pm)}_{ij}\,\hat e_{\alpha,j}^{\!*}\ \ (\alpha=\pm).
+~}
+\label{eq:chi-eff-SB-diag}
+\end{equation}
+
+\paragraph{Cases: $\sigma^+\sigma^-$ and $\sigma^+\sigma^+$ pumps.}
+Let $\mathbf E^{(1)}=E^{(1)}_{+}\hat{\mathbf e}_+$ and $\mathbf E^{(2)}=E^{(2)}_{-}\hat{\mathbf e}_-$ for the
+$\sigma^+\sigma^-$ case, and $\mathbf E^{(1)}=E^{(1)}_{+}\hat{\mathbf e}_+$,
+$\mathbf E^{(2)}=E^{(2)}_{+}\hat{\mathbf e}_+$ for the $\sigma^+\sigma^+$ case (the $\sigma^-\sigma^-$
+case follows by $+\leftrightarrow-$). Using the isotropic contractions:
+\begin{align}
+\sigma^+\sigma^-:\qquad
+&\mathcal T^{(A)}_{ij}=E^{(1)}_{+}E^{(2)}_{-}\,\delta_{ij},\ \
+\mathcal T^{(B)}_{ij}=E^{(1)}_{+}E^{(2)}_{-}\,(\hat e_+)_{i}(\hat e_-)_{j},\ \
+\mathcal T^{(C)}_{ij}=E^{(1)}_{+}E^{(2)}_{-}\,(\hat e_-)_{i}(\hat e_+)_{j},\\
+\sigma^+\sigma^+:\qquad
+&\mathcal T^{(A)}_{ij}=E^{(1)}_{+}E^{(2)}_{+}\,\delta_{ij},\ \
+\mathcal T^{(B)}_{ij}=E^{(1)}_{+}E^{(2)}_{+}\,(\hat e_+)_{i}(\hat e_+)_{j},\ \
+\mathcal T^{(C)}_{ij}=E^{(1)}_{+}E^{(2)}_{+}\,(\hat e_-)_{i}(\hat e_-)_{j}.
+\end{align}
+Substituting into \eqref{eq:M-mixers}–\eqref{eq:chi-eff-SB-diag} gives compact diagonal results:
+\begin{align}
+\boxed{~
+\sigma^+\sigma^-:\quad
+\begin{aligned}
+\delta\chi^{(\pm)}_{++}&=\frac{|E^{(1)}_{+}E^{(2)}_{-}|^2}{\mathcal D_\pm}
+\Big[\chi^{(+)}_{(\mp1),B}+\chi^{(+)}_{(\mp1),C}\Big]\Big[\chi^{(+)}_{(\pm1),B}+\chi^{(+)}_{(\pm1),C}\Big],\\
+\delta\chi^{(\pm)}_{--}&=\frac{|E^{(1)}_{+}E^{(2)}_{-}|^2}{\mathcal D_\pm}
+\Big[\chi^{(-)}_{(\mp1),B}+\chi^{(-)}_{(\mp1),C}\Big]\Big[\chi^{(-)}_{(\pm1),B}+\chi^{(-)}_{(\pm1),C}\Big],
+\end{aligned}
+~}
+\label{eq:SB-pm}
+\\[4pt]
+\boxed{~
+\sigma^+\sigma^+:\quad
+\begin{aligned}
+\delta\chi^{(\pm)}_{++}&=\frac{|E^{(1)}_{+}E^{(2)}_{+}|^2}{\mathcal D_\pm}
+\Big[\chi^{(+)}_{(\mp1),A}+\chi^{(+)}_{(\mp1),B}+\chi^{(+)}_{(\mp1),C}\Big]
+\Big[\chi^{(+)}_{(\pm1),A}+\chi^{(+)}_{(\pm1),B}+\chi^{(+)}_{(\pm1),C}\Big],\\
+\delta\chi^{(\pm)}_{--}&=\frac{|E^{(1)}_{+}E^{(2)}_{+}|^2}{\mathcal D_\pm}
+\Big[\chi^{(-)}_{(\mp1),A}-(\chi^{(-)}_{(\mp1),B}+\chi^{(-)}_{(\mp1),C})\Big]
+\Big[\chi^{(-)}_{(\pm1),A}-(\chi^{(-)}_{(\pm1),B}+\chi^{(-)}_{(\pm1),C})\Big].
+\end{aligned}
+~}
+\label{eq:SB-pp}
+\end{align}
+Here $\chi^{(\pm)}_{(\cdot),m}$ are the scalar amplitudes multiplying the isotropic $A,B,C$ contractions for the
+Floquet-harmonic blocks that couple the indicated circular component. (The precise microscopic values
+follow from the density-matrix calculation used elsewhere in this file.)
+
+\paragraph{Faraday rotation at the carrier.}
+For small nonlinearities, $n_\pm(\omega_s)\simeq 1+\tfrac{1}{2}\mathrm{Re}\,\chi_{\pm\pm}(\omega_s)$.
+A linearly polarized probe thus acquires the rotation
+\begin{equation}
+\boxed{~
+\theta_F(\omega_s)=\frac{k_0 L}{4}\,
+\mathrm{Re}\!\left\{\big[\chi^{\mathrm{eff}}_{++}-\chi^{\mathrm{eff}}_{--}\big]
++\big[\delta\chi^{(+)}_{++}-\delta\chi^{(+)}_{--}\big]
++\big[\delta\chi^{(-)}_{++}-\delta\chi^{(-)}_{--}\big]\right\}_{\omega_s}.
+~}
+\label{eq:thetaF-final}
+\end{equation}
+\emph{Discussion.} (i) For \underline{$\sigma^+\sigma^-$ pumps} with equal intensities and an isotropic, parity-symmetric medium,
+the stationary DC contribution satisfies $\chi^{\mathrm{eff}}_{++}=\chi^{\mathrm{eff}}_{--}$ (Sec.~``Specialization to Circular Pumps''),
+so $\theta_F$ stems solely from the sideband loops in \eqref{eq:SB-pm} and is
+\emph{dispersive}, $\propto \mathrm{Re}(1/\mathcal D_\pm)$; it vanishes for $\Delta\to\infty$ and is maximal near $|\Delta|\sim\Gamma_s$.\\
+(ii) For \underline{$\sigma^+\sigma^+$ pumps} (or $\sigma^-\sigma^-$) the stationary term already yields
+$\chi^{\mathrm{eff}}_{++}\neq \chi^{\mathrm{eff}}_{--}$ (Sec.~``Same-helicity pumps''), producing a nonzero $\theta_F$ even without sidebands.
+Equations \eqref{eq:SB-pp}–\eqref{eq:thetaF-final} quantify the additional sideband dressing; the sign of
+$\mathrm{Re}\,[\delta\chi_{++}-\delta\chi_{--}]$ flips with $\Delta$ and with pump helicity.
+
+\medskip
+The expressions above are fully consistent with the isotropic-tensor contraction in Eq.~\eqref{eq:isotropic_decomp} and the
+circular-basis diagonalization in Eq.~\eqref{eq:chi_eff_final}, while incorporating the cross-tone sidebands through
+the elimination procedure \eqref{eq:3by3-system}–\eqref{eq:dchi-final}.
+
+
+% ======================================================================
+% Section: Sideband-dressed chi^(3)_eff and time-resolved Faraday rotation
+% ======================================================================
+\section{Time-resolved Faraday rotation}
+
+\subsection{Fields, basis, and isotropic contractions}
+
+\paragraph{Probe (weak).}
+A monochromatic probe at $\omega_s$ with Jones vector $\mathbf E_s$:
+\[
+\mathbf E_s(t)=\tfrac{1}{2}\!\left[\mathbf E_s\,e^{-i\omega_s t}+\mathrm{c.c.}\right],\qquad
+\|\mathbf E_s\|\ll \|\mathbf E^{(1,2)}\|.
+\]
+
+\paragraph{Pumps (two strong tones, beat at $\Delta$).}
+Two pumps at
+\[
+\omega_{p\pm}=\omega_p\pm\Delta/2,\qquad
+\mathbf E^{(1)}(t)=\tfrac12\!\left[\mathbf E^{(1)}e^{-i\omega_{p+}t}+\mathrm{c.c.}\right],\quad
+\mathbf E^{(2)}(t)=\tfrac12\!\left[\mathbf E^{(2)}e^{-i\omega_{p-}t}+\mathrm{c.c.}\right].
+\]
+Their product carries a time modulation at $\Delta$, which couples $\omega_s\leftrightarrow \omega_s\pm\Delta$ (Floquet picture).
+
+\paragraph{Circular basis.}
+We use $\{\hat{\mathbf e}_+,\hat{\mathbf e}_-\}$ for propagation along $+\hat z$, with
+$\mathbf E_s=E_{s,+}\hat{\mathbf e}_++E_{s,-}\hat{\mathbf e}_-$.
+
+% \paragraph{Isotropic $\chi^{(3)}$ contractions (your $A,B,C$).}
+% Let $\mathcal T^{(A,B,C)}_{ij}$ denote the three isotropic rank-2 contractions built from the pump vectors:
+% \[
+% \mathcal T^{(A)}_{ij}=(\mathbf E^{(1)}\!\cdot\mathbf E^{(2)\!*})\,\delta_{ij},\quad
+% \mathcal T^{(B)}_{ij}=E^{(1)}_{i}\,E^{(2)\!*}_{j},\quad
+% \mathcal T^{(C)}_{ij}=E^{(1)\!*}_{i}\,E^{(2)}_{j}.
+% \]
+% We denote the (Floquet) third-order scalars that multiply these as $\chi^{(m)}_{(0)}$ (stationary), and
+% $\chi^{(m)}_{(\pm1)}$ (first sideband blocks), with $m\in\{A,B,C\}$.
+%
+% \subsection{Frequency-domain sideband elimination and $\delta\underline{\underline{\chi}}(\omega_s)$}
+%
+% Retaining only terms linear in $\mathbf E_s$ and quadratic in the pumps, the third-order polarization pieces that mix the probe carrier with its first sidebands are
+% \begin{align}
+% P^{(3)}_i(\omega_s) &\supset \varepsilon_0\left[\mathcal M^{(-)}_{ij}\,E_{s,-,j}+\mathcal M^{(+)}_{ij}\,E_{s,+,j}\right],\\
+% P^{(3)}_i(\omega_s\pm\Delta) &\supset \varepsilon_0\,\widetilde{\mathcal M}^{(\pm)}_{ij}\,E_{s,j},
+% \end{align}
+% with \emph{mixing tensors}
+% \begin{equation}
+% \boxed{~
+% \mathcal M^{(\pm)}_{ij}=\sum_{m=A,B,C}\chi^{(m)}_{(\mp 1)}\!\big(\omega_s;\omega_{p+},-\omega_{p-},\omega_s\pm\Delta\big)\,\mathcal T^{(m)}_{ij},\qquad
+% \widetilde{\mathcal M}^{(\pm)}_{ij}=\sum_{m=A,B,C}\chi^{(m)}_{(\pm 1)}\!\big(\omega_s\pm\Delta;\omega_{p+},-\omega_{p-},\omega_s\big)\,\mathcal T^{(m)}_{ij}.~}
+% \label{eq:mixers}
+% \end{equation}
+%
+% Introduce the linear propagation operator $\mathcal D(\omega)$ and its lumped values at the three frequencies,
+% \[
+% \mathcal D_0\equiv \mathcal D(\omega_s),\qquad
+% \mathcal D_\pm\equiv \mathcal D(\omega_s\pm\Delta)=\Gamma_s\mp i\Delta,
+% \]
+% where $\Gamma_s>0$ is the probe’s linear decoherence/linewidth near $\omega_s$.
+%
+% Collecting the unknown probe amplitudes $(E_{s,i},E_{s,+,i},E_{s,-,i})$, the first-order coupled system reads
+% \begin{equation}
+% \begin{pmatrix}
+% \mathcal D_0\,\delta_{ij} & -\mathcal K^{(+)}_{ij} & -\mathcal K^{(-)}_{ij} \\
+% -\widetilde{\mathcal K}^{(+)}_{ij} & \mathcal D_{+}\,\delta_{ij} & 0 \\
+% -\widetilde{\mathcal K}^{(-)}_{ij} & 0 & \mathcal D_{-}\,\delta_{ij}
+% \end{pmatrix}
+% \!
+% \begin{pmatrix}
+% E_{s,j}\\ E_{s,+,j}\\ E_{s,-,j}
+% \end{pmatrix}
+% =
+% \begin{pmatrix}
+% S_{s,i}\\ 0\\ 0
+% \end{pmatrix},
+% \qquad
+% \mathcal K^{(\pm)}_{ij}\equiv \frac{\omega_s^2}{c^2}\,\mathcal M^{(\pm)}_{ij},\ \
+% \widetilde{\mathcal K}^{(\pm)}_{ij}\equiv \frac{(\omega_s\pm\Delta)^2}{c^2}\,\widetilde{\mathcal M}^{(\pm)}_{ij}.
+% \label{eq:3x3}
+% \end{equation}
+% Here $S_{s,i}$ is the external probe drive at $\omega_s$ (port/boundary excitation).
+%
+% In the weak-mixing limit $\|\mathcal K^{(\pm)}\|,\|\widetilde{\mathcal K}^{(\pm)}\|\ll|\mathcal D_\pm|$,
+% \[
+% E_{s,\pm,i}\approx (\mathcal D_\pm^{-1}\,\widetilde{\mathcal K}^{(\pm)})_{ij}E_{s,j},
+% \]
+% and the carrier constitutive relation becomes
+% \[
+% P^{(3)}_i(\omega_s)=\varepsilon_0\left[\chi^{\mathrm{eff}}_{ij}(\omega_s)+\delta\chi^{(+)}_{ij}(\omega_s)+\delta\chi^{(-)}_{ij}(\omega_s)\right]E_{s,j},
+% \]
+% with the sideband corrections
+% \begin{equation}
+% \boxed{~
+% \delta\chi^{(\pm)}_{ij}(\omega_s)
+% =\frac{c^2}{\omega_s^2}\big(\mathcal K^{(\pm)}\,\mathcal D_\pm^{-1}\,\widetilde{\mathcal K}^{(\pm)}\big)_{ij}
+% =\frac{1}{\mathcal D_\pm}\,\mathcal M^{(\pm)}_{ik}\,\widetilde{\mathcal M}^{(\pm)}_{kj}
+% \ \ \propto\ \ \frac{|\,\mathbf E^{(1)}|^2|\,\mathbf E^{(2)}|^2}{\Gamma_s\mp i\Delta}\,.
+% ~}
+% \label{eq:dchi}
+% \end{equation}
+% Therefore
+% \[
+% \boxed{~
+% \underline{\underline{\chi}}^{\,\mathrm{eff,SB}}(\omega_s)
+% =\underline{\underline{\chi}}^{\,\mathrm{eff}}(\omega_s)+\delta\underline{\underline{\chi}}^{(+)}(\omega_s)+\delta\underline{\underline{\chi}}^{(-)}(\omega_s).~}
+% \]
+%
+% \subsection{Circular-basis diagonals and explicit pump helicities}
+%
+% Projecting (\ref{eq:dchi}) to the circular basis gives
+% \[
+% \chi^{\mathrm{eff,SB}}_{\alpha\alpha}(\omega_s)
+% =\chi^{\mathrm{eff}}_{\alpha\alpha}(\omega_s)+\sum_{\pm}\delta\chi^{(\pm)}_{\alpha\alpha}(\omega_s),\qquad
+% \delta\chi^{(\pm)}_{\alpha\alpha}=\hat e_{\alpha,i}\,\delta\chi^{(\pm)}_{ij}\,\hat e_{\alpha,j}^{\!*},\ \ \alpha\in\{+,-\}.
+% \]
+%
+% \paragraph{Case \texorpdfstring{$\sigma^+\sigma^-$}{sigma+ sigma-} pumps.}
+% With $\mathbf E^{(1)}=E^{(1)}_+\hat{\mathbf e}_+$, $\mathbf E^{(2)}=E^{(2)}_-\hat{\mathbf e}_-$, the isotropic contractions yield
+% \[
+% \boxed{~
+% \begin{aligned}
+% \delta\chi^{(\pm)}_{++}&=\frac{|E^{(1)}_{+}E^{(2)}_{-}|^2}{\mathcal D_\pm}
+% \Big[\chi^{(+)}_{(\mp1),B}+\chi^{(+)}_{(\mp1),C}\Big]\Big[\chi^{(+)}_{(\pm1),B}+\chi^{(+)}_{(\pm1),C}\Big],\\
+% \delta\chi^{(\pm)}_{--}&=\frac{|E^{(1)}_{+}E^{(2)}_{-}|^2}{\mathcal D_\pm}
+% \Big[\chi^{(-)}_{(\mp1),B}+\chi^{(-)}_{(\mp1),C}\Big]\Big[\chi^{(-)}_{(\pm1),B}+\chi^{(-)}_{(\pm1),C}\Big].
+% \end{aligned}
+% ~}
+% \]
+%
+% \paragraph{Case \texorpdfstring{$\sigma^+\sigma^+$}{sigma+ sigma+} pumps.}
+% With $\mathbf E^{(1)}=E^{(1)}_+\hat{\mathbf e}_+$, $\mathbf E^{(2)}=E^{(2)}_+\hat{\mathbf e}_+$:
+% \[
+% \boxed{~
+% \begin{aligned}
+% \delta\chi^{(\pm)}_{++}&=\frac{|E^{(1)}_{+}E^{(2)}_{+}|^2}{\mathcal D_\pm}
+% \Big[\chi^{(+)}_{(\mp1),A}+\chi^{(+)}_{(\mp1),B}+\chi^{(+)}_{(\mp1),C}\Big]
+% \Big[\chi^{(+)}_{(\pm1),A}+\chi^{(+)}_{(\pm1),B}+\chi^{(+)}_{(\pm1),C}\Big],\\
+% \delta\chi^{(\pm)}_{--}&=\frac{|E^{(1)}_{+}E^{(2)}_{+}|^2}{\mathcal D_\pm}
+% \Big[\chi^{(-)}_{(\mp1),A}-(\chi^{(-)}_{(\mp1),B}+\chi^{(-)}_{(\mp1),C})\Big]
+% \Big[\chi^{(-)}_{(\pm1),A}-(\chi^{(-)}_{(\pm1),B}+\chi^{(-)}_{(\pm1),C})\Big].
+% \end{aligned}
+% ~}
+% \]
+%
+\subsection{Temporal coupled-mode theory (TCMT) with sidebands and explicit $g_\pm,\kappa_\pm$}
+
+Define slowly varying envelopes per circular component $\alpha\in\{+,-\}$:
+$a_{0,\alpha}(t)$ at $\omega_s$, and $a_{\pm,\alpha}(t)$ at $\omega_s\pm\Delta$.
+Let $\delta_{0,\alpha}$ and $\gamma_{0,\alpha}$ be the carrier detuning and decay,
+and $\delta_\pm=\delta_0\pm\Delta$, $\gamma_\pm$ the sideband detuning/decay.
+The input–output coupling is $\sqrt{2\gamma_{e,\alpha}}\,s_{\mathrm{in},\alpha}(t)$.
+
+The TCMT equations are
+\begin{equation}
+\boxed{~
+\begin{aligned}
+\dot a_{0,\alpha}&=\big(-\gamma_{0,\alpha}-i\delta_{0,\alpha}\big)a_{0,\alpha}
++i\,\kappa_{+}^{(\alpha)}\,a_{+,\alpha}+i\,\kappa_{-}^{(\alpha)}\,a_{-,\alpha}
++\sqrt{2\gamma_{e,\alpha}}\,s_{\mathrm{in},\alpha}(t),\\
+\dot a_{+,\alpha}&=\big(-\gamma_{+}-i\delta_{+}\big)a_{+,\alpha}+i\,g_{+}^{(\alpha)}\,a_{0,\alpha},\\
+\dot a_{-,\alpha}&=\big(-\gamma_{-}-i\delta_{-}\big)a_{-,\alpha}+i\,g_{-}^{(\alpha)}\,a_{0,\alpha}.
+\end{aligned}
+~}
+\label{eq:tcmt}
+\end{equation}
+
+The \emph{mixing coefficients} are circular projections of (\ref{eq:M-mixers}):
+\[
+\kappa_{\pm}^{(\alpha)}=\hat e_{\alpha,i}\,\mathcal M^{(\pm)}_{ij}\,\hat e_{\alpha,j}^{\!*},\qquad
+g_{\pm}^{(\alpha)}=\hat e_{\alpha,i}\,\widetilde{\mathcal M}^{(\pm)}_{ij}\,\hat e_{\alpha,j}^{\!*}.
+\]
+Explicitly (list the nonzero scalars only):
+\begin{align*}
+\underline{\sigma^+\sigma^-:}\quad
+&g_{+}^{(+)}=\big[\chi^{(+)}_{(+1),B}+\chi^{(+)}_{(+1),C}\big]E^{(1)}_+E^{(2)}_-,
+&&\kappa_{+}^{(+)}=\big[\chi^{(+)}_{(-1),B}+\chi^{(+)}_{(-1),C}\big]E^{(1)}_+E^{(2)}_-,\\
+&g_{-}^{(+)}=\big[\chi^{(+)}_{(-1),B}+\chi^{(+)}_{(-1),C}\big]E^{(1)}_+E^{(2)}_-,
+&&\kappa_{-}^{(+)}=\big[\chi^{(+)}_{(+1),B}+\chi^{(+)}_{(+1),C}\big]E^{(1)}_+E^{(2)}_-,\\
+&g_{+}^{(-)}=\big[\chi^{(-)}_{(+1),B}+\chi^{(-)}_{(+1),C}\big]E^{(1)}_+E^{(2)}_-,
+&&\kappa_{+}^{(-)}=\big[\chi^{(-)}_{(-1),B}+\chi^{(-)}_{(-1),C}\big]E^{(1)}_+E^{(2)}_-,\\
+&g_{-}^{(-)}=\big[\chi^{(-)}_{(-1),B}+\chi^{(-)}_{(-1),C}\big]E^{(1)}_+E^{(2)}_-,
+&&\kappa_{-}^{(-)}=\big[\chi^{(-)}_{(+1),B}+\chi^{(-)}_{(+1),C}\big]E^{(1)}_+E^{(2)}_-;\\[4pt]
+\underline{\sigma^+\sigma^+:}\quad
+&g_{+}^{(+)}=\big[\chi^{(+)}_{(+1),A}+\chi^{(+)}_{(+1),B}+\chi^{(+)}_{(+1),C}\big]E^{(1)}_+E^{(2)}_+,
+&&\kappa_{+}^{(+)}=\big[\chi^{(+)}_{(-1),A}+\chi^{(+)}_{(-1),B}+\chi^{(+)}_{(-1),C}\big]E^{(1)}_+E^{(2)}_+,\\
+&g_{-}^{(+)}=\big[\chi^{(+)}_{(-1),A}+\chi^{(+)}_{(-1),B}+\chi^{(+)}_{(-1),C}\big]E^{(1)}_+E^{(2)}_+,
+&&\kappa_{-}^{(+)}=\big[\chi^{(+)}_{(+1),A}+\chi^{(+)}_{(+1),B}+\chi^{(+)}_{(+1),C}\big]E^{(1)}_+E^{(2)}_+,\\
+&g_{+}^{(-)}=\big[\chi^{(-)}_{(+1),A}-(\chi^{(-)}_{(+1),B}+\chi^{(-)}_{(+1),C})\big]E^{(1)}_+E^{(2)}_+,
+&&\kappa_{+}^{(-)}=\big[\chi^{(-)}_{(-1),A}-(\chi^{(-)}_{(-1),B}+\chi^{(-)}_{(-1),C})\big]E^{(1)}_+E^{(2)}_+,\\
+&g_{-}^{(-)}=\big[\chi^{(-)}_{(-1),A}-(\chi^{(-)}_{(-1),B}+\chi^{(-)}_{(-1),C})\big]E^{(1)}_+E^{(2)}_+,
+&&\kappa_{-}^{(-)}=\big[\chi^{(-)}_{(+1),A}-(\chi^{(-)}_{(+1),B}+\chi^{(-)}_{(+1),C})\big]E^{(1)}_+E^{(2)}_+.
+\end{align*}
+
+\subsection{Solution and time-resolved Faraday rotation}
+
+For steady input $s_{\mathrm{in},\alpha}(t)=s_{\mathrm{in},\alpha}$ and weak mixing, set $\dot a_{\pm,\alpha}\!\approx\!0$:
+\[
+a_{\pm,\alpha}\approx \frac{i\,g_{\pm}^{(\alpha)}}{\gamma_{\pm}+i\delta_{\pm}}\,a_{0,\alpha},\qquad
+\delta_{\pm}=\delta_0\pm\Delta.
+\]
+The carrier then obeys
+\[
+\dot a_{0,\alpha}=\Big(-\gamma_{0,\alpha}-i\delta_{0,\alpha}\Big)a_{0,\alpha}
++i\Sigma_{\alpha}\,a_{0,\alpha}
++\sqrt{2\gamma_{e,\alpha}}\,s_{\mathrm{in},\alpha},\qquad
+\Sigma_{\alpha}\equiv
+\frac{\kappa_{+}^{(\alpha)}g_{+}^{(\alpha)}}{\gamma_{+}+i\delta_{+}}
++\frac{\kappa_{-}^{(\alpha)}g_{-}^{(\alpha)}}{\gamma_{-}+i\delta_{-}}.
+\]
+Steady state:
+\[
+a_{0,\alpha}=\frac{\sqrt{2\gamma_{e,\alpha}}\,s_{\mathrm{in},\alpha}}
+{\gamma_{0,\alpha}+i\delta_{0,\alpha}-i\Sigma_{\alpha}}.
+\]
+The detected probe (carrier+sidebands) is
+\[
+\mathbf E(t)\approx 
+\sum_{\alpha=\pm}\Big[
+a_{0,\alpha}\,e^{-i\omega_s t}
++a_{+,\alpha}\,e^{-i(\omega_s+\Delta)t}
++a_{-,\alpha}\,e^{-i(\omega_s-\Delta)t}
+\Big]\hat{\mathbf e}_{\alpha}.
+\]
+Define small sideband ratios $r_{\pm}^{(\alpha)}\equiv a_{\pm,\alpha}/a_{0,\alpha}=i\,g_{\pm}^{(\alpha)}/(\gamma_{\pm}+i\delta_{\pm})$.
+To first order in $r_{\pm}^{(\alpha)}$, the instantaneous polarization angle (Faraday rotation) is
+\begin{equation}
+\boxed{~
+\theta(t)
+=\underbrace{\frac{k_0 L}{4}\,\mathrm{Re}\big[\chi^{\mathrm{eff,SB}}_{++}(\omega_s)-\chi^{\mathrm{eff,SB}}_{--}(\omega_s)\big]}_{\displaystyle \theta_0\ \text{(static, carrier)}}
+\ +\ \underbrace{\frac{1}{2}\,\big|R\big|\cos\!\big(\Delta t+\arg R\big)}_{\text{oscillation at }\Delta},
+\qquad
+R\ \equiv\ r_{+}^{(+)}+r_{-}^{(+)}-\big(r_{+}^{(-)}+r_{-}^{(-)}\big).
+~}
+\label{eq:theta_time}
+\end{equation}
+The static piece $\theta_0$ reflects circular birefringence of the \emph{carrier} alone; the oscillatory part arises
+from carrier–sideband interference and vanishes if the sidebands are spectrally filtered out.
+For $\sigma^+\sigma^-$ with equal intensities in an isotropic medium, the stationary carrier contribution often
+satisfies $\chi^{\mathrm{eff}}_{++}=\chi^{\mathrm{eff}}_{--}$, so $\theta_0\!\approx\!0$ and rotation is dominantly the $\Delta$-oscillation.
+For $\sigma^+\sigma^+$, $\theta_0\neq0$ already without sidebands, which then dress it and add the $\Delta$ term.
+
+
+
+% ---------------------------------------------------------------
+% Subsection: TCMT at the carrier for circular polarizations
+% (captures Optica 2019 within our notation)
+% ---------------------------------------------------------------
+\subsection{TCMT at the carrier for circular polarizations (cavity form)}
+
+We now specialize to a resonant geometry (single cavity resonance at $\omega_0$) and
+write a temporal coupled–mode theory (TCMT) \cite{FanSuhJoannopoulos2003}
+for the \emph{carrier-frequency} probe envelopes in the circular basis.
+Let $a_{0,+}(t)$ and $a_{0,-}(t)$ denote the intracavity envelopes of the probe’s
+$\sigma^\pm$ components at the carrier $\omega_s\simeq \omega_0$; the external
+drives (ports) are $s_{\rm in,\pm}(t)$ with the standard input–output relation
+$s_{\rm out,\pm}=s_{\rm in,\pm}-\sqrt{2\gamma_e}\,a_{0,\pm}$.
+Two strong pumps at $\omega_{p\pm}=\omega_p\pm\Delta/2$ and opposite helicities
+($\sigma^+$, $\sigma^-$) bias the cavity and produce a time-periodic mixing at $\Delta$
+between the circular probe modes (the engine behind the \emph{optically driven Faraday effect} \cite{DugganOptica2019}).
+
+\paragraph{Time-periodic TCMT (lab frame).}
+Under the instantaneous Kerr assumption and after projecting the $\chi^{(3)}$
+tensor onto the circular basis (our isotropic $A,B,C$ reduction),
+the \emph{carrier} envelopes obey
+\begin{equation}
+\boxed{~
+\begin{aligned}
+\dot a_{0,+} &= \big(-\gamma_0 - i\delta_0\big)\,a_{0,+}
+\;+\; i\,D\,e^{+i\Delta t}\,a_{0,-}
+\;+\;\sqrt{2\gamma_e}\,s_{\rm in,+}(t),\\[2pt]
+\dot a_{0,-} &= \big(-\gamma_0 - i\delta_0\big)\,a_{0,-}
+\;+\; i\,D^{*}e^{-i\Delta t}\,a_{0,+}
+\;+\;\sqrt{2\gamma_e}\,s_{\rm in,-}(t),
+\end{aligned} ~}
+\label{eq:cavity-tcmt-lab}
+\end{equation}
+where $\gamma_0$ is the intrinsic decay (half-linewidth), $\delta_0\equiv \omega_s-\omega_0$
+is the probe–cavity detuning, and $D$ is a pump-controlled complex coupling
+proportional to the appropriate $\chi^{(3)}$ Floquet block(s) contracted with the pump Jones vectors
+(e.g., for $\sigma^+\sigma^-$ pumps $D\propto \big[\chi^{(+)}_{(+1),B}+\chi^{(+)}_{(+1),C}\big]E^{(1)}_+E^{(2)\!*}_-$).
+Equation~\eqref{eq:cavity-tcmt-lab} is the TCMT analogue of the time-periodic polarization
+coupling used in Ref.~\cite{DugganOptica2019} (their $e^{\pm i\Delta t}$ mixing).
+
+\paragraph{Static coupling via a rotating frame.}
+Define a slow rotating frame $b_\pm(t)\equiv a_{0,\pm}(t)\,e^{\mp i\Delta t/2}$.
+Then Eqs.~\eqref{eq:cavity-tcmt-lab} become
+\begin{equation}
+\boxed{~
+\begin{aligned}
+\dot b_{+} &= \Big(-\gamma_0 - i(\delta_0 - \tfrac{\Delta}{2})\Big)\,b_{+}
+\;+\; i\,D\,b_{-}
+\;+\;\sqrt{2\gamma_e}\,s_{\rm in,+}(t)\,e^{-i\Delta t/2},\\[2pt]
+\dot b_{-} &= \Big(-\gamma_0 - i(\delta_0 + \tfrac{\Delta}{2})\Big)\,b_{-}
+\;+\; i\,D^{*}\,b_{+}
+\;+\;\sqrt{2\gamma_e}\,s_{\rm in,-}(t)\,e^{+i\Delta t/2}.
+\end{aligned} ~}
+\label{eq:cavity-tcmt-rot}
+\end{equation}
+For quasi-CW probing near the cavity line, the exponential factors on the drives
+are slowly varying constants, so the coupling becomes \emph{static}.
+This $2\times 2$ system is convenient for closed-form steady-state solutions and
+matches the effective-Faraday cavity treatment of \cite{DugganOptica2019}.
+
+\paragraph{Closed-form steady state and rotation.}
+With $\dot b_\pm=0$ and constant inputs, write
+\begin{equation}
+\begin{bmatrix} b_+ \\[2pt] b_- \end{bmatrix}
+=
+\underbrace{\begin{bmatrix}
+\gamma_0+i(\delta_0-\tfrac{\Delta}{2}) & -\,iD \\
+-\,iD^{*} & \gamma_0+i(\delta_0+\tfrac{\Delta}{2})
+\end{bmatrix}^{-1}}_{\displaystyle \mathbf G(\delta_0,\Delta,D)}
+\begin{bmatrix}
+\sqrt{2\gamma_e}\,s_{\rm in,+} \\[2pt]
+\sqrt{2\gamma_e}\,s_{\rm in,-}
+\end{bmatrix}.
+\label{eq:cavity-green}
+\end{equation}
+Transform back to the lab frame via $a_{0,\pm}=b_\pm e^{\pm i\Delta t/2}$ and use
+$s_{\rm out,\pm}=s_{\rm in,\pm}-\sqrt{2\gamma_e}\,a_{0,\pm}$ to obtain the port fields.
+The \emph{instantaneous} polarization rotation is
+\begin{equation}
+\boxed{~
+\theta(t)=\tfrac{1}{2}\,\big[\arg a_{0,+}(t)-\arg a_{0,-}(t)\big].
+~}
+\label{eq:theta-cavity}
+\end{equation}
+Near a cavity line, the observable rotation is essentially \emph{static} (the
+$e^{\pm i\Delta t/2}$ factors cancel in the Stokes parameters over the cavity lifetime),
+and one may define
+\begin{equation}
+\boxed{~
+\theta_0=\tfrac{1}{2}\arg\!\left(\frac{b_+}{b_-}\right)
+=\tfrac{1}{2}\arg\!\left(
+\frac{\gamma_0+i(\delta_0-\tfrac{\Delta}{2})}{\gamma_0+i(\delta_0+\tfrac{\Delta}{2})}
+\;+\;
+\frac{|D|^2}{\big[\gamma_0+i(\delta_0+\tfrac{\Delta}{2})\big]\big[\gamma_0+i(\delta_0-\tfrac{\Delta}{2})\big]}
+\right).
+~}
+\label{eq:theta0-cavity}
+\end{equation}
+Equations~\eqref{eq:cavity-tcmt-lab}–\eqref{eq:theta0-cavity} are the cavity counterpart of our
+sideband-elimination picture: the Lorentzian dispersive factor $1/(\Gamma_s\mp i\Delta)$ appearing in the
+bulk propagation is here replaced by the cavity susceptibilities
+$1/(\gamma_0+i(\delta_0\mp \Delta/2))$, while the mixing amplitude $D$ contains the
+same $\chi^{(3)}$ contractions with the pump helicities as in our isotropic $A,B,C$ expansion.
+This reproduces the \emph{optically driven effective Faraday effect} from Ref.~\cite{DugganOptica2019}
+within our notation, and fits naturally in the TCMT framework \cite{FanSuhJoannopoulos2003}.
+
+Of course, there can be typos and stupid mistakes, but the whole logic is correct.
+
+
+\section{References}
+\begin{thebibliography}{9}
+\bibitem{Boyd}
+R.~W.~Boyd, \textit{Nonlinear Optics} (4th ed.), Academic Press (2020). See frequency-domain polarization and the SI prefactor linking $n_2$ and $\mathrm{Re}\,\chi^{(3)}$. URL: \url{https://lib.ysu.am/disciplines_bk/cce1226f312d5f73b4d8dd86e878c5b3.pdf}.
+
+\bibitem{SheikBahae}
+M.~Sheik-Bahae, ``Third-Order Optical Nonlinearities,'' in \textit{Handbook of Optics, Vol.~IV} (OSA/McGraw-Hill). A convenient overview of frequency selection rules and generated frequencies. URL: \url{https://msbahae.unm.edu/Courses/568%20Nonlinear%20Optics/OSA-Handbook%20of%20Optics-IV-Ch17.pdf}.
+
+\bibitem{CREOL}
+CREOL Lecture Notes, ``Third-order nonlinear susceptibility $\chi^{(3)}$ and its tensor representation,'' discussing isotropic tensor reduction and Kleinman symmetry. URL: \url{https://www.creol.ucf.edu/mir/wp-content/uploads/sites/7/2023/07/L16_-3rd-order-nonlinear-susceptibility-%CF%873-and-its-tensor-representation.pdf}.
+
+\bibitem{Stokes}
+Stokes parameters and $S_3$ definition (circular component). URL: \url{https://en.wikipedia.org/wiki/Stokes_parameters}.
+
+\bibitem{UTAustin}
+UT Austin Lecture Notes, Faraday rotation and circular birefringence relation $\theta=(k_0L/2)(n_+-n_-)$. URL: \url{https://farside.ph.utexas.edu/teaching/jk1/Electromagnetism/node73.html}.
+
+\bibitem{DugganOptica2019}
+R.~Duggan, D.~Sounas, and A.~Al\`u,
+``Optically driven effective Faraday effect in instantaneous nonlinear media,''
+\textit{Optica} \textbf{6}(9), 1152--1157 (2019).
+doi:10.1364/OPTICA.6.001152
+
+\bibitem{FanSuhJoannopoulos2003}
+S.~Fan, W.~Suh, and J.~D.~Joannopoulos,
+``Temporal coupled-mode theory for the Fano resonance in optical resonators,''
+\textit{Journal of the Optical Society of America A} \textbf{20}(3), 569--572 (2003).
+doi:10.1364/JOSAA.20.000569
+
+\end{thebibliography}
+
+\end{document}
