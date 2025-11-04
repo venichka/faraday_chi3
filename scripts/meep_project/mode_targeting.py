@@ -1,7 +1,9 @@
 # ========= mode_targeting.py (mirror + cavity optimizer; no spacers) =========
 import numpy as np
 import meep as mp
-from math import isfinite
+from math import isfinite, log
+from copy import deepcopy
+from typing import Dict, List, Any, Optional, Sequence, Tuple
 
 # ------------------ Targets & weights (all wavelengths in μm) ------------------
 LAM_PROBE = 0.800
@@ -35,6 +37,15 @@ MID_WINDOW_NM = 150.0             # search window for two dips to bracket 800 nm
 FSR_TARGET = 0.100                # ~100 nm around 1.6 μm
 ALPHA_FSR = 2.0
 
+# Reflectance dip shaping (local minima near targets)
+DIP_WINDOW_NM = dict(probe=25.0, pump1=35.0, pump2=35.0)
+ALPHA_DIP_DETUNE = dict(probe=40.0, pump1=24.0, pump2=24.0)
+ALPHA_DIP_DEPTH = dict(probe=12.0, pump1=8.0, pump2=8.0)
+DIP_TARGET_R = dict(probe=0.10, pump1=0.12, pump2=0.12)
+
+# Baseline smoothing kernel length (number of samples)
+BASELINE_SMOOTH_LEN = 9
+
 # Spectrum for R(λ) (covers 0.6–2.0 μm)
 wl_min, wl_max = 0.6, 2.0
 fmin, fmax = 1/wl_max, 1/wl_min
@@ -47,11 +58,92 @@ SRC_AMPLITUDE = 1.0
 
 
 # ------------------------------ Utilities -------------------------------------
-def _n_of_medium(m):
+def _instantiate_medium(candidate) -> Optional[mp.Medium]:
+    if candidate is None:
+        return None
+    if isinstance(candidate, mp.Medium):
+        return deepcopy(candidate)
+    if callable(candidate):
+        maybe = candidate()
+        if isinstance(maybe, mp.Medium):
+            return maybe
+    return None
+
+
+def _material_from_library(names: Sequence[str]) -> Optional[mp.Medium]:
     try:
-        return float(m.index)
+        from meep import materials  # type: ignore
     except Exception:
+        return None
+    for name in names:
+        candidate = getattr(materials, name, None)
+        mat = _instantiate_medium(candidate)
+        if mat is not None:
+            return mat
+    return None
+
+
+def _linearize_medium(mat: mp.Medium) -> mp.Medium:
+    """Ensure no nonlinear terms are present (keep optimization purely linear)."""
+    if hasattr(mat, "chi2"):
+        mat.chi2 = 0.0
+    if hasattr(mat, "chi3"):
+        mat.chi3 = 0.0
+    return mat
+
+
+def get_cavity_materials(model: str = "library",
+                         index_high: float = 2.0,
+                         index_low: float = 1.45) -> Tuple[mp.Medium, mp.Medium]:
+    """
+    Return (SiN, SiO2) media according to the requested model:
+      • "library": try mp.materials.Si3N4_NIR and mp.materials.SiO2 (fallback to constants)
+      • "constant": simple lossless media with provided indices.
+    Nonlinear susceptibilities are cleared to keep the response linear.
+    """
+    model_lc = (model or "").lower()
+    if model_lc == "library":
+        mat_sin = _material_from_library(["Si3N4_NIR", "SiN"])
+        mat_sio2 = _material_from_library(["SiO2", "FusedSilica", "Silica"])
+        if mat_sin is None:
+            mat_sin = mp.Medium(index=index_high)
+        if mat_sio2 is None:
+            mat_sio2 = mp.Medium(index=index_low)
+    elif model_lc == "constant":
+        mat_sin = mp.Medium(index=index_high)
+        mat_sio2 = mp.Medium(index=index_low)
+    else:
+        raise ValueError(f"Unknown material model '{model}'. Expected 'library' or 'constant'.")
+    return _linearize_medium(mat_sin), _linearize_medium(mat_sio2)
+
+
+def material_index_at_wavelength(material: mp.Medium,
+                                 wavelength_um: float) -> float:
+    """Approximate the refractive index at wavelength λ (μm) for quarter-wave penalties."""
+    if wavelength_um <= 0:
         return 1.0
+    freq = 1.0 / wavelength_um
+    if hasattr(material, "epsilon"):
+        try:
+            eps_val = material.epsilon(freq)
+            eps_real = float(np.real(eps_val))
+            if np.isfinite(eps_real) and eps_real > 1e-9:
+                return float(np.sqrt(eps_real))
+        except Exception:
+            pass
+    idx = getattr(material, "index", None)
+    if idx is not None:
+        try:
+            n = float(idx)
+            if np.isfinite(n) and n > 0:
+                return n
+        except Exception:
+            pass
+    return 1.0
+
+
+def _n_of_medium(material, wavelength_um: float = LAM_PROBE) -> float:
+    return material_index_at_wavelength(material, wavelength_um)
 
 
 def _harminv_modes_for_window(cell, geometry, resolution, dpml,
@@ -77,7 +169,7 @@ def _harminv_modes_for_window(cell, geometry, resolution, dpml,
 
 
 def _score_one_target(modes, lam_target_um, half_window_um,
-                      w_detune, w_qpen, w_qreward):
+                      w_detune, q_min, w_qpen, w_qreward):
     # Accept only sane modes
     filtered = []
     f0 = 1.0/lam_target_um
@@ -95,7 +187,8 @@ def _score_one_target(modes, lam_target_um, half_window_um,
 
     if not filtered:
         # bounded fallback: 1 window off in detune, no Q reward
-        return float(w_detune + w_qpen*1.0), dict(found=False, lam=None, Q=None)
+        return float(w_detune + w_qpen*1.0), dict(
+            found=False, lam=None, detune_um=None, detune_nm=None, Q=None, penalty=float(w_detune + w_qpen*1.0))
 
     # pick closest in wavelength
     lamodes = np.array([1.0/f for (f, _, _) in filtered])
@@ -112,13 +205,22 @@ def _score_one_target(modes, lam_target_um, half_window_um,
         qpen = w_qpen
         qrew = 0.0
     else:
-        from math import log
-        Qmin = 1500.0 if np.isclose(lam_target_um, 0.800) else 800.0
+        Qmin = max(q_min, 1.0)
         qdef = max(0.0, (log(Qmin) - log(Q))/log(Qmin))
         qpen = w_qpen * (qdef*qdef)
-        qrew = - w_qreward * min(1.0, Q/Qmin)
+        qrew = - w_qreward * min(1.0, max(0.0, (Q - Qmin)/Qmin))
 
-    return float(detune + qpen + qrew), dict(found=True, lam=lam, Q=Q, err=err)
+    penalty = float(detune + qpen + qrew)
+    return penalty, dict(found=True,
+                         lam=float(lam),
+                         detune_um=float(lam - lam_target_um),
+                         detune_nm=float(lam - lam_target_um)*1e3,
+                         Q=float(Q),
+                         err=float(err) if err is not None else None,
+                         penalty=penalty,
+                         detune_term=float(detune),
+                         q_penalty=float(qpen),
+                         q_reward=float(qrew))
 
 
 def modal_objective(cell, geometry, resolution, dpml):
@@ -130,9 +232,12 @@ def modal_objective(cell, geometry, resolution, dpml):
         df = BAND_FRAC[key] * f0
         modes = _harminv_modes_for_window(
             cell, geometry, resolution, dpml, f0, df)
-        term, d = _score_one_target(modes, lam0,
-                                    ALPHA_DETUNE[key], Q_MIN[key],
-                                    ALPHA_QPEN[key], ALPHA_QREWARD[key])
+        half_window = BAND_FRAC[key] * lam0
+        term, d = _score_one_target(
+            modes, lam0, half_window,
+            ALPHA_DETUNE[key], Q_MIN[key],
+            ALPHA_QPEN[key], ALPHA_QREWARD[key])
+        d["half_window_um"] = float(half_window)
         J += term
         diag[key] = d
     return J, diag
@@ -200,27 +305,65 @@ def _baseline_penalty(wl, R):
     """High-R stopband near each target: baseline (percentile) ≥ R_MIN."""
     win_um = BASELINE_WINDOW_NM * 1e-3
     pen = 0.0
+    diag: Dict[float, Dict[str, Any]] = {}
     for lam0 in TARGET_WL:
+        entry: Dict[str, Any] = dict(target=float(lam0))
         m = (wl >= lam0 - win_um) & (wl <= lam0 + win_um)
-        if np.count_nonzero(m) >= 6:
-            Rb = float(np.quantile(R[m], BASELINE_PERCENTILE))
+        entry["samples"] = int(np.count_nonzero(m))
+        if entry["samples"] >= 6:
+            Rloc = np.asarray(R[m], dtype=float)
+            baseline_series = None
+            try:
+                from scipy.signal import savgol_filter  # type: ignore
+
+                win_len = len(Rloc) if len(Rloc) % 2 == 1 else len(Rloc) - 1
+                if win_len < 5:
+                    raise ValueError("window too small")
+                baseline_series = savgol_filter(
+                    Rloc, win_len, 2, mode="interp")
+            except Exception:
+                k = min(BASELINE_SMOOTH_LEN, len(Rloc))
+                if k % 2 == 0:
+                    k = max(1, k - 1)
+                if k >= 3:
+                    kernel = np.ones(k, dtype=float) / float(k)
+                    baseline_series = np.convolve(
+                        Rloc, kernel, mode="same")
+                else:
+                    baseline_series = Rloc
+            baseline_series = np.asarray(baseline_series, dtype=float)
+            Rb = float(np.quantile(
+                baseline_series, BASELINE_PERCENTILE))
+            entry["baseline"] = Rb
             if Rb < HARD_REJECT_BELOW:   # early kill
-                return 1e3
+                entry["hard_reject"] = True
+                diag[lam0] = entry
+                return 1e3, diag
             if Rb < R_MIN:
-                pen += (R_MIN - Rb)**2
+                deficit = (R_MIN - Rb)**2
+                pen += deficit
+                entry["penalty"] = deficit
+            else:
+                entry["penalty"] = 0.0
         else:
             pen += 0.05
-    return pen
+            entry["penalty"] = 0.05
+            entry["insufficient"] = True
+        diag[lam0] = entry
+    return pen, diag
 
 
 def _fsr_penalty(wl, R):
     """Encourage ~100 nm spacing near 1.6 μm using deepest local minima."""
     mask = (wl > 1.45) & (wl < 1.75)
     w, y = wl[mask], R[mask]
+    diag = dict(samples=int(w.size))
     if w.size < 20:
-        return 0.1
+        diag["reason"] = "insufficient_samples"
+        return 0.1, diag
     try:
-        from scipy.ndimage import minimum_filter1d
+        from scipy.ndimage import minimum_filter1d  # type: ignore
+
         ysm = minimum_filter1d(y, size=9, mode='nearest')
     except Exception:
         ysm = y
@@ -228,18 +371,29 @@ def _fsr_penalty(wl, R):
     ws = np.sort(w[idx])
     if ws.size >= 2:
         dws = np.diff(ws)
-        return (np.min(np.abs(dws - FSR_TARGET))**2)
-    return 0.1
+        spacing = float(np.min(np.abs(dws - FSR_TARGET)))
+        penalty = spacing**2
+        diag.update(dict(
+            min_spacing_um=float(np.min(dws)),
+            penalty=penalty,
+            target_spacing_um=float(FSR_TARGET)
+        ))
+        return penalty, diag
+    diag["reason"] = "insufficient_minima"
+    return 0.1, diag
 
 
 def _comb_midpoint_penalty(wl, R, lam0=LAM_PROBE):
     """Find dips around lam0; pull their midpoint to lam0 (uses find_peaks(-R))."""
     win_um = MID_WINDOW_NM * 1e-3
+    diag = dict(target=float(lam0))
     m = (wl >= lam0 - win_um) & (wl <= lam0 + win_um)
     if np.count_nonzero(m) < 8:
-        return 0.2
+        diag["reason"] = "insufficient_samples"
+        return 0.2, diag
     try:
-        from scipy.signal import find_peaks
+        from scipy.signal import find_peaks  # type: ignore
+
         wloc, Rloc = wl[m], R[m]
         peaks, _ = find_peaks(-Rloc)  # dips of R
         if peaks.size >= 2:
@@ -248,10 +402,73 @@ def _comb_midpoint_penalty(wl, R, lam0=LAM_PROBE):
             if below.size and above.size:
                 lam_low, lam_high = below[-1], above[0]
                 lam_mid = 0.5*(lam_low + lam_high)
-                return ALPHA_MID * (lam_mid - lam0)**2
-    except Exception:
-        pass
-    return 0.2
+                penalty = ALPHA_MID * (lam_mid - lam0)**2
+                diag.update(dict(
+                    found=True,
+                    lam_low=float(lam_low),
+                    lam_high=float(lam_high),
+                    midpoint=float(lam_mid),
+                    penalty=penalty
+                ))
+                return penalty, diag
+    except Exception as exc:
+        diag["exception"] = repr(exc)
+    diag["reason"] = "peaks_not_found"
+    return 0.2, diag
+
+
+def _dip_penalty(wl, R):
+    """Locate nearest reflectance dip around each target and penalize detune/depth."""
+    total = 0.0
+    diag: Dict[str, Dict[str, Any]] = {}
+    for key, lam0 in (("probe", LAM_PROBE), ("pump1", LAM_PUMP1), ("pump2", LAM_PUMP2)):
+        win_um = DIP_WINDOW_NM[key] * 1e-3
+        m = (wl >= lam0 - win_um) & (wl <= lam0 + win_um)
+        entry: Dict[str, Any] = dict(target=float(lam0),
+                                     window_um=float(win_um))
+        entry["samples"] = int(np.count_nonzero(m))
+        if entry["samples"] < 6:
+            entry["found"] = False
+            entry["reason"] = "insufficient_samples"
+            penalty = 0.5
+            total += penalty
+            entry["penalty"] = penalty
+            diag[key] = entry
+            continue
+        wloc = np.asarray(wl[m], dtype=float)
+        Rloc = np.asarray(R[m], dtype=float)
+        try:
+            from scipy.signal import find_peaks  # type: ignore
+
+            peaks, _ = find_peaks(-Rloc)
+        except Exception:
+            peaks = np.empty(0, dtype=int)
+        if peaks.size == 0:
+            idx = int(np.argmin(Rloc))
+            entry["reason"] = "fallback_min"
+        else:
+            idx = int(peaks[np.argmin(Rloc[peaks])])
+        lam_dip = float(wloc[idx])
+        R_dip = float(Rloc[idx])
+        detune_um = lam_dip - lam0
+        det_norm = detune_um / win_um if win_um > 0 else 0.0
+        depth_def = max(0.0, R_dip - DIP_TARGET_R[key])
+        detune_pen = ALPHA_DIP_DETUNE[key] * det_norm * det_norm
+        depth_pen = ALPHA_DIP_DEPTH[key] * (depth_def ** 2)
+        penalty = detune_pen + depth_pen
+        total += penalty
+        entry.update(dict(
+            found=True,
+            lam=float(lam_dip),
+            R=float(R_dip),
+            detune_um=float(detune_um),
+            detune_nm=float(detune_um*1e3),
+            detune_pen=float(detune_pen),
+            depth_pen=float(depth_pen),
+            penalty=float(penalty)
+        ))
+        diag[key] = entry
+    return total, diag
 
 
 # ----------------------------- Master objective --------------------------------
@@ -277,17 +494,17 @@ def score_for_params(theta, N_per,
                                    dpml, pad_air, pad_sub, mat_SiN, mat_SiO2, cell_z)
 
     # 1) Modal locking via Harminv (probe locked, pumps near targets with Q constraints)
-    # J_modes, _diag_modes = modal_objective(cell, geom, resolution, dpml)
+    J_modes, diag_modes = modal_objective(cell, geom, resolution, dpml)
 
     # 2) Reflectance spectrum & penalties (baseline + FSR + comb midpoint)
     freqs, R = reflectance_spectrum(
         cell, geom, resolution, dpml, fcen, df, nfreq)
     wl = 1.0/freqs
-    # interpolate R at targets
     R_targets = np.interp(TARGET_WL, wl[::-1], R[::-1], left=1.0, right=1.0)
-    baseline_pen = _baseline_penalty(wl, R)
-    FSR_pen = _fsr_penalty(wl, R)
-    J_mid = _comb_midpoint_penalty(wl, R, lam0=LAM_PROBE)
+    dip_pen, dip_diag = _dip_penalty(wl, R)
+    baseline_pen, baseline_diag = _baseline_penalty(wl, R)
+    FSR_pen, fsr_diag = _fsr_penalty(wl, R)
+    J_mid, mid_diag = _comb_midpoint_penalty(wl, R, lam0=LAM_PROBE)
 
     # 3) Quarter-wave regularizer at 800 nm (centers DBR stopband)
     nH, nL = _n_of_medium(mat_SiN), _n_of_medium(mat_SiO2)
@@ -295,9 +512,79 @@ def score_for_params(theta, N_per,
                         (nL*t_SiO2 - LAM_PROBE/4.0)**2) / LAM_PROBE**2)
 
     # combine
-    J = float(np.sum(R_targets) + ALPHA_RBASE*baseline_pen +
-              ALPHA_FSR*FSR_pen + J_mid + J_QW)
-    return J if isfinite(J) else 1e3
+    if baseline_pen >= 1e3:
+        total = float(baseline_pen)
+    else:
+        total = float(
+            J_modes +
+            dip_pen +
+            ALPHA_RBASE*baseline_pen +
+            ALPHA_FSR*FSR_pen +
+            J_mid + J_QW
+        )
+
+    diagnostics = dict(
+        theta=dict(t_SiN=float(t_SiN), t_SiO2=float(t_SiO2),
+                   L_cav=float(L_cav), cell_margin=float(cell_margin)),
+        total=total,
+        modes=diag_modes,
+        dips=dip_diag,
+        baseline=baseline_diag,
+        fsr=fsr_diag,
+        comb_mid=mid_diag,
+        quarter_wave=dict(
+            penalty=float(J_QW),
+            n_high=float(nH),
+            n_low=float(nL)
+        ),
+        reflectance=dict(
+            targets=TARGET_WL.tolist(),
+            values=R_targets.tolist()
+        )
+    )
+
+    # Pareto bookkeeping (min detune, maximize min Q)
+    target_map = dict(probe=LAM_PROBE, pump1=LAM_PUMP1, pump2=LAM_PUMP2)
+    detune_sum = 0.0
+    min_Q = float('inf')
+    for key, entry in diag_modes.items():
+        if entry.get("found"):
+            detune_sum += abs(entry.get("detune_um", 0.0))
+            q_val = entry.get("Q", 0.0) if entry.get("Q") is not None else 0.0
+            if q_val > 0:
+                min_Q = min(min_Q, q_val) if min_Q != float('inf') else q_val
+        else:
+            detune_sum += BAND_FRAC[key] * target_map[key]
+            min_Q = min(min_Q, 0.0)
+    if min_Q == float('inf'):
+        min_Q = 0.0
+
+    record = dict(theta=np.array(theta, dtype=float),
+                  J=float(total),
+                  detune=float(detune_sum),
+                  min_Q=float(min_Q),
+                  diagnostics=diagnostics)
+
+    def _dominates(a: Dict[str, Any], b: Dict[str, Any]) -> bool:
+        """Return True if record a Pareto-dominates record b."""
+        better_detune = a["detune"] <= b["detune"]
+        better_q = a["min_Q"] >= b["min_Q"]
+        strictly = (a["detune"] < b["detune"]) or (a["min_Q"] > b["min_Q"])
+        return better_detune and better_q and strictly
+
+    pareto: List[Dict[str, Any]] = getattr(score_for_params, "_pareto", [])
+    if not any(_dominates(r, record) for r in pareto):
+        pareto = [r for r in pareto if not _dominates(record, r)]
+        pareto.append(record)
+    score_for_params._pareto = pareto
+    history: List[Dict[str, Any]] = getattr(score_for_params, "history", [])
+    history.append(record)
+    if len(history) > 200:
+        history = history[-200:]
+    score_for_params.history = history
+    score_for_params.last_eval = diagnostics
+
+    return total if isfinite(total) else 1e3
 
 
 # ------------------------------- Optimizer ------------------------------------
@@ -309,7 +596,9 @@ def optimize_geometry_mirrors(N_per,
                                       (0.05, 0.60),  # t_SiO2 (μm)
                                       (0.50, 8.00),  # L_cav  (μm)
                                       (0.20, 1.00)),  # cell_margin
-                              maxiter=60):
+                              maxiter=60,
+                              n_restarts=3,
+                              random_seed=None):
     """
     Optimize (t_SiN, t_SiO2, L_cav, cell_margin) for:
       • fixed probe mode at 800 nm (high Q),
@@ -320,7 +609,12 @@ def optimize_geometry_mirrors(N_per,
     """
     try:
         from scipy.optimize import minimize
-        x0 = np.array([tH0, tL0, L0, margin0])
+        bounds = tuple(bounds)
+        rng = np.random.default_rng(random_seed)
+        starts = [np.array([tH0, tL0, L0, margin0], dtype=float)]
+        for _ in range(1, max(1, n_restarts)):
+            perturb = np.array([rng.uniform(lo, hi) for (lo, hi) in bounds], dtype=float)
+            starts.append(perturb)
 
         def proj(x):
             y = np.array(x, dtype=float)
@@ -329,14 +623,67 @@ def optimize_geometry_mirrors(N_per,
             return y
 
         def fun(x):
-            x = proj(x)
-            return score_for_params(x, N_per, dpml, pad_air, pad_sub, resolution, mat_SiN, mat_SiO2)
+            x_proj = proj(x)
+            return score_for_params(x_proj, N_per, dpml, pad_air, pad_sub, resolution, mat_SiN, mat_SiO2)
 
-        res = minimize(fun, x0, method="Nelder-Mead",
-                       options=dict(maxiter=maxiter, xatol=5e-3, fatol=5e-4, disp=True))
-        xbest = proj(res.x)
-        fbest = fun(xbest)
-        return xbest, fbest
+        best_record: Dict[str, Any] = {}
+        restart_summaries: List[Dict[str, Any]] = []
+
+        for idx, x0 in enumerate(starts):
+            res = minimize(fun, x0, method="Nelder-Mead",
+                           options=dict(maxiter=maxiter, xatol=5e-3, fatol=5e-4, disp=False))
+            xbest = proj(res.x)
+            cost = float(res.fun)
+            diagnostics = getattr(score_for_params, "last_eval", None)
+            pareto_snapshot = getattr(score_for_params, "_pareto", [])
+            restart_summary = dict(
+                restart=idx,
+                start=x0.tolist(),
+                xbest=xbest.tolist(),
+                cost=cost,
+                diagnostics=diagnostics,
+                pareto=[dict(theta=r["theta"].tolist(), J=r["J"],
+                             detune=r["detune"], min_Q=r["min_Q"])
+                        for r in pareto_snapshot]
+            )
+            restart_summaries.append(restart_summary)
+            if not best_record or cost < best_record["cost"]:
+                best_record = dict(
+                    theta=xbest,
+                    cost=cost,
+                    diagnostics=diagnostics,
+                    restart=idx,
+                    optimizer_result=res)
+
+            # restart Nelder-Mead around best found so far
+            if idx + 1 < len(starts) and best_record:
+                starts[idx + 1] = proj(
+                    best_record["theta"] + 0.15 * (starts[idx + 1] - best_record["theta"]))
+
+            if diagnostics and isinstance(diagnostics, dict):
+                dip_summary = diagnostics.get("dips", {})
+                detune_nm = sum(abs(v.get("detune_nm", 0.0))
+                                for v in dip_summary.values()
+                                if isinstance(v, dict) and v.get("detune_nm") is not None)
+                modes_diag = diagnostics.get("modes", {}) if isinstance(
+                    diagnostics.get("modes"), dict) else {}
+                probe_entry = modes_diag.get("probe", {}) if isinstance(
+                    modes_diag, dict) else {}
+                probe_Q = probe_entry.get("Q") if isinstance(
+                    probe_entry, dict) else None
+                print(f"[restart {idx}] cost={cost:.5f}, Σ|detune|≈{detune_nm:.2f} nm, "
+                      f"min_Q_probe={probe_Q if probe_Q is not None else 'n/a'}")
+
+        optimize_geometry_mirrors.last_result = dict(
+            best=best_record,
+            restarts=restart_summaries,
+            pareto=getattr(score_for_params, "_pareto", []),
+            history=getattr(score_for_params, "history", [])
+        )
+        if not best_record:
+            return None, None
+        return best_record.get("theta"), best_record.get("cost")
+
     except Exception as e:
         print("Optimizer failed or SciPy missing:", e)
         # coarse fallback
@@ -354,6 +701,14 @@ def optimize_geometry_mirrors(N_per,
                             x, N_per, dpml, pad_air, pad_sub, resolution, mat_SiN, mat_SiO2)
                         if J < bestJ:
                             bestJ, bestx = J, x
+        optimize_geometry_mirrors.last_result = dict(
+            best=dict(theta=bestx, cost=bestJ,
+                      diagnostics=getattr(score_for_params, "last_eval", None),
+                      restart="grid"),
+            restarts=[],
+            pareto=getattr(score_for_params, "_pareto", []),
+            history=getattr(score_for_params, "history", [])
+        )
         return bestx, bestJ
 
 # ========= end module =========

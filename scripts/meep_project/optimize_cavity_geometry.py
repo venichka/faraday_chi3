@@ -26,7 +26,9 @@ from mode_targeting import (
     optimize_geometry_mirrors,      # optimizer for (tH,tL,L,margin)
     build_stack_from_params,        # geometry builder
     reflectance_spectrum,           # two-run normalized R(λ)
-    fcen, df, nfreq                 # spectrum settings (0.6–2.0 μm)
+    fcen, df, nfreq,                # spectrum settings (0.6–2.0 μm)
+    get_cavity_materials,
+    material_index_at_wavelength
 )
 import meep as mp
 import matplotlib.pyplot as plt
@@ -174,6 +176,13 @@ def main():
                              "tLmin", "tLmax", "margMin", "margMax"),
                     default=(2.0, 5.0, 0.05, 0.60, 0.05, 0.60, 0.0, 0.05),
                     help="Bounds for CLI; internally reordered to (tH,tL,L,margin).")
+    ap.add_argument("--materials", type=str, default="library",
+                    choices=("library", "constant"),
+                    help="Material model for Si3N4/SiO2 (library uses mp.materials.* dispersive data).")
+    ap.add_argument("--nH", type=float, default=None,
+                    help="High-index value if --materials constant (defaults to existing data).")
+    ap.add_argument("--nL", type=float, default=None,
+                    help="Low-index value if --materials constant (defaults to existing data).")
     ap.add_argument("--outfile", type=str, default="optimize_report.json",
                     help="Optimization report JSON filename")
     ap.add_argument("--out-geom", type=str, default="optimized_geometry.json",
@@ -183,6 +192,8 @@ def main():
     args = ap.parse_args()
 
     # ---------- input: either JSON or base module ----------
+    use_library = (args.materials == "library")
+
     if args.in_json:
         if geo_read_json is None:
             raise RuntimeError(
@@ -190,7 +201,15 @@ def main():
         spec_in = geo_read_json(args.in_json)
         n_SiN, n_SiO2, dpml, pad_air, pad_sub, N_per_j, t_SiN_j, t_SiO2_j, L_cav_j = _infer_from_json(
             spec_in)
-        mat_SiN, mat_SiO2 = mp.Medium(index=n_SiN), mp.Medium(index=n_SiO2)
+        if use_library:
+            mat_SiN, mat_SiO2 = get_cavity_materials("library", n_SiN, n_SiO2)
+            n_SiN = material_index_at_wavelength(mat_SiN, 0.8)
+            n_SiO2 = material_index_at_wavelength(mat_SiO2, 0.8)
+        else:
+            n_high = args.nH if args.nH is not None else n_SiN
+            n_low = args.nL if args.nL is not None else n_SiO2
+            mat_SiN, mat_SiO2 = get_cavity_materials("constant", n_high, n_low)
+            n_SiN, n_SiO2 = n_high, n_low
         resolution = 100  # JSON does not encode resolution; pick default or override
         N_per = args.Nper if args.Nper is not None else N_per_j
         tH0 = args.tH0 if args.tH0 != 0.260 else t_SiN_j
@@ -202,13 +221,22 @@ def main():
         base = _discover_base_module(args.base)
         mat_SiN, mat_SiO2, resolution, dpml, pad_air, pad_sub, \
             N_per_b, t_SiN_b, t_SiO2_b, L_cav_b = _infer_from_base(base)
+        if use_library:
+            mat_SiN, mat_SiO2 = get_cavity_materials("library")
+        else:
+            n_base_high = getattr(mat_SiN, "index", None)
+            n_base_low = getattr(mat_SiO2, "index", None)
+            n_high = args.nH if args.nH is not None else (float(n_base_high) if n_base_high is not None else 2.0)
+            n_low = args.nL if args.nL is not None else (float(n_base_low) if n_base_low is not None else 1.45)
+            mat_SiN, mat_SiO2 = get_cavity_materials("constant", n_high, n_low)
+        n_SiN = material_index_at_wavelength(mat_SiN, 0.8)
+        n_SiO2 = material_index_at_wavelength(mat_SiO2, 0.8)
         N_per = args.Nper if args.Nper is not None else N_per_b
         tH0 = args.tH0 if args.tH0 != 0.260 else t_SiN_b
         tL0 = args.tL0 if args.tL0 != 0.160 else t_SiO2_b
         L0 = args.L0 if args.L0 != 1.543 else L_cav_b
         # Indices for JSON export:
-        n_SiN, n_SiO2 = getattr(mat_SiN, "index", 2.0), getattr(
-            mat_SiO2, "index", 1.45)
+        # n_SiN / n_SiO2 already set via material_index_at_wavelength
 
     # ---------- optimize mirrors + cavity ----------
     # Reorder CLI bounds (Lmin.. → internal (tH,tL,L,margin))
@@ -257,12 +285,10 @@ def main():
     fig.savefig(args.plot, dpi=200)
 
     # ---------- write geometry JSON ----------
-    # Use indices from materials (module) if available; otherwise from JSON input branch above
-    if "n_SiN" not in locals():
-        n_SiN, n_SiO2 = getattr(mat_SiN, "index", 2.0), getattr(
-            mat_SiO2, "index", 1.45)
+    n_export_SiN = material_index_at_wavelength(mat_SiN, 0.8)
+    n_export_SiO2 = material_index_at_wavelength(mat_SiO2, 0.8)
     spec_out = _make_geometry_spec(
-        n_SiN, n_SiO2, dpml, pad_air, pad_sub, N_per, t_SiN_opt, t_SiO2_opt, L_cav_opt
+        n_export_SiN, n_export_SiO2, dpml, pad_air, pad_sub, N_per, t_SiN_opt, t_SiO2_opt, L_cav_opt
     )
     if geo_write_json is None:
         with open(args.out_geom, "w") as f:
