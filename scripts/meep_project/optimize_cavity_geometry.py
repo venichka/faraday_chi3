@@ -175,7 +175,7 @@ def main():
     ap.add_argument("--bounds", type=float, nargs=8,
                     metavar=("Lmin", "Lmax", "tHmin", "tHmax",
                              "tLmin", "tLmax", "margMin", "margMax"),
-                    default=(2.0, 5.0, 0.05, 0.60, 0.05, 0.60, 0.0, 0.05),
+                    default=(1.0, 4.3, 0.05, 0.60, 0.05, 0.60, 0.0, 0.05),
                     help="Bounds for CLI; internally reordered to (tH,tL,L,margin).")
     ap.add_argument("--materials", type=str, default="library",
                     choices=("library", "constant", "fit"),

@@ -319,6 +319,8 @@ def run_simulation(args: argparse.Namespace) -> None:
         index_low=args.nL if args.nL is not None else default_low,
         sin_csv=args.sin_fit,
         sio2_csv=args.sio2_fit,
+        lam_min=args.fit_window[0],
+        lam_max=args.fit_window[1],
         fit_poles=args.fit_poles,
     )
     materials["SiN"] = mat_sin
@@ -515,13 +517,17 @@ def parse_args() -> argparse.Namespace:
                         help="CSV with wavelength_nm,n,k for SiN when --materials fit.")
     parser.add_argument("--sio2-fit", type=str, default=None,
                         help="CSV with wavelength_nm,n,k for SiO2 when --materials fit.")
+    parser.add_argument("--fit_window", type=int, nargs=2,
+                        metavar=("lambda_min", "lambda_max"),
+                        default=(600, 2000),
+                        help="Lower and upper wavelength limits for fitting epsilon.")
     parser.add_argument("--fit-poles", type=int, default=6,
                         help="Number of Lorentz/Drude poles when fitting dispersive materials.")
     return parser.parse_args()
 
 
 if __name__ == "__main__":
-    args = parse_args()
-    if args.materials == "fit" and (args.sin_fit is None or args.sio2_fit is None):
-        raise SystemExit("For --materials fit provide both --sin-fit and --sio2-fit CSV paths.")
-    run_simulation(args)
+    # args = parse_args()
+    # if args.materials == "fit" and (args.sin_fit is None or args.sio2_fit is None):
+    #     raise SystemExit("For --materials fit provide both --sin-fit and --sio2-fit CSV paths.")
+    run_simulation()
