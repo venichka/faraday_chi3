@@ -228,14 +228,14 @@ def build_geometry_from_spec(
     return geometry, cell_z, cavity_center
 
 
-def load_geometry(path: Path, core_span_xy: float, dpml_z: float) -> Tuple[List[mp.Block], float, float, Dict[str, mp.Medium]]:
+def load_geometry(path: Path, core_span_xy: float, dpml_z: float) -> Tuple[List[mp.Block], float, float, Dict[str, mp.Medium], Dict]:
     spec = load_geometry_json(str(path))
     mats = {
         name: material_factory(name, entry, mp)
         for name, entry in spec["materials"].items()
     }
     geometry, cell_z, cavity_center = build_geometry_from_spec(spec, mats, core_span_xy, dpml_z)
-    return geometry, cell_z, cavity_center, mats
+    return geometry, cell_z, cavity_center, mats, spec
 
 
 # --------------------------------------------------------------------------- #
@@ -296,8 +296,8 @@ class EnvelopeTracker:
 # --------------------------------------------------------------------------- #
 # Main simulation driver
 # --------------------------------------------------------------------------- #
-def run_simulation(mode: str) -> None:
-    run = quick_params() if mode == "quick" else full_params()
+def run_simulation(args: argparse.Namespace) -> None:
+    run = quick_params() if args.mode == "quick" else full_params()
 
     modes = load_cavity_modes(Path("cavity_modes.json"))
     spec_path = Path("optimized_geometry.json")
@@ -305,20 +305,25 @@ def run_simulation(mode: str) -> None:
         raise FileNotFoundError("optimized_geometry.json not found.")
 
     core_span = run.span_xy
-    geometry, cell_z, cavity_center, materials = load_geometry(
+    geometry, cell_z, cavity_center, materials, spec = load_geometry(
         spec_path,
         core_span_xy=core_span,
         dpml_z=run.dpml_z,
     )
 
-    # Override library materials for SiN/SiO2 if provided
-    mat_sin = materials.get("Si3N4_NIR")
-    if mat_sin is None:
-        mat_sin, _ = get_cavity_materials("library")
-    mat_sio2 = materials.get("SiO2")
-    if mat_sio2 is None:
-        _, mat_sio2 = get_cavity_materials("library")
-        materials["SiO2"] = mat_sio2
+    default_high = float(getattr(materials.get("SiN"), "index", 2.0))
+    default_low = float(getattr(materials.get("SiO2"), "index", 1.45))
+    mat_sin, mat_sio2 = get_cavity_materials(
+        model=args.materials,
+        index_high=args.nH if args.nH is not None else default_high,
+        index_low=args.nL if args.nL is not None else default_low,
+        sin_csv=args.sin_fit,
+        sio2_csv=args.sio2_fit,
+        fit_poles=args.fit_poles,
+    )
+    materials["SiN"] = mat_sin
+    materials["SiO2"] = mat_sio2
+    geometry, cell_z, cavity_center = build_geometry_from_spec(spec, materials, core_span, run.dpml_z)
 
     # Apply χ³ scaling for SiN
     freq_probe = modes["probe"]["frequency"]
@@ -463,9 +468,9 @@ def run_simulation(mode: str) -> None:
         xy = field_maps["xy"]
         fig3, ax3 = plt.subplots(figsize=(5, 4))
         im = ax3.imshow(
-        np.abs(xy.T),
-        origin="lower",
-        extent=(-0.5 * core_span, 0.5 * core_span, -0.5 * core_span, 0.5 * core_span),
+            np.abs(xy.T),
+            origin="lower",
+            extent=(-0.5 * core_span, 0.5 * core_span, -0.5 * core_span, 0.5 * core_span),
             cmap="inferno",
             aspect="equal",
         )
@@ -478,9 +483,9 @@ def run_simulation(mode: str) -> None:
         xz = field_maps["xz"]
         fig4, ax4 = plt.subplots(figsize=(5, 4))
         im = ax4.imshow(
-        np.abs(xz.T),
-        origin="lower",
-        extent=(-0.5 * core_span, 0.5 * core_span, -0.5 * (cell_z - 2 * run.dpml_z), 0.5 * (cell_z - 2 * run.dpml_z)),
+            np.abs(xz.T),
+            origin="lower",
+            extent=(-0.5 * core_span, 0.5 * core_span, -0.5 * (cell_z - 2 * run.dpml_z), 0.5 * (cell_z - 2 * run.dpml_z)),
             cmap="inferno",
             aspect="auto",
         )
@@ -500,9 +505,23 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="3D Faraday rotation simulation.")
     parser.add_argument("--mode", choices=("quick", "full"), default="quick",
                         help="Select quick sanity run or full-resolution simulation.")
+    parser.add_argument("--materials", choices=("library", "constant", "fit"), default="library",
+                        help="Material model for SiN/SiO2.")
+    parser.add_argument("--nH", type=float, default=None,
+                        help="Override high-index value when --materials constant.")
+    parser.add_argument("--nL", type=float, default=None,
+                        help="Override low-index value when --materials constant.")
+    parser.add_argument("--sin-fit", type=str, default=None,
+                        help="CSV with wavelength_nm,n,k for SiN when --materials fit.")
+    parser.add_argument("--sio2-fit", type=str, default=None,
+                        help="CSV with wavelength_nm,n,k for SiO2 when --materials fit.")
+    parser.add_argument("--fit-poles", type=int, default=6,
+                        help="Number of Lorentz/Drude poles when fitting dispersive materials.")
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = parse_args()
-    run_simulation(args.mode)
+    if args.materials == "fit" and (args.sin_fit is None or args.sio2_fit is None):
+        raise SystemExit("For --materials fit provide both --sin-fit and --sio2-fit CSV paths.")
+    run_simulation(args)

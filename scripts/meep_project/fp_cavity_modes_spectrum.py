@@ -1,5 +1,4 @@
 import json
-from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
@@ -9,6 +8,7 @@ import meep as mp
 import numpy as np
 
 from geometry_io import load_params
+from mode_targeting import get_cavity_materials, material_index_at_wavelength
 
 
 @dataclass(frozen=True)
@@ -22,6 +22,18 @@ class CavityConfig:
     dpml: float
     resolution: int
     cell_margin: float
+
+
+MATERIAL_MODEL = dict(
+    mode="fit",        # options: "library", "constant", "fit"
+    sin_csv="si3n4.csv",
+    sio2_csv="sio2.csv",
+    lam_min=600,
+    lam_max=2000,
+    fit_poles=2,
+    n_high=2.0,
+    n_low=1.45,
+)
 
 
 def load_cavity_config(prefer: str = "report") -> CavityConfig:
@@ -40,56 +52,6 @@ def load_cavity_config(prefer: str = "report") -> CavityConfig:
     )
 
 
-def _instantiate_medium(candidate) -> Optional[mp.Medium]:
-    if candidate is None:
-        return None
-    if isinstance(candidate, mp.Medium):
-        return deepcopy(candidate)
-    if callable(candidate):
-        maybe = candidate()
-        if isinstance(maybe, mp.Medium):
-            return maybe
-    return None
-
-
-def _material_from_library(names: Sequence[str]) -> Optional[mp.Medium]:
-    try:
-        from meep import materials  # type: ignore
-    except Exception:
-        return None
-
-    for name in names:
-        candidate = getattr(materials, name, None)
-        mat = _instantiate_medium(candidate)
-        if mat is not None:
-            return mat
-    return None
-
-
-def _enforce_linear_response(mat: mp.Medium) -> mp.Medium:
-    """Ensure the material behaves linearly by zeroing nonlinear terms."""
-    if hasattr(mat, "chi2"):
-        mat.chi2 = 0.0
-    if hasattr(mat, "chi3"):
-        mat.chi3 = 0.0
-    return mat
-
-
-def dispersive_materials() -> Tuple[mp.Medium, mp.Medium]:
-    """
-    Retrieve dispersive Si3N4 and SiO2 from Meep's material library.
-    Falls back to lossless constant-index media if unavailable.
-    """
-    mat_sin = _material_from_library(["Si3N4_NIR", "SiN", "SiliconNitride"])
-    mat_sio2 = _material_from_library(["SiO2", "FusedSilica", "Silica"])
-
-    if mat_sin is None:
-        print("[WARN] Dispersive Si3N4 material not found in library; using index=2.0.")
-        mat_sin = mp.Medium(index=2.0)
-    if mat_sio2 is None:
-        print("[WARN] Dispersive SiO2 material not found in library; using index=1.45.")
-        mat_sio2 = mp.Medium(index=1.45)
-    return _enforce_linear_response(mat_sin), _enforce_linear_response(mat_sio2)
 
 
 def stack_length(cfg: CavityConfig) -> float:
@@ -457,7 +419,16 @@ def summarize_modes(label: str, modes: Sequence[HarminvMode]) -> None:
 
 def main():
     cfg = load_cavity_config()
-    mat_sin, mat_sio2 = dispersive_materials()
+    mat_sin, mat_sio2 = get_cavity_materials(
+        model=MATERIAL_MODEL.get("mode", "library"),
+        index_high=MATERIAL_MODEL.get("n_high", 2.0),
+        index_low=MATERIAL_MODEL.get("n_low", 1.45),
+        sin_csv=MATERIAL_MODEL.get("sin_csv"),
+        sio2_csv=MATERIAL_MODEL.get("sio2_csv"),
+        lam_min=MATERIAL_MODEL.get("lam_min", None),
+        lam_max=MATERIAL_MODEL.get("lam_max", None),
+        fit_poles=MATERIAL_MODEL.get("fit_poles", 2),
+    )
     geometry, cell_z = build_geometry(cfg, mat_sin, mat_sio2)
 
     plot_epsilon(cfg, geometry, cell_z,

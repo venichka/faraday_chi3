@@ -8,17 +8,15 @@ Fit (n,k) data to a Meep-style sum of Lorentzian susceptibilities and plot ε(λ
 - Material construction matches your attached example:
     * If f0 == 0  -> DrudeSusceptibility with sigma = A (and frequency=1.0)
     * If f0 > 0   -> LorentzianSusceptibility with sigma = A / f0**2
-  (See Meep docs for susceptibility parameters.)  # refs: Materials / Python API
 
 Model (Meep frequency f = 1/λ_μm):
     ε(f) = ε_inf + sum_j A_j / ( f0_j**2 - f**2 - i*γ_j*f )
 
-NOTE: The fitter keeps the same parameter layout as before:
+NOTE: Parameter layout:
     params = [eps_inf, f0_1..f0_N, gamma_1..gamma_N, A_1..A_N]
 """
 
 import sys
-import math
 import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
@@ -27,8 +25,11 @@ from pathlib import Path
 FILE_SIO2 = "sio2_from_slowsio2_2min42s_fastsn_3min2s_no6_tape_backside.csv"
 FILE_SINX = "sn_from_slowsio2_2min42s_fastsn_3min2s_no6_tape_backside.csv"
 FIT_FILE = FILE_SINX     # choose which file to fit
-N_POLES = 10            # number of Lorentz poles
-OUT_PREFIX = "fit_sinx"   # prefix for outputs (png, params.py)
+N_POLES = 2             # number of Lorentz/Drude poles
+OUT_PREFIX = "fit_sinx"   # prefix for outputs (png)
+# Optional wavelength window (nm). Use None to disable.
+LAMBDA_MIN = 600         # e.g., 450.0
+LAMBDA_MAX = 2000         # e.g., 900.0
 # ---------------------
 
 
@@ -36,15 +37,13 @@ OUT_PREFIX = "fit_sinx"   # prefix for outputs (png, params.py)
 def load_nk_csv(path: Path):
     """
     Load CSV with columns: wavelength_nm, n, k (with or without a header).
-    Returns (wl_um, f_meep, eps_real, eps_imag).
+    Returns (wl_nm, wl_um, f_meep, eps_real, eps_imag).
     """
     arr = np.genfromtxt(
         path, delimiter=",", comments="#", dtype=float, invalid_raise=False
     )
-    # If the file has a header, genfromtxt may return NaNs in the first row; drop those.
-    if arr.ndim == 1:
-        raise RuntimeError(f"Could not parse numeric columns from {path}")
-    # Keep only rows with 3 finite columns
+    if arr.ndim != 2 or arr.shape[1] < 3:
+        raise RuntimeError(f"Could not parse 3 numeric columns from {path}")
     mask = np.all(np.isfinite(arr[:, :3]), axis=1)
     arr = arr[mask]
     wl_nm = arr[:, 0]
@@ -56,13 +55,13 @@ def load_nk_csv(path: Path):
     f_meep = 1.0 / wl_um  # Meep frequency units: 1/μm
     # sort by increasing frequency to help optimizers
     order = np.argsort(f_meep)
-    return wl_um[order], f_meep[order], eps_real[order], eps_imag[order]
+    return wl_nm[order], wl_um[order], f_meep[order], eps_real[order], eps_imag[order]
 
 
 # ----------------------------- Fitter (unchanged) ------------------------------
 def eps_model(f, params):
     """
-    Complex ε for Lorentz poles, with the same parameterization as before:
+    Complex ε for Lorentz poles:
     params = [eps_inf, f0_1..f0_N, gamma_1..gamma_N, A_1..A_N]
     """
     n = (len(params) - 1) // 3
@@ -81,7 +80,6 @@ def pack_params(eps_inf, f0, gamma, A):
 
 
 def initial_guess(f, eps_real, n_poles):
-    # crude guesses, same spirit as before
     eps_inf = max(float(np.median(eps_real)), 1.0)
     f0 = np.quantile(f, np.linspace(0.2, 0.8, n_poles))
     gamma = 0.1 * (f.max() - f.min()) * np.ones(n_poles)
@@ -107,22 +105,21 @@ def fit_lorentz(f, eps_real, eps_imag, n_poles=3):
 
     p0 = initial_guess(f, eps_real, n_poles)
     n = n_poles
-    lb = np.concatenate(([-np.inf], 1e-6*np.ones(3*n)))
+    lb = np.concatenate(([-np.inf], 1e-6*np.ones(3*n))
+                        )   # eps_inf free; others >= 0
     ub = np.concatenate(([np.inf],  np.inf*np.ones(3*n)))
     sol = least_squares(resid, p0, bounds=(lb, ub), max_nfev=10000, verbose=1)
     return sol.x, sol.cost, sol.success
 
 
 # ---------------- Material creation (matches your attached example) -------------
-def build_meep_medium_from_params(params):
+def build_meep_medium_from_params(params, tiny=1e-12):
     """
     Build a meep.Medium using the same construction logic as your reference file:
 
       - For each pole:
-          if f0 == 0: use DrudeSusceptibility(frequency=1.0, gamma=γ, sigma=A)
-          else:       use LorentzianSusceptibility(frequency=f0, gamma=γ, sigma=A/f0**2)
-
-    See Meep's susceptibility docs for parameter meanings.  # refs: Materials / Python API
+          if f0 ~ 0: DrudeSusceptibility(frequency=1.0, gamma=γ, sigma=A)
+          else:      LorentzianSusceptibility(frequency=f0, gamma=γ, sigma=A/f0**2)
     """
     try:
         import meep as mp
@@ -141,30 +138,45 @@ def build_meep_medium_from_params(params):
         f0j = float(f0[j])
         gamj = float(gam[j])
         Aj = float(A[j])
-        if f0j == 0.0:
-            # Drude term: use sigma = A (as in your example)
+        if abs(f0j) < tiny:
             E_susceptibilities.append(
                 mp.DrudeSusceptibility(frequency=1.0, gamma=gamj, sigma=Aj)
             )
         else:
-            # Lorentz term: Meep expects sigma consistent with its internal form;
-            # your example converts A -> sigma via division by f0^2
             E_susceptibilities.append(
                 mp.LorentzianSusceptibility(
-                    frequency=f0j,
-                    gamma=gamj,
-                    sigma=Aj / (f0j**2),
+                    frequency=f0j, gamma=gamj, sigma=Aj / (f0j**2)
                 )
             )
-
     return mp.Medium(epsilon=eps_inf, E_susceptibilities=E_susceptibilities)
 
 
 # ---------------------------------- Main ---------------------------------------
 def main():
-    wl_um, f_meep, eps_real, eps_imag = load_nk_csv(Path(FIT_FILE))
+    wl_nm, wl_um, f_meep, eps_real, eps_imag = load_nk_csv(Path(FIT_FILE))
 
-    params, cost, ok = fit_lorentz(f_meep, eps_real, eps_imag, N_POLES)
+    # Apply wavelength window (nm) if provided
+    mask = np.ones_like(wl_nm, dtype=bool)
+    if LAMBDA_MIN is not None:
+        mask &= (wl_nm >= float(LAMBDA_MIN))
+    if LAMBDA_MAX is not None:
+        mask &= (wl_nm <= float(LAMBDA_MAX))
+    if not np.any(mask):
+        raise ValueError(
+            "No data points remain after applying wavelength window.")
+
+    wl_nm = wl_nm[mask]
+    wl_um = wl_um[mask]
+    f_meep_win = f_meep[mask]
+    eps_r_win = eps_real[mask]
+    eps_i_win = eps_imag[mask]
+
+    # sanity: at least a few points vs parameters
+    if f_meep_win.size < max(6, 3*N_POLES):
+        raise ValueError(f"Not enough data ({f_meep_win.size}) for {N_POLES} poles; "
+                         f"need at least ~{max(6, 3*N_POLES)} points.")
+
+    params, cost, ok = fit_lorentz(f_meep_win, eps_r_win, eps_i_win, N_POLES)
     print("\n=== Fit status ===")
     print("success:", ok, "cost:", cost)
     n = (len(params)-1)//3
@@ -180,12 +192,17 @@ def main():
     medium = build_meep_medium_from_params(params)
 
     # Plot comparison of ε from data vs. fitted medium
-    eps_fit = np.array([complex(medium.epsilon(float(f))[0, 0])
-                       for f in f_meep])
+    # medium.epsilon(f) may return scalar or 3x3; handle both robustly.
+    eps_fit = []
+    for f in f_meep_win:
+        val = medium.epsilon(float(f))
+        arr = np.asarray(val)
+        eps_fit.append(arr[0, 0] if arr.ndim >= 2 else arr)
+    eps_fit = np.array(eps_fit, dtype=complex)
 
     plt.figure(figsize=(9, 4.5), dpi=140)
     plt.subplot(1, 2, 1)
-    plt.plot(wl_um, eps_real, "k.", label="data Re{ε}")
+    plt.plot(wl_um, eps_r_win, "k.", label="data Re{ε}")
     plt.plot(wl_um, eps_fit.real, "-", label="fit Re{ε}")
     plt.xlabel("Wavelength (μm)")
     plt.ylabel("Re{ε}")
@@ -194,7 +211,7 @@ def main():
     plt.legend()
 
     plt.subplot(1, 2, 2)
-    plt.plot(wl_um, eps_imag, "k.", label="data Im{ε}")
+    plt.plot(wl_um, eps_i_win, "k.", label="data Im{ε}")
     plt.plot(wl_um, eps_fit.imag, "-", label="fit Im{ε}")
     plt.xlabel("Wavelength (μm)")
     plt.ylabel("Im{ε}")

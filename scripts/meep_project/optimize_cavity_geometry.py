@@ -37,6 +37,7 @@ import importlib
 import json
 from pathlib import Path
 from datetime import datetime
+from typing import Tuple, List
 
 import numpy as np
 import matplotlib
@@ -177,8 +178,18 @@ def main():
                     default=(2.0, 5.0, 0.05, 0.60, 0.05, 0.60, 0.0, 0.05),
                     help="Bounds for CLI; internally reordered to (tH,tL,L,margin).")
     ap.add_argument("--materials", type=str, default="library",
-                    choices=("library", "constant"),
-                    help="Material model for Si3N4/SiO2 (library uses mp.materials.* dispersive data).")
+                    choices=("library", "constant", "fit"),
+                    help="Material model for Si3N4/SiO2 (library uses mp.materials.*, fit loads CSV dispersive data).")
+    ap.add_argument("--sin-fit", type=str, default=None,
+                    help="CSV with wavelength_nm,n,k for SiN when --materials fit.")
+    ap.add_argument("--sio2-fit", type=str, default=None,
+                    help="CSV with wavelength_nm,n,k for SiO2 when --materials fit.")
+    ap.add_argument("--fit-poles", type=int, default=2,
+                    help="Number of Lorentz/Drude poles when fitting materials (default 6).")
+    ap.add_argument("--fit_window", type=int, nargs=2,
+                    metavar=("lambda_min", "lambda_max"),
+                    default=(600, 2000),
+                    help="Lower and upper wavelength limits for fitting epsilon.")
     ap.add_argument("--nH", type=float, default=None,
                     help="High-index value if --materials constant (defaults to existing data).")
     ap.add_argument("--nL", type=float, default=None,
@@ -192,7 +203,29 @@ def main():
     args = ap.parse_args()
 
     # ---------- input: either JSON or base module ----------
-    use_library = (args.materials == "library")
+    model = args.materials
+
+    if model == "fit" and (args.sin_fit is None or args.sio2_fit is None):
+        raise SystemExit("For --materials fit provide both --sin-fit and --sio2-fit CSV paths.")
+
+    def build_materials(default_high: float, default_low: float) -> Tuple[mp.Medium, mp.Medium]:
+        high = default_high
+        low = default_low
+        if model == "constant":
+            if args.nH is not None:
+                high = args.nH
+            if args.nL is not None:
+                low = args.nL
+        return get_cavity_materials(
+            model=model,
+            index_high=high,
+            index_low=low,
+            sin_csv=args.sin_fit,
+            sio2_csv=args.sio2_fit,
+            lam_min=args.fit_window[0],
+            lam_max=args.fit_window[1],
+            fit_poles=args.fit_poles,
+        )
 
     if args.in_json:
         if geo_read_json is None:
@@ -201,15 +234,9 @@ def main():
         spec_in = geo_read_json(args.in_json)
         n_SiN, n_SiO2, dpml, pad_air, pad_sub, N_per_j, t_SiN_j, t_SiO2_j, L_cav_j = _infer_from_json(
             spec_in)
-        if use_library:
-            mat_SiN, mat_SiO2 = get_cavity_materials("library", n_SiN, n_SiO2)
-            n_SiN = material_index_at_wavelength(mat_SiN, 0.8)
-            n_SiO2 = material_index_at_wavelength(mat_SiO2, 0.8)
-        else:
-            n_high = args.nH if args.nH is not None else n_SiN
-            n_low = args.nL if args.nL is not None else n_SiO2
-            mat_SiN, mat_SiO2 = get_cavity_materials("constant", n_high, n_low)
-            n_SiN, n_SiO2 = n_high, n_low
+        mat_SiN, mat_SiO2 = build_materials(n_SiN, n_SiO2)
+        n_SiN = material_index_at_wavelength(mat_SiN, 0.8)
+        n_SiO2 = material_index_at_wavelength(mat_SiO2, 0.8)
         resolution = 100  # JSON does not encode resolution; pick default or override
         N_per = args.Nper if args.Nper is not None else N_per_j
         tH0 = args.tH0 if args.tH0 != 0.260 else t_SiN_j
@@ -219,16 +246,11 @@ def main():
         if not args.base:
             raise SystemExit("Provide --base <module> or --in-json <file>")
         base = _discover_base_module(args.base)
-        mat_SiN, mat_SiO2, resolution, dpml, pad_air, pad_sub, \
+        mat_SiN_base, mat_SiO2_base, resolution, dpml, pad_air, pad_sub, \
             N_per_b, t_SiN_b, t_SiO2_b, L_cav_b = _infer_from_base(base)
-        if use_library:
-            mat_SiN, mat_SiO2 = get_cavity_materials("library")
-        else:
-            n_base_high = getattr(mat_SiN, "index", None)
-            n_base_low = getattr(mat_SiO2, "index", None)
-            n_high = args.nH if args.nH is not None else (float(n_base_high) if n_base_high is not None else 2.0)
-            n_low = args.nL if args.nL is not None else (float(n_base_low) if n_base_low is not None else 1.45)
-            mat_SiN, mat_SiO2 = get_cavity_materials("constant", n_high, n_low)
+        default_high = float(getattr(mat_SiN_base, "index", 2.0))
+        default_low = float(getattr(mat_SiO2_base, "index", 1.45))
+        mat_SiN, mat_SiO2 = build_materials(default_high, default_low)
         n_SiN = material_index_at_wavelength(mat_SiN, 0.8)
         n_SiO2 = material_index_at_wavelength(mat_SiO2, 0.8)
         N_per = args.Nper if args.Nper is not None else N_per_b

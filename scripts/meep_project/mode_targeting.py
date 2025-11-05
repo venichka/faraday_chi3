@@ -92,13 +92,21 @@ def _linearize_medium(mat: mp.Medium) -> mp.Medium:
     return mat
 
 
-def get_cavity_materials(model: str = "library",
-                         index_high: float = 2.0,
-                         index_low: float = 1.45) -> Tuple[mp.Medium, mp.Medium]:
+def get_cavity_materials(
+    model: str = "library",
+    index_high: float = 2.0,
+    index_low: float = 1.45,
+    sin_csv: Optional[str] = None,
+    sio2_csv: Optional[str] = None,
+    lam_min: Optional[int] = None,
+    lam_max: Optional[int] = None,
+    fit_poles: int = 6,
+) -> Tuple[mp.Medium, mp.Medium]:
     """
     Return (SiN, SiO2) media according to the requested model:
       • "library": try mp.materials.Si3N4_NIR and mp.materials.SiO2 (fallback to constants)
       • "constant": simple lossless media with provided indices.
+      • "fit": fit dispersive materials from CSV tables using material_fit.fit_meep_material_from_csv
     Nonlinear susceptibilities are cleared to keep the response linear.
     """
     model_lc = (model or "").lower()
@@ -112,8 +120,26 @@ def get_cavity_materials(model: str = "library",
     elif model_lc == "constant":
         mat_sin = mp.Medium(index=index_high)
         mat_sio2 = mp.Medium(index=index_low)
+    elif model_lc == "fit":
+        if sin_csv is None or sio2_csv is None:
+            raise ValueError("Fit model requires sin_csv and sio2_csv paths.")
+        try:
+            from material_fit import fit_meep_material_from_csv
+        except Exception as exc:
+            raise RuntimeError(
+                "material_fit module (with scipy) is required for 'fit' materials."
+            ) from exc
+        mat_sin = fit_meep_material_from_csv(
+            sin_csv, material_name="SiN_fit", n_poles=fit_poles,
+            lambda_min=lam_min, lambda_max=lam_max
+        )
+        mat_sio2 = fit_meep_material_from_csv(
+            sio2_csv, material_name="SiO2_fit", n_poles=fit_poles
+        )
     else:
-        raise ValueError(f"Unknown material model '{model}'. Expected 'library' or 'constant'.")
+        raise ValueError(
+            f"Unknown material model '{model}'. Expected 'library', 'constant', or 'fit'."
+        )
     return _linearize_medium(mat_sin), _linearize_medium(mat_sio2)
 
 
