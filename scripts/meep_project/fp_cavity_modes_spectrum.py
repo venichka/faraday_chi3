@@ -1,4 +1,3 @@
-import itertools
 import json
 from copy import deepcopy
 from dataclasses import dataclass
@@ -174,7 +173,7 @@ N_FREQ = 800
 # Time controls
 HARMINV_RUN_TIME = 600
 DESIRED_PUMP_SEPARATION_UM = 0.050
-MIN_PUMP_SEPARATION_UM = 0.040
+MIN_PUMP_SEPARATION_UM = 0.020
 
 
 def plot_epsilon(cfg: CavityConfig,
@@ -270,8 +269,8 @@ def epsilon_profile(geometry: Sequence[mp.Block],
 
 def find_reflectance_dips(wl: np.ndarray,
                           R: np.ndarray,
-                          prominence: float = 0.01,
-                          width: int = 8) -> List[Dict[str, float]]:
+                          prominence: float = 0.003,
+                          width: int = 3) -> List[Dict[str, float]]:
     dips: List[Dict[str, float]] = []
     try:
         from scipy.signal import find_peaks  # type: ignore
@@ -280,8 +279,10 @@ def find_reflectance_dips(wl: np.ndarray,
         for idx in peaks:
             dips.append(dict(index=int(idx), lam=float(wl[idx]), R=float(R[idx])))
     except Exception:
+        pass
+    if len(dips) < 2:
         for idx in range(1, len(R) - 1):
-            if R[idx] < R[idx - 1] and R[idx] < R[idx + 1]:
+            if R[idx] <= R[idx - 1] and R[idx] < R[idx + 1]:
                 dips.append(dict(index=int(idx), lam=float(wl[idx]), R=float(R[idx])))
     dips.sort(key=lambda d: d["lam"])
     return dips
@@ -296,37 +297,62 @@ def nearest_dip(dips: Sequence[Dict[str, float]],
     return dict(best)
 
 
+def select_pump_center(dips: Sequence[Dict[str, float]],
+                       nominal: float = 1.60,
+                       window: Tuple[float, float] = (1.4, 1.7)) -> float:
+    if not dips:
+        return nominal
+    scoped = [d for d in dips if window[0] <= d["lam"] <= window[1]]
+    pool = scoped if scoped else dips
+    best = min(pool, key=lambda d: abs(d["lam"] - nominal))
+    return float(best["lam"])
+
+
 def select_pump_dips(dips: Sequence[Dict[str, float]],
-                     lam1_target: float,
-                     lam2_target: float,
-                     desired_sep: float,
-                     min_sep: float) -> Tuple[Dict[str, float], Dict[str, float], float]:
-    window = [min(lam1_target, lam2_target) - 0.25, max(lam1_target, lam2_target) + 0.25]
-    candidates = [d for d in dips if window[0] <= d["lam"] <= window[1]]
-    if len(candidates) < 2:
-        raise RuntimeError("Not enough dips in pump window.")
-    best_pair = None
-    best_cost = float("inf")
-    best_sep = 0.0
-    for d1, d2 in itertools.combinations(candidates, 2):
-        lam_low, lam_high = sorted([d1["lam"], d2["lam"]])
-        sep = lam_high - lam_low
-        cost = abs(lam_low - lam1_target) + abs(lam_high - lam2_target)
-        cost += 3.0 * abs(sep - desired_sep)
+                     lam_center: float = 1.60,
+                     window_half: float = 0.25,
+                     min_sep: float = MIN_PUMP_SEPARATION_UM,
+                     desired_sep: float = DESIRED_PUMP_SEPARATION_UM) -> Tuple[Dict[str, float], Dict[str, float]]:
+    low = lam_center - window_half
+    high = lam_center + window_half
+    ordered = sorted({d["lam"]: d for d in dips}.values(), key=lambda d: d["lam"])
+    if len(ordered) < 2:
+        raise RuntimeError("Not enough reflectance dips near pump band.")
+
+    feasible: List[Tuple[float, Dict[str, float], Dict[str, float]]] = []
+    for i in range(len(ordered) - 1):
+        d1 = ordered[i]
+        d2 = ordered[i + 1]
+        lam1, lam2 = d1["lam"], d2["lam"]
+        center = 0.5 * (lam1 + lam2)
+        sep = lam2 - lam1
+        within = (low <= lam1 <= high) or (low <= lam2 <= high) or (low <= center <= high)
+        if not within:
+            continue
+        cost = 6.0 * abs(center - lam_center) + abs(sep - desired_sep)
         if sep < min_sep:
-            cost += 10.0 * (min_sep - sep)
-        if cost < best_cost:
-            best_cost = cost
-            best_pair = (dict(d1), dict(d2))
-            best_sep = sep
-    if best_pair is None:
-        raise RuntimeError("Failed to choose pump dips.")
-    d_low, d_high = best_pair
+            cost += 200.0 * (min_sep - sep)
+        feasible.append((cost, dict(d1), dict(d2)))
+
+    if not feasible:
+        for i in range(len(ordered) - 1):
+            d1 = ordered[i]
+            d2 = ordered[i + 1]
+            lam1, lam2 = d1["lam"], d2["lam"]
+            center = 0.5 * (lam1 + lam2)
+            sep = lam2 - lam1
+            cost = 10.0 * abs(center - lam_center) + abs(sep - desired_sep)
+            if sep < min_sep:
+                cost += 300.0 * (min_sep - sep)
+            feasible.append((cost, dict(d1), dict(d2)))
+
+    if not feasible:
+        raise RuntimeError("Unable to choose pump dips.")
+
+    _, d_low, d_high = min(feasible, key=lambda item: item[0])
     if d_low["lam"] > d_high["lam"]:
         d_low, d_high = d_high, d_low
-    d_low["separation_um"] = best_sep
-    d_high["separation_um"] = best_sep
-    return d_low, d_high, best_sep
+    return d_low, d_high
 
 
 def modes_to_freqs(modes: Sequence[HarminvMode], max_modes: int = 3) -> List[float]:
@@ -452,14 +478,10 @@ def main():
     selected_reflectance: Dict[str, Dict[str, float]] = {
         "probe": nearest_dip(dips, 0.800, 0.800),
     }
+    pump_center = select_pump_center(dips)
     try:
-        pump1_dip, pump2_dip, pump_sep = select_pump_dips(
-            dips,
-            lam1_target=1.550,
-            lam2_target=1.650,
-            desired_sep=DESIRED_PUMP_SEPARATION_UM,
-            min_sep=MIN_PUMP_SEPARATION_UM,
-        )
+        pump1_dip, pump2_dip = select_pump_dips(dips, lam_center=pump_center)
+        pump_sep = pump2_dip["lam"] - pump1_dip["lam"]
         selected_reflectance["pump1"] = pump1_dip
         selected_reflectance["pump2"] = pump2_dip
         print(
@@ -470,6 +492,7 @@ def main():
         print("[WARN] Pump dip selection fallback:", exc)
         selected_reflectance["pump1"] = nearest_dip(dips, 1.550, 1.550)
         selected_reflectance["pump2"] = nearest_dip(dips, 1.650, 1.650)
+        pump_sep = selected_reflectance["pump2"]["lam"] - selected_reflectance["pump1"]["lam"]
 
     for role in ["probe", "pump1", "pump2"]:
         lam_min = selected_reflectance[role]["lam"]
@@ -526,7 +549,16 @@ def main():
     freqs_to_plot: List[float] = []
     for modes in mode_sets:
         freqs_to_plot.extend(modes_to_freqs(modes, max_modes=3))
-    plot_mode_profiles(cfg, geometry, cell_z, freqs_to_plot, component=mp.Ex)
+    if freqs_to_plot:
+        plot_mode_profiles(cfg, geometry, cell_z, freqs_to_plot, component=mp.Ex)
+
+    selected_freqs = [resonances[label]["frequency"]
+                      for label in short_labels
+                      if np.isfinite(resonances[label]["frequency"]) and resonances[label]["frequency"] > 0]
+    if selected_freqs:
+        print("[INFO] Plotting selected mode profiles (probe + pumps).")
+        plot_mode_profiles(cfg, geometry, cell_z, selected_freqs, component=mp.Ex,
+                           label="|Ex|(z) selected modes")
 
     # ---- Export resonance summary for nonlinear simulations ----
     if resonances.get("pump1") and resonances.get("pump2"):
