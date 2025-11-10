@@ -51,7 +51,7 @@ CLEARANCE_PML = 0.10   # min gap between any solid/dispersive region and PML [um
 WL_MANUAL = dict(probe=0.80, pump1=1.48, pump2=1.65)  # μm
 
 # Nonlinearity (SI)
-N2_SIN = 0*2.5e-19  # m^2/W
+N2_SIN = 2*2.5e-19  # m^2/W
 
 #%%
 # ------------------------------------------------------------------------------
@@ -77,12 +77,12 @@ class RunParams:
     capture_fields: bool
 
 QUICK = RunParams(
-    resolution=10,
+    resolution=30,
     span_xy=0.8,
     dpml_z=2.0,
     dpml_xy=1.6,
     src_buffer=0.25,
-    runtime_factor=3.0,
+    runtime_factor=0.01,
     pulse_duration_fs=100.0,
     pump_band_nm=10.0,
     probe_band_nm=30.0,
@@ -222,9 +222,9 @@ def assemble_geometry(core_span_xy: float, dpml_z: float, margin_z: float):
     if USE_FITTED_MATERIALS:
         # Edit the arguments below to your CSVs and fit settings
         mat_sin, mat_sio2 = get_cavity_materials(
-            model="constant",
-            index_high=1.0,           # fallback index used inside your helper when needed
-            index_low=1.0,
+            model="fit",
+            index_high=2.0,           # fallback index used inside your helper when needed
+            index_low=1.45,
             sin_csv="si3n4.csv",      # your CSV paths
             sio2_csv="sio2.csv",
             lam_min=600, lam_max=2000,  # nm
@@ -270,7 +270,7 @@ EPS0 = 8.854187817e-12; C0 = 299792458.0
 SCALE_E = 1.0 / (1e-6 * EPS0 * C0)
 
 chi3_si = (4.0/3.0) * N2_SIN * (n_probe_lin**2) * EPS0 * C0
-E_chi3_meep = chi3_si * (SCALE_E**3) * RUN.nonlinear_scale
+E_chi3_meep = chi3_si * (SCALE_E**2) * RUN.nonlinear_scale
 sin_med.E_chi3_diag = mp.Vector3(E_chi3_meep, E_chi3_meep, E_chi3_meep)
 
 # Clearance check: keep solids away from PMLs

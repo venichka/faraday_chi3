@@ -104,15 +104,15 @@ def quick_params() -> RunParams:
         span_xy=0.8,
         dpml_xy=1.0,
         dpml_z=1.0,
-        src_buffer=0.25,
+        src_buffer=2.5,
         runtime_factor=0.35,
         pulse_duration_fs=100.0,
         pump_band_nm=10.0,
         probe_band_nm=30.0,
         pump_intensity_w_cm2=1.0e12,
-        probe_intensity_w_cm2=1.0e4,
+        probe_intensity_w_cm2=5.0e7,
         nonlinear_scale=1.0,
-        sample_dt=0.015,
+        sample_dt=0.05,
         lp_tau=0.8,
         capture_fields=True,
         pump_cutoff=4.0,
@@ -132,7 +132,7 @@ def full_params() -> RunParams:
         pump_band_nm=30.0,
         probe_band_nm=10.0,
         pump_intensity_w_cm2=1.0e12,
-        probe_intensity_w_cm2=1.0e7,
+        probe_intensity_w_cm2=5.0e7,
         nonlinear_scale=1.0,
         sample_dt=0.05,
         lp_tau=0.8,
@@ -397,10 +397,10 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
     freq_sb_minus = max(freq_probe - delta_omega, 0.0)
 
     # Nonlinear response for SiN scaled as requested
-    n2_sin = 2.5e-19  # m²/W
+    n2_sin = 2.0*2.5e-19  # m²/W
     n_linear_probe = material_index_at_wavelength(mat_sin, lam_probe)
     chi3_si = (4.0 / 3.0) * n2_sin * (n_linear_probe**2) * EPS0 * C0
-    e_chi3_meep = chi3_si * (SCALE_E**3) * run.nonlinear_scale
+    e_chi3_meep = chi3_si * (SCALE_E**2) * run.nonlinear_scale
     mat_sin.E_chi3_diag = mp.Vector3(e_chi3_meep, e_chi3_meep, e_chi3_meep)
 
     n_pump1 = material_index_at_wavelength(mat_sin, lam_p1)
@@ -651,15 +651,15 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
             xz_td_snapshot["t"] = float(t)
 
     probe_sample_point = mp.Vector3(0, 0, z_tr + 0.1)
-    # simulation.run(
-    #     mp.at_every(run.sample_dt, sample_callback),
-    #     until_after_sources=mp.stop_when_fields_decayed(
-    #         50, mp.Ex, probe_sample_point, 1e-9
-    #     ),
-    # )
     simulation.run(
-        mp.at_every(run.sample_dt, sample_callback), until=stop_time
+        mp.at_every(run.sample_dt, sample_callback),
+        until_after_sources=mp.stop_when_fields_decayed(
+            50, mp.Ex, probe_sample_point, 1e-9
+        ),
     )
+    # simulation.run(
+    #     mp.at_every(run.sample_dt, sample_callback), until=stop_time
+    # )
 
     # ------------------------------------------------------------------ #
     # Post-processing

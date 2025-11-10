@@ -152,7 +152,7 @@ def material_index_at_wavelength(material: mp.Medium,
     if hasattr(material, "epsilon"):
         try:
             eps_val = material.epsilon(freq)
-            eps_real = float(np.real(eps_val))
+            eps_real = float(np.real(eps_val)[0, 0])
             if np.isfinite(eps_real) and eps_real > 1e-9:
                 return float(np.sqrt(eps_real))
         except Exception:
