@@ -38,7 +38,9 @@ MATERIAL_MODEL = dict(
 
 def load_cavity_config(prefer: str = "report") -> CavityConfig:
     """Load the cavity definition produced by the optimizer."""
-    params = load_params(prefer=prefer)
+    params = load_params(prefer=prefer,
+                         report_json="optimize_report_experiment.json",
+                         geom_json="optimized_geometry_experiment.json")
     return CavityConfig(
         t_SiN=float(params["t_SiN"]),
         t_SiO2=float(params["t_SiO2"]),
@@ -261,7 +263,7 @@ def nearest_dip(dips: Sequence[Dict[str, float]],
 
 def select_pump_center(dips: Sequence[Dict[str, float]],
                        nominal: float = 1.60,
-                       window: Tuple[float, float] = (1.4, 1.7)) -> float:
+                       window: Tuple[float, float] = (1.45, 1.75)) -> float:
     if not dips:
         return nominal
     scoped = [d for d in dips if window[0] <= d["lam"] <= window[1]]
@@ -272,7 +274,7 @@ def select_pump_center(dips: Sequence[Dict[str, float]],
 
 def select_pump_dips(dips: Sequence[Dict[str, float]],
                      lam_center: float = 1.60,
-                     window_half: float = 0.25,
+                     window_half: float = 0.15,
                      min_sep: float = MIN_PUMP_SEPARATION_UM,
                      desired_sep: float = DESIRED_PUMP_SEPARATION_UM) -> Tuple[Dict[str, float], Dict[str, float]]:
     low = lam_center - window_half
@@ -449,7 +451,7 @@ def main():
     selected_reflectance: Dict[str, Dict[str, float]] = {
         "probe": nearest_dip(dips, 0.800, 0.800),
     }
-    pump_center = select_pump_center(dips)
+    pump_center = select_pump_center(dips, 1.7, window=[1.55,1.8])
     try:
         pump1_dip, pump2_dip = select_pump_dips(dips, lam_center=pump_center)
         pump_sep = pump2_dip["lam"] - pump1_dip["lam"]

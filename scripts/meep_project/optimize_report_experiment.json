@@ -1,0 +1,27 @@
+{
+  "best_theta": {
+    "t_SiN_um": 0.26,
+    "t_SiO2_um": 0.16,
+    "L_cav_um": 1.543,
+    "cell_margin_um": 0.0,
+    "N_per": 3
+  },
+  "score": 16.443037700577662,
+  "R_targets": {
+    "800nm": 0.608465510418546,
+    "1550nm": 0.7445952607581638,
+    "1650nm": 0.9634084476859345
+  },
+  "sim": {
+    "resolution_px_per_um": 100,
+    "dpml_um": 1.0,
+    "pad_air_um": 0.8,
+    "pad_sub_um": 3.0,
+    "cell_z_um": 11.278473609962614
+  },
+  "files": {
+    "geometry_json": "optimized_geometry_experiment.json",
+    "plot_png": "reflectance_plot.png"
+  },
+  "notes": "Mirror+cavity optimization with modal (Harminv) and reflectance constraints. Reflectance via incident-field subtraction (get_flux_data / load_minus_flux_data)."
+}
