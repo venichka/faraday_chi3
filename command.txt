@@ -1,0 +1,1 @@
+python pump_intensity_sweep.py --mode quick --materials fit --sin-fit "si3n4.csv" --sio2-fit "sio2.csv" --intensities 1e6,1e7

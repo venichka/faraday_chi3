@@ -104,7 +104,7 @@ def quick_params() -> RunParams:
         span_xy=0.8,
         dpml_xy=1.0,
         dpml_z=1.0,
-        src_buffer=2.5,
+        src_buffer=0.25,
         runtime_factor=0.35,
         pulse_duration_fs=100.0,
         pump_band_nm=10.0,

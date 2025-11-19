@@ -39,8 +39,8 @@ MATERIAL_MODEL = dict(
 def load_cavity_config(prefer: str = "report") -> CavityConfig:
     """Load the cavity definition produced by the optimizer."""
     params = load_params(prefer=prefer,
-                         report_json="optimize_report_experiment.json",
-                         geom_json="optimized_geometry_experiment.json")
+                         report_json="optimize_report_experiment_new.json",
+                         geom_json="optimized_geometry_experiment_new.json")
     return CavityConfig(
         t_SiN=float(params["t_SiN"]),
         t_SiO2=float(params["t_SiO2"]),
