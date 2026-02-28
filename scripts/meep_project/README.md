@@ -168,9 +168,3 @@ Tests cover:
 - objective-score parsing from summary data
 - sweep trace-bundle serialization helpers
 
-## Publishing checklist
-
-- verify conda environment creation
-- run tests and one smoke simulation
-- ensure JSON/plots are not committed unintentionally
-- add project description and sample results in README
