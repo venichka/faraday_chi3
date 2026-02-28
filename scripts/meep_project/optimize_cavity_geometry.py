@@ -30,6 +30,7 @@ import shutil
 import subprocess
 import sys
 import time
+from collections import Counter
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -66,6 +67,12 @@ PROBE_EXACT_UM = 0.8
 PROBE_BAND_MIN_UM = 0.85
 PROBE_BAND_MAX_UM = 0.95
 MIN_PUMP_SEP_UM = 0.02
+PUMP_TARGET1_UM = 1.55
+PUMP_TARGET2_UM = 1.65
+PUMP_TARGET_CENTER_FREQ_INV_UM = 0.5 * (
+    (1.0 / PUMP_TARGET1_UM) + (1.0 / PUMP_TARGET2_UM)
+)
+PUMP_TARGET_DELTA_FREQ_INV_UM = abs((1.0 / PUMP_TARGET1_UM) - (1.0 / PUMP_TARGET2_UM))
 
 
 @dataclass
@@ -106,6 +113,15 @@ class SearchConfig:
 
 _WORKER_MATERIAL_CACHE: Dict[Tuple, Tuple[mp.Medium, mp.Medium]] = {}
 _WORKER_SHARED_CONTEXT: Dict[str, object] = {}
+
+
+def _configure_numeric_threads() -> None:
+    # Outer process parallelism evaluates candidates concurrently; keep inner
+    # numeric libraries single-threaded to avoid oversubscription.
+    os.environ.setdefault("OMP_NUM_THREADS", "1")
+    os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+    os.environ.setdefault("MKL_NUM_THREADS", "1")
+    os.environ.setdefault("NUMEXPR_NUM_THREADS", "1")
 
 
 def build_material_payload(args: argparse.Namespace) -> Dict[str, object]:
@@ -159,6 +175,7 @@ def _get_worker_materials(payload: Dict[str, object]) -> Tuple[mp.Medium, mp.Med
 
 def init_objective_worker(shared_context: Dict[str, object]) -> None:
     global _WORKER_SHARED_CONTEXT
+    _configure_numeric_threads()
     _WORKER_SHARED_CONTEXT = dict(shared_context)
 
 
@@ -254,15 +271,6 @@ def parse_args() -> argparse.Namespace:
         help=(
             "Reference scale for dominant pump monitor amplitude term in "
             "quality-weighted objective: term=dom/(dom+ref)."
-        ),
-    )
-    ap.add_argument(
-        "--quality-hotspot-ref-w-cm2",
-        type=float,
-        default=5e11,
-        help=(
-            "Reference cavity hotspot intensity (W/cm^2) for source-aware term "
-            "in quality-weighted objective: term=I/(I+I_ref)."
         ),
     )
     ap.add_argument(
@@ -827,6 +835,14 @@ def pick_resonant_modes_from_dips(
         return None
 
     # Pump resonances
+    def _freq_of(dip_entry: Dict[str, float]) -> float:
+        lam = float(dip_entry["lam"])
+        return float(1.0 / lam) if lam > 0 else float("nan")
+
+    dip_freqs = np.array([_freq_of(d) for d in dips], dtype=float)
+    dip_rs = np.array([float(d.get("R", 1.0)) for d in dips], dtype=float)
+    f_probe = _freq_of(d_probe)
+
     pumps = []
     for d in dips:
         if not (PUMP_MIN_UM <= d["lam"] <= PUMP_MAX_UM):
@@ -848,9 +864,36 @@ def pick_resonant_modes_from_dips(
             lam2 = max(d1["lam"], d2["lam"])
             if (lam2 - lam1) < MIN_PUMP_SEP_UM:
                 continue
-            c = 0.5 * (lam1 + lam2)
-            sep = lam2 - lam1
-            score = d1["R"] + d2["R"] + 0.35 * abs(c - 1.5) + 0.15 * abs(sep - 0.08)
+
+            f1 = _freq_of(d1)
+            f2 = _freq_of(d2)
+            if (not np.isfinite(f1)) or (not np.isfinite(f2)):
+                continue
+            f_center = 0.5 * (f1 + f2)
+            f_detune = abs(f1 - f2)
+
+            f_sb_plus = f_probe + f_detune
+            f_sb_minus = max(f_probe - f_detune, 0.0)
+
+            sb_plus_idx = int(np.argmin(np.abs(dip_freqs - f_sb_plus)))
+            sb_minus_idx = int(np.argmin(np.abs(dip_freqs - f_sb_minus)))
+            sb_plus_detune = float(abs(dip_freqs[sb_plus_idx] - f_sb_plus))
+            sb_minus_detune = float(abs(dip_freqs[sb_minus_idx] - f_sb_minus))
+            sb_plus_r = float(dip_rs[sb_plus_idx])
+            sb_minus_r = float(dip_rs[sb_minus_idx])
+
+            # Score in frequency-domain to match FWM sideband physics:
+            #  • low pump reflectance
+            #  • pump center/detune close to desired targets
+            #  • sidebands close to existing cavity resonances and not strongly reflected
+            score = float(
+                d1["R"]
+                + d2["R"]
+                + 6.0 * abs(f_center - PUMP_TARGET_CENTER_FREQ_INV_UM)
+                + 4.0 * abs(f_detune - PUMP_TARGET_DELTA_FREQ_INV_UM)
+                + 8.0 * (sb_plus_detune + sb_minus_detune)
+                + 0.5 * (sb_plus_r + sb_minus_r)
+            )
             if best_pair is None or score < best_pair[2]:
                 if d1["lam"] <= d2["lam"]:
                     best_pair = (d1, d2, score)
@@ -880,6 +923,12 @@ def pick_resonant_modes_from_dips(
         "probe_depth": float(d_probe.get("depth", float("nan"))),
         "pump1_depth": float(d_p1.get("depth", float("nan"))),
         "pump2_depth": float(d_p2.get("depth", float("nan"))),
+        "pump_center_frequency_inv_um": float(
+            0.5 * (_freq_of(d_p1) + _freq_of(d_p2))
+        ),
+        "pump_detune_frequency_inv_um": float(
+            abs(_freq_of(d_p1) - _freq_of(d_p2))
+        ),
     }
 
 
@@ -902,11 +951,10 @@ def _summary_float(mapping: Dict[str, Any], path: Sequence[str], default: float 
 
 def _objective_from_summary_data(
     data: Dict,
-    objective_metric: str,
-    quality_std_ref_deg: float,
-    quality_pump_dom_ref: float,
-    quality_hotspot_ref_w_cm2: float,
-    quality_pump_balance_sigma_dec: float,
+    objective_metric: str = "abs_rotation",
+    quality_std_ref_deg: float = 15.0,
+    quality_pump_dom_ref: float = 0.2,
+    quality_pump_balance_sigma_dec: float = 0.35,
 ) -> Tuple[float, float, float, Dict[str, float]]:
     pr = data.get("probe_rotation_deg", {})
     rot_raw = pr.get("final_relative_deg", float("nan"))
@@ -934,7 +982,7 @@ def _objective_from_summary_data(
     probe_quality_factor = float(dolp_term * s0_term * stability_term)
 
     # Source-aware terms from the same nonlinear run (no extra simulations):
-    # dominant pump circular components at output monitor + cavity hotspot intensity.
+    # dominant pump circular components at output monitor.
     p1_dom = _summary_float(
         data,
         ["pump_monitor_metrics", "rms_integrated", "tail_weighted_abs", "pump1_dominant"],
@@ -955,16 +1003,6 @@ def _objective_from_summary_data(
         ["pump_monitor_metrics", "rms_integrated", "dominant_purity", "pump2_tail_weighted"],
         default=np.nan,
     )
-    i1_hot = _summary_float(
-        data,
-        ["kerr_shift_estimate", "local_intensity_w_cm2", "used_for_prediction", "pump1"],
-        default=np.nan,
-    )
-    i2_hot = _summary_float(
-        data,
-        ["kerr_shift_estimate", "local_intensity_w_cm2", "used_for_prediction", "pump2"],
-        default=np.nan,
-    )
 
     dom_geom = np.sqrt(max(p1_dom, 0.0) * max(p2_dom, 0.0)) if np.isfinite(p1_dom) and np.isfinite(p2_dom) else 0.0
     dom_ref = max(float(quality_pump_dom_ref), 1e-12)
@@ -981,11 +1019,7 @@ def _objective_from_summary_data(
     else:
         pump_balance_term = 0.0
 
-    i_hot_geom = np.sqrt(max(i1_hot, 0.0) * max(i2_hot, 0.0)) if np.isfinite(i1_hot) and np.isfinite(i2_hot) else 0.0
-    i_ref = max(float(quality_hotspot_ref_w_cm2), 1.0)
-    hotspot_term = float(i_hot_geom / (i_hot_geom + i_ref))
-
-    source_quality_factor = float(pump_dom_term * pump_purity_term * pump_balance_term * hotspot_term)
+    source_quality_factor = float(pump_dom_term * pump_purity_term * pump_balance_term)
     quality_factor = float(probe_quality_factor * source_quality_factor)
 
     metric = str(objective_metric).lower()
@@ -1010,8 +1044,6 @@ def _objective_from_summary_data(
         "pump_dom_term": float(pump_dom_term),
         "pump_purity_term": float(pump_purity_term),
         "pump_balance_term": float(pump_balance_term),
-        "hotspot_intensity_geom_w_cm2": float(i_hot_geom),
-        "hotspot_term": float(hotspot_term),
         "source_quality_factor": float(source_quality_factor),
         "quality_factor": float(quality_factor),
     }
@@ -1060,13 +1092,32 @@ def objective_run(
 
     # Enforce resonance constraint from structure modes (reflectance dips).
     mats_for_refl = {"SiN": mat_sin, "SiO2": mat_sio2}
-    wl_refl, R_refl = debug_reflectance(
-        geom_spec,
-        mats_for_refl,
-        resolution=int(args.resonance_resolution),
-        nfreq=int(args.resonance_nfreq),
-        decay_threshold=float(args.resonance_decay_threshold),
-    )
+    try:
+        wl_refl, R_refl = debug_reflectance(
+            geom_spec,
+            mats_for_refl,
+            resolution=int(args.resonance_resolution),
+            nfreq=int(args.resonance_nfreq),
+            decay_threshold=float(args.resonance_decay_threshold),
+        )
+    except Exception as exc:
+        return Candidate(
+            profile=profile,
+            N_per=n_per,
+            t_sin_um=design["t_sin_um"],
+            t_sio2_um=design["t_sio2_um"],
+            L_cav_um=design["L_cav_um"],
+            pump1_um=float("nan"),
+            pump2_um=float("nan"),
+            probe_um=float("nan"),
+            probe_reflectance=float("nan"),
+            pump1_reflectance=float("nan"),
+            pump2_reflectance=float("nan"),
+            rotation_deg=float("nan"),
+            abs_rotation_deg=-1.0,
+            objective_summary=f"resonance_eval_failed:{type(exc).__name__}",
+            score=-1.0,
+        )
     dips = find_reflectance_dips(
         wl_refl,
         R_refl,
@@ -1217,11 +1268,17 @@ def objective_run(
     if args.materials == "constant":
         cmd.extend(["--nH", str(float(args.nH)), "--nL", str(float(args.nL))])
 
+    env = os.environ.copy()
+    env.setdefault("OMP_NUM_THREADS", "1")
+    env.setdefault("OPENBLAS_NUM_THREADS", "1")
+    env.setdefault("MKL_NUM_THREADS", "1")
+    env.setdefault("NUMEXPR_NUM_THREADS", "1")
     completed = subprocess.run(
         cmd,
         cwd=str(Path(__file__).resolve().parent),
         capture_output=True,
         text=True,
+        env=env,
     )
     stdout_text = completed.stdout or ""
     stderr_text = completed.stderr or ""
@@ -1295,7 +1352,6 @@ def objective_run(
         objective_metric=str(getattr(args, "objective_metric", "abs_rotation")),
         quality_std_ref_deg=float(getattr(args, "quality_std_ref_deg", 15.0)),
         quality_pump_dom_ref=float(getattr(args, "quality_pump_dom_ref", 0.2)),
-        quality_hotspot_ref_w_cm2=float(getattr(args, "quality_hotspot_ref_w_cm2", 5e11)),
         quality_pump_balance_sigma_dec=float(
             getattr(args, "quality_pump_balance_sigma_dec", 0.35)
         ),
@@ -1895,18 +1951,130 @@ def objective_search_profile(
             if candidate_score(cand_ref) > candidate_score(best):
                 best = cand_ref
 
-        valid = [
-            c
-            for c in cache.values()
-            if np.isfinite(candidate_score(c)) and candidate_score(c) >= 0.0
+        def classify_invalid_reason(summary: str) -> str:
+            s = str(summary or "").strip()
+            if not s:
+                return "unknown_invalid"
+            if s.startswith("failed returncode="):
+                return "solver_runtime_failure"
+            if s.startswith("summary_parse_failed"):
+                return "summary_parse_failed"
+            if s.startswith("worker_exception"):
+                return "worker_exception"
+            if s.startswith("missing_result"):
+                return "missing_result"
+            if s.startswith("resonance_not_found"):
+                return "resonance_not_found"
+            if s.startswith("local_q_not_found"):
+                return "local_q_not_found"
+            if s.startswith("local_q_below_threshold"):
+                return "local_q_below_threshold"
+            if s.startswith("local_depth_below_threshold"):
+                return "local_depth_below_threshold"
+            return s.split(";", 1)[0][:120]
+
+        all_candidates = list(cache.values())
+        all_scores = np.array([candidate_score(c) for c in all_candidates], dtype=float)
+        valid_mask = np.isfinite(all_scores) & (all_scores >= 0.0)
+        valid: List[Candidate] = [
+            c for c, ok in zip(all_candidates, valid_mask.tolist()) if bool(ok)
         ]
+        invalid_reasons = Counter(
+            classify_invalid_reason(c.objective_summary)
+            for c, ok in zip(all_candidates, valid_mask.tolist())
+            if not bool(ok)
+        )
+        valid_scores = np.array([candidate_score(c) for c in valid], dtype=float)
+        valid_abs_rot = np.array([float(c.abs_rotation_deg) for c in valid], dtype=float)
+        seed_scores = np.array([float(item[0]) for item in seeds], dtype=float)
+        seed_valid_scores = seed_scores[np.isfinite(seed_scores) & (seed_scores >= 0.0)]
+        seed_best_score = (
+            float(np.max(seed_valid_scores)) if seed_valid_scores.size else float("nan")
+        )
+        elapsed_s = float(time.time() - profile_start_t)
+        final_best_score = (
+            float(np.max(valid_scores)) if valid_scores.size else float("nan")
+        )
+        score_improvement = (
+            float(final_best_score - seed_best_score)
+            if (np.isfinite(final_best_score) and np.isfinite(seed_best_score))
+            else float("nan")
+        )
+        score_improvement_rel = (
+            float(score_improvement / max(abs(seed_best_score), 1e-12))
+            if np.isfinite(score_improvement) and np.isfinite(seed_best_score)
+            else float("nan")
+        )
+        invalid_reason_counts = {
+            k: int(v) for k, v in sorted(invalid_reasons.items(), key=lambda kv: (-kv[1], kv[0]))
+        }
+
+        success_metrics = {
+            "requested_eval_estimate": int(est_profile_evals) if est_profile_evals is not None else None,
+            "evaluations_attempted": int(eval_counter),
+            "unique_candidates": int(len(all_candidates)),
+            "valid_candidates": int(len(valid)),
+            "invalid_candidates": int(len(all_candidates) - len(valid)),
+            "valid_fraction": (
+                float(len(valid) / max(len(all_candidates), 1))
+                if all_candidates
+                else float("nan")
+            ),
+            "invalid_reason_counts": invalid_reason_counts,
+            "seed_valid_count": int(seed_valid_scores.size),
+            "seed_best_score": float(seed_best_score),
+            "final_best_score": float(final_best_score),
+            "score_improvement_from_seed_best": float(score_improvement),
+            "relative_improvement_from_seed_best": float(score_improvement_rel),
+            "best_improved_vs_seed": bool(
+                np.isfinite(score_improvement) and (score_improvement > 1e-9)
+            ),
+            "valid_score_mean": (
+                float(np.mean(valid_scores)) if valid_scores.size else float("nan")
+            ),
+            "valid_score_median": (
+                float(np.median(valid_scores)) if valid_scores.size else float("nan")
+            ),
+            "valid_score_std": (
+                float(np.std(valid_scores)) if valid_scores.size else float("nan")
+            ),
+            "valid_abs_rotation_mean_deg": (
+                float(np.mean(valid_abs_rot)) if valid_abs_rot.size else float("nan")
+            ),
+            "valid_abs_rotation_median_deg": (
+                float(np.median(valid_abs_rot)) if valid_abs_rot.size else float("nan")
+            ),
+            "elapsed_s": float(elapsed_s),
+            "eval_rate_per_min": (
+                float(eval_counter / max(elapsed_s / 60.0, 1e-9))
+                if eval_counter > 0
+                else 0.0
+            ),
+            "estimated_budget_utilization": (
+                float(eval_counter / max(int(est_profile_evals), 1))
+                if est_profile_evals is not None
+                else float("nan")
+            ),
+        }
+
         if not valid:
-            return None, {"status": "no_valid_candidates", "evaluations": eval_counter}
+            return None, {
+                "status": "no_valid_candidates",
+                "evaluations": int(eval_counter),
+                "objective_metric": str(args.objective_metric),
+                "best_profile": profile,
+                "optimizer": str(args.optimizer).lower(),
+                "workers_requested": int(args.workers),
+                "workers_effective": int(workers),
+                "parallel_enabled": bool(executor is not None),
+                "elapsed_s": float(elapsed_s),
+                "success_metrics": success_metrics,
+            }
         best = max(valid, key=lambda c: candidate_score(c))
 
         diag = {
             "status": "ok",
-            "evaluations": eval_counter,
+            "evaluations": int(eval_counter),
             "best_score": float(candidate_score(best)),
             "best_abs_rotation_deg": float(best.abs_rotation_deg),
             "best_rotation_deg": float(best.rotation_deg),
@@ -1918,7 +2086,8 @@ def objective_search_profile(
             "workers_requested": int(args.workers),
             "workers_effective": int(workers),
             "parallel_enabled": bool(executor is not None),
-            "elapsed_s": float(time.time() - profile_start_t),
+            "elapsed_s": float(elapsed_s),
+            "success_metrics": success_metrics,
         }
         return best, diag
     finally:
@@ -2398,6 +2567,42 @@ def write_outputs(
     else:
         search_desc = "discrete-mirror sweep + budgeted derivative-free local search (Powell)"
 
+    profile_status = {
+        str(name): str(diag.get("status", "unknown"))
+        for name, diag in profile_diags.items()
+    }
+    profiles_ok = [name for name, status in profile_status.items() if status == "ok"]
+    profiles_failed = [name for name, status in profile_status.items() if status != "ok"]
+    per_profile_evals = {
+        str(name): int(diag.get("evaluations", 0))
+        for name, diag in profile_diags.items()
+    }
+    per_profile_best_score = {
+        str(name): float(diag.get("best_score", float("nan")))
+        for name, diag in profile_diags.items()
+    }
+    per_profile_success = {
+        str(name): dict(diag.get("success_metrics", {}))
+        for name, diag in profile_diags.items()
+    }
+    valid_counts = [
+        float(metrics.get("valid_candidates", float("nan")))
+        for metrics in per_profile_success.values()
+        if isinstance(metrics, dict)
+    ]
+    invalid_counts = [
+        float(metrics.get("invalid_candidates", float("nan")))
+        for metrics in per_profile_success.values()
+        if isinstance(metrics, dict)
+    ]
+    valid_count_total = int(np.nansum(valid_counts)) if valid_counts else 0
+    invalid_count_total = int(np.nansum(invalid_counts)) if invalid_counts else 0
+    overall_valid_fraction = (
+        float(valid_count_total / max(valid_count_total + invalid_count_total, 1))
+        if (valid_count_total + invalid_count_total) > 0
+        else float("nan")
+    )
+
     report = {
         "meta": {
             "generated_on": utcnow_iso(),
@@ -2484,7 +2689,6 @@ def write_outputs(
                 "objective_metric": str(args.objective_metric),
                 "quality_std_ref_deg": float(args.quality_std_ref_deg),
                 "quality_pump_dom_ref": float(args.quality_pump_dom_ref),
-                "quality_hotspot_ref_w_cm2": float(args.quality_hotspot_ref_w_cm2),
                 "quality_pump_balance_sigma_dec": float(args.quality_pump_balance_sigma_dec),
             },
             "constraints": {
@@ -2506,6 +2710,24 @@ def write_outputs(
                 "probe_exact_tolerance_um": float(args.probe_exact_tol),
                 "min_pump_separation_um": MIN_PUMP_SEP_UM,
             },
+            "profile_status": profile_status,
+            "profile_diagnostics": profile_diags,
+            "success_metrics": {
+                "profiles_total": int(len(profile_diags)),
+                "profiles_ok": int(len(profiles_ok)),
+                "profiles_failed": int(len(profiles_failed)),
+                "profile_names_ok": profiles_ok,
+                "profile_names_failed": profiles_failed,
+                "overall_success": bool(len(profiles_ok) > 0),
+                "selected_profile": str(best.profile),
+                "selected_score": float(candidate_score(best)),
+                "selected_abs_rotation_deg": float(best.abs_rotation_deg),
+                "per_profile_evaluations": per_profile_evals,
+                "per_profile_best_score": per_profile_best_score,
+                "overall_valid_candidates": int(valid_count_total),
+                "overall_invalid_candidates": int(invalid_count_total),
+                "overall_valid_fraction": float(overall_valid_fraction),
+            },
         },
         "files": {
             "geometry_json": str(out_geom),
@@ -2524,6 +2746,7 @@ def write_outputs(
 
 
 def main() -> None:
+    _configure_numeric_threads()
     args = parse_args()
     mp.verbosity(int(args.meep_verbosity))
 

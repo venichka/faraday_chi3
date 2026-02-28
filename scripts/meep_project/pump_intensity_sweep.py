@@ -23,7 +23,27 @@ from typing import Any, Dict, List, Sequence, Tuple
 import matplotlib.pyplot as plt
 import numpy as np
 
-from faraday_meep_fp_circ import FS_PER_MEEP, run_simulation
+C0 = 299792458.0
+FS_PER_MEEP = (1e-6 / C0) * 1e15
+
+_RUN_SIMULATION = None
+
+
+def _configure_numeric_threads() -> None:
+    # Process-level sweep parallelism should not multiply inner BLAS/OpenMP threads.
+    os.environ.setdefault("OMP_NUM_THREADS", "1")
+    os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+    os.environ.setdefault("MKL_NUM_THREADS", "1")
+    os.environ.setdefault("NUMEXPR_NUM_THREADS", "1")
+
+
+def _get_run_simulation():
+    global _RUN_SIMULATION
+    if _RUN_SIMULATION is None:
+        from faraday_meep_fp_circ import run_simulation as _run_simulation
+
+        _RUN_SIMULATION = _run_simulation
+    return _RUN_SIMULATION
 
 
 @dataclass
@@ -219,12 +239,11 @@ def _build_args(
         calibration_decay_threshold=namespace.calibration_decay_threshold,
         pump1_frequency=None,
         pump2_frequency=None,
-        kerr_xpm_factor=float(namespace.kerr_xpm_factor),
-        kerr_intensity_metric=str(namespace.kerr_intensity_metric),
     )
 
 
 def _run_single_job(job: Tuple[int, float, Dict[str, object]]) -> Tuple[int, float, Dict[str, Any]]:
+    _configure_numeric_threads()
     dim, intensity, args_dict = job
     sim_args = argparse.Namespace(**args_dict)
     point_dir = Path(str(sim_args.output_dir))
@@ -236,6 +255,7 @@ def _run_single_job(job: Tuple[int, float, Dict[str, object]]) -> Tuple[int, flo
     )
 
     _update_point_progress(point_dir, "main_simulation_running")
+    run_simulation = _get_run_simulation()
     result = run_simulation(sim_args)
 
     out_dir = Path(str(result.output_dir))
@@ -745,6 +765,7 @@ def _write_global_markdown_summary(output_root: Path, sweep_report: Dict[str, An
 
 
 def main() -> None:
+    _configure_numeric_threads()
     parser = argparse.ArgumentParser(description="Sweep pump intensity for the Faraday rotation simulation.")
     parser.add_argument(
         "--intensities",
@@ -827,18 +848,6 @@ def main() -> None:
         "--force-rerun",
         action="store_true",
         help="Ignore existing per-point outputs and rerun simulations before aggregation.",
-    )
-    parser.add_argument(
-        "--kerr-xpm-factor",
-        type=float,
-        default=1.0,
-        help="Cross-phase coefficient forwarded to simulation Kerr-shift diagnostics.",
-    )
-    parser.add_argument(
-        "--kerr-intensity-metric",
-        choices=("peak", "p95", "mean", "rms"),
-        default="p95",
-        help="Cavity-line intensity statistic forwarded to simulation Kerr-shift diagnostics.",
     )
     parser.add_argument(
         "--progress-interval",

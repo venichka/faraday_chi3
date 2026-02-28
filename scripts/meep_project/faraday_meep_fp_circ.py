@@ -474,7 +474,9 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
     if dimension not in (1, 3):
         raise ValueError("--dim must be either 1 or 3.")
     is_quasi_1d = dimension == 1
-    # In quasi-1D mode we still use vector fields (Ex/Ey) in a collapsed transverse cell.
+    # Meep strict 1D does not support the dual-polarization source set used here.
+    # Keep an effective 1D model by collapsing transverse cell extents while using
+    # the 3D field solver so Ex/Ey (and Hx/Hy for forward-wave separation) remain available.
     simulation_dimensions = 3
     track_ey = True
     capture_spatial_fields = run.capture_fields and not is_quasi_1d
@@ -531,13 +533,10 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
     # Nonlinear response for SiN scaled as requested
     n2_sin = 2.0*2.5e-19  # m²/W
     n_linear_probe = material_index_at_wavelength(mat_sin, lam_probe)
-    n_linear_p1 = material_index_at_wavelength(mat_sin, lam_p1)
-    n_linear_p2 = material_index_at_wavelength(mat_sin, lam_p2)
-    kerr_xpm_factor = float(getattr(args, "kerr_xpm_factor", 1.0))
-    kerr_intensity_metric = str(getattr(args, "kerr_intensity_metric", "p95")).lower()
     chi3_si = (4.0 / 3.0) * n2_sin * (n_linear_probe**2) * EPS0 * C0
     e_chi3_meep = chi3_si * (SCALE_E**2) * run.nonlinear_scale
     mat_sin.E_chi3_diag = mp.Vector3(e_chi3_meep, e_chi3_meep, e_chi3_meep)
+    n_monitor_medium = float(material_index_at_wavelength(materials["SiO2"], lam_probe))
 
     n_source_medium = 1.0  # sources are injected in air
 
@@ -576,7 +575,12 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
     snapshot_time = 0.6 * stop_time
 
     # Monitors
-    z_tr = 0.5 * cell_z - run.dpml_z - 0.2
+    pad_sub_um = float(spec.get("pads", {}).get("substrate_um", 0.0))
+    z_right_edge_no_pml = 0.5 * cell_z - run.dpml_z
+    if pad_sub_um > 1e-9:
+        z_tr = z_right_edge_no_pml - 0.5 * pad_sub_um
+    else:
+        z_tr = z_right_edge_no_pml - 0.2
     if is_quasi_1d:
         monitor_span = 0.0
         dft_plane_xy = mp.Volume(center=mp.Vector3(0, 0, z_tr), size=mp.Vector3())
@@ -684,19 +688,9 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
     dft_fields = simulation.add_dft_fields(
         monitor_components, dft_freqs, where=dft_plane_xy
     )
+    probe_monitor_components = [mp.Ex, mp.Ey, mp.Hx, mp.Hy]
     trans_monitor = simulation.add_dft_fields(
-        monitor_components, freq_probe, df_probe, nfreq_probe, where=dft_plane_xy
-    )
-    cavity_len_um = float(spec.get("cavity", {}).get("L_um", 0.0))
-    cavity_line_size = mp.Vector3(0, 0, max(cavity_len_um, 1.0 / max(run.resolution, 1)))
-    cavity_line_volume = mp.Volume(
-        center=mp.Vector3(0, 0, cavity_center),
-        size=cavity_line_size,
-    )
-    cavity_line_dft = simulation.add_dft_fields(
-        monitor_components,
-        [freq_p1, freq_p2],
-        where=cavity_line_volume,
+        probe_monitor_components, freq_probe, df_probe, nfreq_probe, where=dft_plane_xy
     )
     dft_fields_xz = (
         simulation.add_dft_fields(monitor_components, dft_freqs, where=dft_plane_xz)
@@ -737,6 +731,8 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
             "Ix": [],
             "Iy": [],
             "S0": [],
+            "S0_backward": [],
+            "forward_fraction": [],
             "S1": [],
             "S2": [],
             "S3": [],
@@ -809,6 +805,28 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
     def stokes_theta_deg(ex_arr: np.ndarray, ey_arr: np.ndarray) -> float:
         return stokes_metrics(ex_arr, ey_arr)["theta_deg"]
 
+    def forward_transverse_fields(
+        ex_arr: np.ndarray | complex,
+        ey_arr: np.ndarray | complex,
+        hx_arr: np.ndarray | complex,
+        hy_arr: np.ndarray | complex,
+        n_medium: float,
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """
+        Decompose total transverse fields into forward/backward waves for z-propagation.
+        For +z in nonmagnetic medium: Hy=n*Ex and Hx=-n*Ey.
+        """
+        ex = np.asarray(ex_arr)
+        ey = np.asarray(ey_arr)
+        hx = np.asarray(hx_arr)
+        hy = np.asarray(hy_arr)
+        n_use = max(float(n_medium), 1e-9)
+        ex_fwd = 0.5 * (ex + hy / n_use)
+        ex_bwd = 0.5 * (ex - hy / n_use)
+        ey_fwd = 0.5 * (ey - hx / n_use)
+        ey_bwd = 0.5 * (ey + hx / n_use)
+        return ex_fwd, ey_fwd, ex_bwd, ey_bwd
+
     def sample_callback(sim: mp.Simulation) -> None:
         t = sim.meep_time()
         time_trace["t"].append(t)
@@ -852,14 +870,25 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
         # Probe polarization angle at center frequency
         ex_c = np.asarray(sim.get_dft_array(trans_monitor, mp.Ex, k_probe_center))
         ey_c = np.asarray(sim.get_dft_array(trans_monitor, mp.Ey, k_probe_center))
-        stokes_c = stokes_metrics(ex_c, ey_c)
+        hx_c = np.asarray(sim.get_dft_array(trans_monitor, mp.Hx, k_probe_center))
+        hy_c = np.asarray(sim.get_dft_array(trans_monitor, mp.Hy, k_probe_center))
+        ex_fwd_c, ey_fwd_c, ex_bwd_c, ey_bwd_c = forward_transverse_fields(
+            ex_c, ey_c, hx_c, hy_c, n_medium=n_monitor_medium
+        )
+        stokes_c = stokes_metrics(ex_fwd_c, ey_fwd_c)
         theta_deg = stokes_c["theta_deg"]
-        ix_c = float(np.mean(np.abs(ex_c) ** 2))
-        iy_c = float(np.mean(np.abs(ey_c) ** 2))
+        ix_c = float(np.mean(np.abs(ex_fwd_c) ** 2))
+        iy_c = float(np.mean(np.abs(ey_fwd_c) ** 2))
+        s0_bwd = float(np.mean(np.abs(ex_bwd_c) ** 2 + np.abs(ey_bwd_c) ** 2))
+        s0_fwd = float(stokes_c["S0"])
+        s0_tot = max(s0_fwd + s0_bwd, 1e-30)
+        forward_fraction = float(s0_fwd / s0_tot)
         time_trace["probe_pol"]["theta_deg"].append(theta_deg)
         time_trace["probe_pol"]["Ix"].append(ix_c)
         time_trace["probe_pol"]["Iy"].append(iy_c)
         time_trace["probe_pol"]["S0"].append(stokes_c["S0"])
+        time_trace["probe_pol"]["S0_backward"].append(s0_bwd)
+        time_trace["probe_pol"]["forward_fraction"].append(forward_fraction)
         time_trace["probe_pol"]["S1"].append(stokes_c["S1"])
         time_trace["probe_pol"]["S2"].append(stokes_c["S2"])
         time_trace["probe_pol"]["S3"].append(stokes_c["S3"])
@@ -1001,6 +1030,8 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
     probe_ix = np.array(time_trace["probe_pol"]["Ix"])
     probe_iy = np.array(time_trace["probe_pol"]["Iy"])
     probe_s0 = np.array(time_trace["probe_pol"]["S0"])
+    probe_s0_backward = np.array(time_trace["probe_pol"]["S0_backward"])
+    probe_forward_fraction = np.array(time_trace["probe_pol"]["forward_fraction"])
     probe_s1 = np.array(time_trace["probe_pol"]["S1"])
     probe_s2 = np.array(time_trace["probe_pol"]["S2"])
     probe_s3 = np.array(time_trace["probe_pol"]["S3"])
@@ -1101,53 +1132,6 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
 
     def safe_ratio(num: float, den: float) -> float:
         return float(num / den) if abs(den) > 1e-30 else float("nan")
-
-    def cavity_field_metrics(freq_idx: int, n_lin: float) -> Dict[str, float]:
-        ex_line = np.ravel(np.asarray(simulation.get_dft_array(cavity_line_dft, mp.Ex, freq_idx)))
-        ey_line = np.ravel(np.asarray(simulation.get_dft_array(cavity_line_dft, mp.Ey, freq_idx)))
-        if ex_line.size == 0 or ey_line.size == 0:
-            return {
-                "samples": 0,
-                "i_peak_w_cm2": float("nan"),
-                "i_p95_w_cm2": float("nan"),
-                "i_mean_w_cm2": float("nan"),
-                "i_rms_w_cm2": float("nan"),
-                "e_peak_meep": float("nan"),
-            }
-        e_mag = np.sqrt(np.abs(ex_line) ** 2 + np.abs(ey_line) ** 2)
-        i_line = meep_field_to_intensity(e_mag, n_lin=max(float(n_lin), 1e-9))
-        i_line = np.asarray(i_line, dtype=float)
-        i_finite = i_line[np.isfinite(i_line)]
-        if i_finite.size == 0:
-            return {
-                "samples": int(e_mag.size),
-                "i_peak_w_cm2": float("nan"),
-                "i_p95_w_cm2": float("nan"),
-                "i_mean_w_cm2": float("nan"),
-                "i_rms_w_cm2": float("nan"),
-                "e_peak_meep": float(np.nanmax(np.asarray(e_mag, dtype=float))),
-            }
-        return {
-            "samples": int(e_mag.size),
-            "i_peak_w_cm2": float(np.max(i_finite)),
-            "i_p95_w_cm2": float(np.percentile(i_finite, 95)),
-            "i_mean_w_cm2": float(np.mean(i_finite)),
-            "i_rms_w_cm2": float(np.sqrt(np.mean(i_finite**2))),
-            "e_peak_meep": float(np.max(np.asarray(e_mag, dtype=float))),
-        }
-
-    def pick_kerr_intensity(metric: Dict[str, float], mode: str) -> float:
-        key = {
-            "peak": "i_peak_w_cm2",
-            "p95": "i_p95_w_cm2",
-            "mean": "i_mean_w_cm2",
-            "rms": "i_rms_w_cm2",
-        }.get(mode, "i_p95_w_cm2")
-        try:
-            out = float(metric.get(key, float("nan")))
-            return out if np.isfinite(out) else float("nan")
-        except Exception:
-            return float("nan")
 
     def weighted_tail_mean(
         values: np.ndarray, weights: np.ndarray, tail_fraction: float = 0.2
@@ -1295,19 +1279,6 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
     probe_s0_tail = weighted_tail_mean(probe_s0_dft, np.ones_like(probe_s0_dft))
     probe_s0_max = float(np.max(probe_s0_dft)) if probe_s0_dft.size else float("nan")
     probe_s0_tail_rel_max = safe_ratio(probe_s0_tail, probe_s0_max)
-
-    cavity_hotspot_p1 = cavity_field_metrics(0, n_linear_p1)
-    cavity_hotspot_p2 = cavity_field_metrics(1, n_linear_p2)
-    i_eff_p1_w_cm2 = pick_kerr_intensity(cavity_hotspot_p1, kerr_intensity_metric)
-    i_eff_p2_w_cm2 = pick_kerr_intensity(cavity_hotspot_p2, kerr_intensity_metric)
-    i_eff_p1_si = max(i_eff_p1_w_cm2, 0.0) * 1e4
-    i_eff_p2_si = max(i_eff_p2_w_cm2, 0.0) * 1e4
-    delta_n_p1 = float(n2_sin * (i_eff_p1_si + kerr_xpm_factor * i_eff_p2_si))
-    delta_n_p2 = float(n2_sin * (i_eff_p2_si + kerr_xpm_factor * i_eff_p1_si))
-    delta_rel_p1 = float(-delta_n_p1 / max(float(n_linear_p1), 1e-12))
-    delta_rel_p2 = float(-delta_n_p2 / max(float(n_linear_p2), 1e-12))
-    freq_p1_kerr = float(max(1e-9, freq_p1 * (1.0 + delta_rel_p1)))
-    freq_p2_kerr = float(max(1e-9, freq_p2 * (1.0 + delta_rel_p2)))
 
     plot_paths: Dict[str, str] = {}
 
@@ -1580,6 +1551,14 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
     probe_dolp_final = float(probe_dolp[-1]) if probe_dolp.size else float("nan")
     probe_docp_final = float(probe_docp[-1]) if probe_docp.size else float("nan")
     probe_s0_final = float(probe_s0[-1]) if probe_s0.size else float("nan")
+    probe_s0_backward_final = (
+        float(probe_s0_backward[-1]) if probe_s0_backward.size else float("nan")
+    )
+    probe_forward_fraction_final = (
+        float(probe_forward_fraction[-1])
+        if probe_forward_fraction.size
+        else float("nan")
+    )
     probe_s1_final = float(probe_s1[-1]) if probe_s1.size else float("nan")
     probe_s2_final = float(probe_s2[-1]) if probe_s2.size else float("nan")
     probe_s3_final = float(probe_s3[-1]) if probe_s3.size else float("nan")
@@ -1615,6 +1594,11 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
     summary_data = {
         "run_mode": run.name,
         "dimension": int(dimension),
+        "modeling_dimensions": {
+            "requested_dimension": int(dimension),
+            "meep_solver_dimensions": int(simulation_dimensions),
+            "quasi_1d_collapsed_transverse_cell": bool(is_quasi_1d),
+        },
         "run_params": run_params_dict,
         "geometry_file": str(spec_path),
         "materials_model": args.materials,
@@ -1643,6 +1627,7 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
         },
         "probe_band_frequencies_inv_um": probe_freqs.tolist(),
         "monitor_plane_z_um": float(z_tr),
+        "monitor_medium_index_probe": float(n_monitor_medium),
         "plot_time_units": {
             "unit": "fs",
             "fs_per_meep_time": float(FS_PER_MEEP),
@@ -1664,7 +1649,12 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
                 if theta_deg_wrapped.size
                 else float("nan")
             ),
-            "method": "dft_monitor_center_frequency_at_output_principal_linear_angle",
+            "method": "dft_monitor_center_frequency_forward_component_principal_linear_angle",
+            "forward_decomposition": {
+                "using_fields": ["Ex", "Ey", "Hx", "Hy"],
+                "n_medium": float(n_monitor_medium),
+                "forward_relation": "Hy=n*Ex and Hx=-n*Ey",
+            },
             "intensity_threshold_rel": 0.01,
             "time_domain_reference": {
                 "final_relative_deg": probe_rotation_final_rel_td,
@@ -1693,6 +1683,8 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
                 "dolp": probe_dolp_final,
                 "docp": probe_docp_final,
                 "S0": probe_s0_final,
+                "S0_backward": probe_s0_backward_final,
+                "forward_fraction": probe_forward_fraction_final,
                 "S1": probe_s1_final,
                 "S2": probe_s2_final,
                 "S3": probe_s3_final,
@@ -1768,39 +1760,6 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
                     "pump1_tail_weighted": float(pump1_purity_rms_tail),
                     "pump2_tail_weighted": float(pump2_purity_rms_tail),
                 },
-            },
-        },
-        "kerr_shift_estimate": {
-            "model": "delta_omega_over_omega = -delta_n/neff",
-            "n2_m2_per_w": float(n2_sin),
-            "xpm_factor": float(kerr_xpm_factor),
-            "intensity_metric": str(kerr_intensity_metric),
-            "neff": {
-                "pump1": float(n_linear_p1),
-                "pump2": float(n_linear_p2),
-            },
-            "hotspot_monitor": {
-                "type": "on_axis_z_line_in_cavity",
-                "center_z_um": float(cavity_center),
-                "length_um": float(max(cavity_len_um, 0.0)),
-                "samples_pump1": int(cavity_hotspot_p1["samples"]),
-                "samples_pump2": int(cavity_hotspot_p2["samples"]),
-            },
-            "local_intensity_w_cm2": {
-                "pump1": cavity_hotspot_p1,
-                "pump2": cavity_hotspot_p2,
-                "used_for_prediction": {
-                    "pump1": float(i_eff_p1_w_cm2),
-                    "pump2": float(i_eff_p2_w_cm2),
-                },
-            },
-            "predicted_frequency_shift": {
-                "pump1_delta_n": float(delta_n_p1),
-                "pump2_delta_n": float(delta_n_p2),
-                "pump1_delta_omega_over_omega": float(delta_rel_p1),
-                "pump2_delta_omega_over_omega": float(delta_rel_p2),
-                "pump1_frequency_new_inv_um": float(freq_p1_kerr),
-                "pump2_frequency_new_inv_um": float(freq_p2_kerr),
             },
         },
         "plot_paths": plot_paths,
@@ -1912,18 +1871,6 @@ def parse_args() -> argparse.Namespace:
         type=float,
         default=None,
         help="Pump intensity in W/cm^2.",
-    )
-    parser.add_argument(
-        "--kerr-xpm-factor",
-        type=float,
-        default=1.0,
-        help="Cross-phase weighting in Kerr shift estimate: delta_n1~n2*(I1+xpm*I2).",
-    )
-    parser.add_argument(
-        "--kerr-intensity-metric",
-        choices=("peak", "p95", "mean", "rms"),
-        default="p95",
-        help="Cavity-line intensity statistic used for Kerr shift prediction.",
     )
     parser.add_argument(
         "--pump1-frequency",

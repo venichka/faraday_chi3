@@ -4,8 +4,8 @@ This project simulates pump-probe nonlinear Faraday-like polarization rotation i
 
 ## Main capabilities
 
-- 1D quasi-1D and 3D field simulations (`faraday_meep_fp_circ.py`)
-- Kerr-aware pump retuning during sweeps (`pump_intensity_sweep.py`)
+- 1D and 3D field simulations (`faraday_meep_fp_circ.py`)
+- Pump-intensity sweeps with aggregate diagnostics (`pump_intensity_sweep.py`)
 - Geometry optimization with resonance/Q constraints (`optimize_cavity_geometry.py`)
 - Optional Bayesian or Powell refinement
 - Debug artifacts: epsilon profile, reflectance with mode markers, mode-overlap plots
@@ -99,7 +99,9 @@ python optimize_cavity_geometry.py \
 Quality-weighted score is:
 
 - `score = |theta_final| * quality_factor`
-- `quality_factor = DoLP_tail * sqrt(S0_tail_rel_max) * exp(-(theta_std/std_ref)^2)`
+- `quality_factor = probe_quality_factor * source_quality_factor`
+- `probe_quality_factor = DoLP_tail * sqrt(S0_tail_rel_max) * exp(-(theta_std/std_ref)^2)`
+- `source_quality_factor = pump_dom_term * pump_purity_term * pump_balance_term`
 
 ### 4) Pump-intensity sweep
 
@@ -115,7 +117,6 @@ python pump_intensity_sweep.py \
   --cavity-modes-file cavity_modes_bayes_w6_q40_rerun.json \
   --resolution 30 \
   --decay-threshold 1e-6 \
-  --pump-frequency-mode retune \
   --output-root pump_sweep_outputs
 ```
 
