@@ -1,0 +1,12 @@
+name: faraday-meep
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - numpy
+  - scipy
+  - matplotlib
+  - scikit-learn
+  - meep
+  - mpi4py
+  - pytest

@@ -387,38 +387,61 @@ def load_params(
         if src == "report" and report:
             bt = report.get("best_theta", {})
             sim = report.get("sim", {})
+            selected = report.get("selected", {})
+            parsed_any = False
 
-            # new mirror+cavity layout
+            # New optimizer schema ("selected")
+            if selected:
+                if "t_sin_um" in selected:
+                    params["t_SiN"] = float(selected["t_sin_um"])
+                    parsed_any = True
+                if "t_sio2_um" in selected:
+                    params["t_SiO2"] = float(selected["t_sio2_um"])
+                    parsed_any = True
+                if "L_cav_um" in selected:
+                    params["t_cav"] = float(selected["L_cav_um"])
+                    parsed_any = True
+                if "N_per" in selected:
+                    params["N_per"] = int(selected["N_per"])
+                    parsed_any = True
+
+            # Legacy schema ("best_theta")
             t_SiN = bt.get("t_SiN_um")
             t_SiO2 = bt.get("t_SiO2_um")
             L_cav = bt.get("L_cav_um")
             cell_margin = bt.get("cell_margin_um", params["cell_margin"])
             N_per = bt.get("N_per", params["N_per"])
 
-            # legacy spacer layout (keep compatibility)
-            if L_cav is None and "L_cav_um" in bt:
-                L_cav = bt["L_cav_um"]
-
-            if t_SiN:
+            if t_SiN is not None:
                 params["t_SiN"] = float(t_SiN)
-            if t_SiO2:
+                parsed_any = True
+            if t_SiO2 is not None:
                 params["t_SiO2"] = float(t_SiO2)
-            if L_cav:
+                parsed_any = True
+            if L_cav is not None:
                 params["t_cav"] = float(L_cav)
-            params["cell_margin"] = float(cell_margin)
-            params["N_per"] = int(N_per)
+                parsed_any = True
+            if cell_margin is not None:
+                params["cell_margin"] = float(cell_margin)
+            if N_per is not None:
+                params["N_per"] = int(N_per)
 
             # optional simulation settings
             if "resolution_px_per_um" in sim:
                 params["resolution"] = int(sim["resolution_px_per_um"])
+                parsed_any = True
             if "dpml_um" in sim:
                 params["dpml"] = float(sim["dpml_um"])
+                parsed_any = True
             if "pad_air_um" in sim:
                 params["pad_air"] = float(sim["pad_air_um"])
+                parsed_any = True
             if "pad_sub_um" in sim:
                 params["pad_sub"] = float(sim["pad_sub_um"])
+                parsed_any = True
 
-            return params
+            if parsed_any:
+                return params
 
         if src == "geom" and geom:
             # geometry spec (geometry_io schema)

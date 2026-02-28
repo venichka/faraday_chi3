@@ -1,0 +1,18 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.DS_Store
+
+# Heavy simulation outputs
+output_*/
+pump_intensity_sweep_*/
+faraday_*outputs/
+.opt_eval_tmp/
+
+# Generated reports/plots
+*.png
+*.pdf
+*.svg

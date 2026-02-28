@@ -1,0 +1,176 @@
+{
+  "meta": {
+    "generated_on": "2026-02-28T01:34:48.602131Z",
+    "script": "optimize_cavity_geometry.py",
+    "objective": "quality_weighted_abs_rotation",
+    "tmm_used": false,
+    "search_algorithm": "discrete-mirror sweep + Bayesian optimization (GP + expected improvement)"
+  },
+  "selected": {
+    "profile": "band",
+    "N_per": 3,
+    "t_sin_um": 0.19767366399489028,
+    "t_sio2_um": 0.30536606224182855,
+    "L_cav_um": 2.9871992957364277,
+    "probe_um": 0.9314560948499442,
+    "pump1_um": 1.3523399677245826,
+    "pump2_um": 1.4390383514596448,
+    "resonance_reflectance": {
+      "probe_R": 0.030814634586321055,
+      "pump1_R": 0.019339693276011163,
+      "pump2_R": 0.007284106141721641
+    },
+    "resonance_depth": {
+      "probe_depth": 0.16332574859204174,
+      "pump1_depth": 0.16575757103819744,
+      "pump2_depth": 0.6713969476026271
+    },
+    "resonance_q_est": {
+      "probe_Q": 60.46179734203314,
+      "pump1_Q": 71.87755951838272,
+      "pump2_Q": 63.01586831697026
+    },
+    "pump_handedness": {
+      "pump1": "sigma_plus",
+      "pump2": "sigma_minus"
+    },
+    "rotation_deg": 0.13095428425073408,
+    "abs_rotation_deg": 0.13095428425073408,
+    "objective_score": 0.06308116211135854,
+    "objective_metric": "quality_weighted_abs_rotation",
+    "quality_metrics": {
+      "quality_factor": 0.48170369127121504,
+      "dolp_tail": 0.9999518082679668,
+      "theta_std_deg": 0.27847653839961306,
+      "s0_rel_max": 0.2347550295736383,
+      "quality_std_ref_deg": 15.0
+    },
+    "objective_summary_file": "/Users/nikita/Google Drive/Work/In process/Projects/!Miniprojects/Faraday_rotation_Optica_2019/scripts/meep_project/optimized_objective_summary.json"
+  },
+  "best_theta": {
+    "t_SiN_um": 0.19767366399489028,
+    "t_SiO2_um": 0.30536606224182855,
+    "L_cav_um": 2.9871992957364277,
+    "cell_margin_um": 0.4,
+    "N_per": 3
+  },
+  "sim": {
+    "resolution_px_per_um": 30,
+    "dpml_um": 1.0,
+    "pad_air_um": 0.8,
+    "pad_sub_um": 0.8,
+    "objective_decay_threshold": 0.001,
+    "pump_intensity_w_cm2": 1000000000000.0
+  },
+  "optimization": {
+    "profile_mode": "band",
+    "mirror_range": [
+      3,
+      5
+    ],
+    "evaluations_total": 44,
+    "profiles_considered": [
+      "band"
+    ],
+    "materials": "fit",
+    "optimizer": "bayes",
+    "optimizer_settings": {
+      "workers": 6,
+      "seed_variants": 1,
+      "top_mirrors_for_refine": 1,
+      "maxfev_powell": 5,
+      "powell_mode": "auto",
+      "bayes_init": 6,
+      "bayes_iters": 6,
+      "bayes_batch_size": 6,
+      "bayes_candidates": 700,
+      "bayes_xi": 0.01,
+      "bayes_gp_restarts": 2,
+      "sklearn_available": true,
+      "bayes_backend": "sklearn_gp",
+      "objective_metric": "quality_weighted_abs_rotation",
+      "quality_std_ref_deg": 15.0,
+      "quality_pump_dom_ref": 0.2,
+      "quality_hotspot_ref_w_cm2": 500000000000.0,
+      "quality_pump_balance_sigma_dec": 0.35
+    },
+    "constraints": {
+      "cavity_min_length_um": 1.5,
+      "cavity_max_length_um": 4.5,
+      "pump_range_um": [
+        1.3,
+        1.7
+      ],
+      "probe_exact_um": 0.8,
+      "probe_band_um": [
+        0.85,
+        0.95
+      ],
+      "resonance_max_reflectance": 0.35,
+      "pump_min_q_est": 40.0,
+      "pump_min_depth": 0.01,
+      "probe_min_depth": 0.0,
+      "resonance_linewidth_level": 0.5,
+      "pump_local_q_check": "off",
+      "local_q_window_um": 0.14,
+      "local_q_resolution": 40,
+      "local_q_nfreq": 401,
+      "local_q_decay_threshold": 1e-05,
+      "probe_exact_tolerance_um": 0.06,
+      "min_pump_separation_um": 0.02
+    }
+  },
+  "files": {
+    "geometry_json": "/Users/nikita/Google Drive/Work/In process/Projects/!Miniprojects/Faraday_rotation_Optica_2019/scripts/meep_project/optimized_geometry_bayes_w6_signal_new.json",
+    "cavity_modes_json": "/Users/nikita/Google Drive/Work/In process/Projects/!Miniprojects/Faraday_rotation_Optica_2019/scripts/meep_project/cavity_modes_bayes_w6_signal_new.json"
+  },
+  "debug": {
+    "plots": {
+      "epsilon_profile": "/Users/nikita/Google Drive/Work/In process/Projects/!Miniprojects/Faraday_rotation_Optica_2019/scripts/meep_project/bayes_w6_signal_new_epsilon_profile.png",
+      "reflectance_marked": "/Users/nikita/Google Drive/Work/In process/Projects/!Miniprojects/Faraday_rotation_Optica_2019/scripts/meep_project/bayes_w6_signal_new_reflectance_marked.png",
+      "mode_profiles": "/Users/nikita/Google Drive/Work/In process/Projects/!Miniprojects/Faraday_rotation_Optica_2019/scripts/meep_project/bayes_w6_signal_new_mode_profiles.png",
+      "mode_overlap_matrix": "/Users/nikita/Google Drive/Work/In process/Projects/!Miniprojects/Faraday_rotation_Optica_2019/scripts/meep_project/bayes_w6_signal_new_mode_overlap_matrix.png"
+    },
+    "overlaps": {
+      "pump1": {
+        "pump1": 1.0,
+        "pump2": 0.8367764752374711,
+        "probe": 0.9605109934489915,
+        "sb_minus": 0.9626935726087945,
+        "sb_plus": 0.9582756200131982
+      },
+      "pump2": {
+        "pump1": 0.8367764752374711,
+        "pump2": 1.0,
+        "probe": 0.9217582322456374,
+        "sb_minus": 0.9242160710682921,
+        "sb_plus": 0.9194211681029426
+      },
+      "probe": {
+        "pump1": 0.9605109934489915,
+        "pump2": 0.9217582322456374,
+        "probe": 1.0000000000000002,
+        "sb_minus": 0.9976692922973465,
+        "sb_plus": 0.9927848569915123
+      },
+      "sb_minus": {
+        "pump1": 0.9626935726087945,
+        "pump2": 0.9242160710682921,
+        "probe": 0.9976692922973465,
+        "sb_minus": 1.0,
+        "sb_plus": 0.9961708695881754
+      },
+      "sb_plus": {
+        "pump1": 0.9582756200131982,
+        "pump2": 0.9194211681029426,
+        "probe": 0.9927848569915123,
+        "sb_minus": 0.9961708695881754,
+        "sb_plus": 1.0
+      }
+    },
+    "cavity_bounds_um": [
+      -1.6935996478682152,
+      1.2935996478682126
+    ]
+  }
+}
