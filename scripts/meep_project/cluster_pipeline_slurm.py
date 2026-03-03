@@ -742,6 +742,7 @@ def main() -> None:
                 continue
             # consume value for key-value options
             if key in {
+                "--cluster-profile",
                 "--nodes",
                 "--ntasks-per-node",
                 "--cpus-per-task",
