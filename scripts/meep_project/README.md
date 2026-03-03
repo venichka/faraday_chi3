@@ -7,6 +7,7 @@ This project simulates pump-probe nonlinear Faraday-like polarization rotation i
 - 1D and 3D field simulations (`faraday_meep_fp_circ.py`)
 - Pump-intensity sweeps with aggregate diagnostics (`pump_intensity_sweep.py`)
 - Geometry optimization with resonance/Q constraints (`optimize_cavity_geometry.py`)
+- Multi-fidelity geometry optimization compatible with existing outputs (`optimize_cavity_geometry_mf.py`)
 - Optional Bayesian or Powell refinement
 - Debug artifacts: epsilon profile, reflectance with mode markers, mode-overlap plots
 
@@ -14,6 +15,7 @@ This project simulates pump-probe nonlinear Faraday-like polarization rotation i
 
 - `faraday_meep_fp_circ.py`: single simulation run and plots
 - `optimize_cavity_geometry.py`: optimize geometry for rotation objective
+- `optimize_cavity_geometry_mf.py`: multi-fidelity optimizer (same output/report schema)
 - `pump_intensity_sweep.py`: sweep pump intensity and aggregate reports
 - `fp_cavity_modes_spectrum.py`: cavity mode analysis helper
 - `geometry_io.py`, `mode_targeting.py`, `material_fit.py`: IO/material/model utilities
@@ -67,6 +69,23 @@ python faraday_meep_fp_circ.py \
   --output-dir output_faraday_3d
 ```
 
+### 2b) Single simulation with TiO2 (constant n,k + Kerr n2)
+
+```bash
+python faraday_meep_fp_circ.py \
+  --dim 1 \
+  --materials constant \
+  --high-index-material tio2 \
+  --nH 2.31 --kH 8e-6 \
+  --high-index-n2 2.3e-18 \
+  --kappa-ref-lambda 1.55 \
+  --geometry-file optimized_geometry.json \
+  --cavity-modes-file cavity_modes.json \
+  --pump-intensity 1e12 \
+  --decay-threshold 1e-4 \
+  --output-dir output_faraday_tio2
+```
+
 ### 3) Optimize geometry
 
 Use classic objective (`|theta|`):
@@ -94,6 +113,23 @@ python optimize_cavity_geometry.py \
   --sin-fit si3n4.csv --sio2-fit sio2.csv \
   --pump-intensity 1e12 \
   --debug
+```
+
+Use multi-fidelity optimization (same output files, plus MF diagnostics in report):
+
+```bash
+python optimize_cavity_geometry_mf.py \
+  --optimizer bayes \
+  --objective-metric abs_rotation \
+  --probe-target-mode exact \
+  --probe-epsilon 0.02 \
+  --mf-stage1-per-n 6 \
+  --mf-stage2-topk 3 \
+  --mf-stage3-topk 2 \
+  --workers 6 \
+  --materials fit \
+  --sin-fit si3n4.csv --sio2-fit sio2.csv \
+  --pump-intensity 1e12
 ```
 
 Quality-weighted score is:
@@ -167,4 +203,3 @@ Tests cover:
 - polarization/mapping math helpers
 - objective-score parsing from summary data
 - sweep trace-bundle serialization helpers
-

@@ -30,6 +30,16 @@ import numpy as np
 
 from geometry_io import material_factory, read_json as load_geometry_json
 from mode_targeting import get_cavity_materials, material_index_at_wavelength
+from nonlinear_materials import (
+    canonical_high_index_material,
+    chi3_si_to_meep_e_chi3,
+    get_high_index_preset,
+    high_index_material_choices,
+    n2_to_chi3_si,
+    resolve_high_index_index,
+    resolve_high_index_kappa,
+    resolve_high_index_n2,
+)
 
 plt.rcParams.update({"figure.dpi": 120, "font.size": 11})
 
@@ -496,19 +506,37 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
         dimension=dimension,
     )
 
-    default_high = float(getattr(materials.get("SiN"), "index", 2.0))
+    high_index_material = canonical_high_index_material(
+        getattr(args, "high_index_material", "sin")
+    )
+    high_slot = str(spec.get("cavity", {}).get("mat", "SiN"))
+    default_high = float(getattr(materials.get(high_slot), "index", np.nan))
+    if (not np.isfinite(default_high)) or default_high <= 0.0:
+        default_high = resolve_high_index_index(None, high_index_material)
+    if high_index_material != "sin" and getattr(args, "nH", None) is None:
+        default_high = resolve_high_index_index(None, high_index_material)
+    n_high = resolve_high_index_index(getattr(args, "nH", None), high_index_material)
+    k_high = resolve_high_index_kappa(getattr(args, "kH", None), high_index_material)
+    n2_high = resolve_high_index_n2(getattr(args, "high_index_n2", None), high_index_material)
+
     default_low = float(getattr(materials.get("SiO2"), "index", 1.45))
+    n_low = float(args.nL if args.nL is not None else default_low)
     mat_sin, mat_sio2 = get_cavity_materials(
         model=args.materials,
-        index_high=args.nH if args.nH is not None else default_high,
-        index_low=args.nL if args.nL is not None else default_low,
+        index_high=n_high if args.nH is not None else default_high,
+        kappa_high=k_high,
+        index_low=n_low,
+        high_index_material=high_index_material,
+        kappa_ref_wavelength_um=float(args.kappa_ref_lambda),
         sin_csv=args.sin_fit,
         sio2_csv=args.sio2_fit,
         lam_min=args.fit_window[0],
         lam_max=args.fit_window[1],
         fit_poles=args.fit_poles,
     )
-    materials["SiN"] = mat_sin
+    if "SiN" in materials:
+        materials["SiN"] = mat_sin
+    materials[high_slot] = mat_sin
     materials["SiO2"] = mat_sio2
     geometry, cell_z, cavity_center = build_geometry_from_spec(
         spec, materials, core_span, run.dpml_z, dimension=dimension
@@ -530,12 +558,14 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
     freq_sb_plus = freq_probe + delta_omega
     freq_sb_minus = max(freq_probe - delta_omega, 0.0)
 
-    # Nonlinear response for SiN scaled as requested
-    n2_sin = 2.0*2.5e-19  # m²/W
+    # Kerr nonlinearity for selected high-index material.
     n_linear_probe = material_index_at_wavelength(mat_sin, lam_probe)
-    chi3_si = (4.0 / 3.0) * n2_sin * (n_linear_probe**2) * EPS0 * C0
-    e_chi3_meep = chi3_si * (SCALE_E**2) * run.nonlinear_scale
+    chi3_si = n2_to_chi3_si(n2_high, n_linear_probe)
+    e_chi3_meep = chi3_si_to_meep_e_chi3(
+        chi3_si, scale_e=SCALE_E, nonlinear_scale=run.nonlinear_scale
+    )
     mat_sin.E_chi3_diag = mp.Vector3(e_chi3_meep, e_chi3_meep, e_chi3_meep)
+    high_preset = get_high_index_preset(high_index_material)
     n_monitor_medium = float(material_index_at_wavelength(materials["SiO2"], lam_probe))
 
     n_source_medium = 1.0  # sources are injected in air
@@ -1190,6 +1220,63 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
         var = np.average(dv * dv, weights=w[valid])
         return float(np.sqrt(max(var, 0.0)))
 
+    def stabilized_zoom_window(
+        t_fs: np.ndarray,
+        theta_rel_deg: np.ndarray,
+        weights: np.ndarray,
+        valid_mask: np.ndarray,
+        tail_fraction: float = 0.2,
+    ) -> Dict[str, float] | None:
+        tt = np.asarray(t_fs, dtype=float)
+        th = np.asarray(theta_rel_deg, dtype=float)
+        ww = np.asarray(weights, dtype=float)
+        vm = np.asarray(valid_mask, dtype=bool)
+        if tt.size == 0 or th.size == 0:
+            return None
+        if vm.size != tt.size:
+            vm = np.ones_like(tt, dtype=bool)
+
+        idx = np.where(vm)[0]
+        if idx.size == 0:
+            idx = np.where(np.isfinite(tt) & np.isfinite(th))[0]
+        if idx.size < 4:
+            return None
+
+        tail_count = max(8, int(np.ceil(float(tail_fraction) * idx.size)))
+        tail_idx = idx[-tail_count:]
+        t_tail = tt[tail_idx]
+        th_tail = th[tail_idx]
+        w_tail = ww[tail_idx] if ww.size == tt.size else np.ones_like(t_tail)
+        valid_tail = np.isfinite(t_tail) & np.isfinite(th_tail)
+        if not np.any(valid_tail):
+            return None
+
+        t_tail = t_tail[valid_tail]
+        th_tail = th_tail[valid_tail]
+        w_tail = np.asarray(w_tail[valid_tail], dtype=float)
+
+        theta_mean = weighted_linear_mean_deg(th_tail, w_tail)
+        theta_std = weighted_tail_linear_std(th_tail, w_tail, tail_fraction=1.0)
+        y_min = float(np.min(th_tail))
+        y_max = float(np.max(th_tail))
+        y_span = max(y_max - y_min, 1e-6)
+        y_pad = max(0.02, 0.25 * y_span, 2.0 * theta_std if np.isfinite(theta_std) else 0.0)
+
+        x0 = float(np.min(t_tail))
+        x1 = float(np.max(t_tail))
+        x_span = max(x1 - x0, 1e-6)
+        x_pad = max(0.05 * x_span, 2.0)
+
+        return {
+            "x0": float(x0 - x_pad),
+            "x1": float(x1 + x_pad),
+            "y0": float(y_min - y_pad),
+            "y1": float(y_max + y_pad),
+            "theta_mean": float(theta_mean),
+            "tail_start": float(x0),
+            "tail_end": float(x1),
+        }
+
     # Coherent-mean monitor traces (legacy) and RMS/integrated traces (new primary).
     pump1_dom_coh = abs_emi_dft_coherent[:, i_p1]
     pump2_dom_coh = abs_epl_dft_coherent[:, i_p2]
@@ -1434,6 +1521,22 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
     fig = plt.figure(figsize=(7.0, 3.6))
     ax = fig.add_subplot(1, 1, 1)
     ax.plot(t_arr_fs, theta_deg_rel, "k-")
+    dft_zoom = stabilized_zoom_window(
+        t_arr_fs,
+        theta_deg_rel,
+        probe_s0_dft,
+        valid_probe_dft,
+        tail_fraction=0.2,
+    )
+    if dft_zoom is not None:
+        ax.axvspan(
+            dft_zoom["tail_start"],
+            dft_zoom["tail_end"],
+            color="C0",
+            alpha=0.12,
+            lw=0.0,
+            label="stabilized window",
+        )
     ax.set_xlabel("time (fs)")
     ax.set_ylabel("polarization rotation (deg)")
     ax.set_title("Probe polarization angle vs time (relative to input)")
@@ -1441,10 +1544,47 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
     plot_paths["probe_rotation"] = str(
         save_figure(fig, "probe_polarization.png", output_dir)
     )
+    if dft_zoom is not None:
+        fig = plt.figure(figsize=(7.0, 3.6))
+        ax = fig.add_subplot(1, 1, 1)
+        ax.plot(t_arr_fs, theta_deg_rel, color="0.75", lw=1.0, label="full trace")
+        ax.axhline(
+            dft_zoom["theta_mean"],
+            color="C3",
+            lw=1.2,
+            ls="--",
+            label="tail mean",
+        )
+        ax.set_xlim(dft_zoom["x0"], dft_zoom["x1"])
+        ax.set_ylim(dft_zoom["y0"], dft_zoom["y1"])
+        ax.set_xlabel("time (fs)")
+        ax.set_ylabel("polarization rotation (deg)")
+        ax.set_title("Probe polarization angle (stabilized zoom, DFT)")
+        ax.grid(True, alpha=0.3)
+        ax.legend(loc="best")
+        plot_paths["probe_rotation_zoom"] = str(
+            save_figure(fig, "probe_polarization_zoom.png", output_dir)
+        )
 
     fig = plt.figure(figsize=(7.0, 3.6))
     ax = fig.add_subplot(1, 1, 1)
     ax.plot(t_td_fs, theta_deg_t_rel, "k-")
+    td_zoom = stabilized_zoom_window(
+        t_td_fs,
+        theta_deg_t_rel,
+        probe_s0_td,
+        valid_probe_td,
+        tail_fraction=0.2,
+    )
+    if td_zoom is not None:
+        ax.axvspan(
+            td_zoom["tail_start"],
+            td_zoom["tail_end"],
+            color="C0",
+            alpha=0.12,
+            lw=0.0,
+            label="stabilized window",
+        )
     ax.set_xlabel("time (fs)")
     ax.set_ylabel("polarization rotation (deg)")
     ax.set_title("Probe polarization angle vs time (relative to input) in time-domain")
@@ -1452,6 +1592,27 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
     plot_paths["probe_rotation_td"] = str(
         save_figure(fig, "probe_polarization_td.png", output_dir)
     )
+    if td_zoom is not None:
+        fig = plt.figure(figsize=(7.0, 3.6))
+        ax = fig.add_subplot(1, 1, 1)
+        ax.plot(t_td_fs, theta_deg_t_rel, color="0.75", lw=1.0, label="full trace")
+        ax.axhline(
+            td_zoom["theta_mean"],
+            color="C3",
+            lw=1.2,
+            ls="--",
+            label="tail mean",
+        )
+        ax.set_xlim(td_zoom["x0"], td_zoom["x1"])
+        ax.set_ylim(td_zoom["y0"], td_zoom["y1"])
+        ax.set_xlabel("time (fs)")
+        ax.set_ylabel("polarization rotation (deg)")
+        ax.set_title("Probe polarization angle (stabilized zoom, TD)")
+        ax.grid(True, alpha=0.3)
+        ax.legend(loc="best")
+        plot_paths["probe_rotation_td_zoom"] = str(
+            save_figure(fig, "probe_polarization_td_zoom.png", output_dir)
+        )
 
     if capture_spatial_fields and xz_snapshot["taken"]:
         x_half = 0.5 * run.span_xy
@@ -1602,6 +1763,19 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
         "run_params": run_params_dict,
         "geometry_file": str(spec_path),
         "materials_model": args.materials,
+        "high_index_material": {
+            "key": str(high_preset.key),
+            "display_name": str(high_preset.display_name),
+            "source": str(high_preset.source),
+            "slot_in_geometry": str(high_slot),
+            "n_constant_used": float(n_high if args.nH is not None else default_high),
+            "k_constant_used": float(k_high),
+            "kappa_ref_lambda_um": float(args.kappa_ref_lambda),
+            "n2_m2_per_w_used": float(n2_high),
+            "n_linear_probe": float(n_linear_probe),
+            "chi3_si": float(chi3_si),
+            "E_chi3_diag_meep": float(e_chi3_meep),
+        },
         "cell_size_um": {"x": float(cell.x), "y": float(cell.y), "z": float(cell_z)},
         "cavity_center_um": float(cavity_center),
         "frequencies_inv_um": frequencies,
@@ -1827,10 +2001,22 @@ def parse_args() -> argparse.Namespace:
         help="Material model for SiN/SiO2.",
     )
     parser.add_argument(
+        "--high-index-material",
+        choices=high_index_material_choices(),
+        default="sin",
+        help="High-index cavity material preset (sin or tio2).",
+    )
+    parser.add_argument(
         "--nH",
         type=float,
         default=None,
-        help="Override high-index value when --materials constant.",
+        help="Override high-index refractive index for constant/library fallback.",
+    )
+    parser.add_argument(
+        "--kH",
+        type=float,
+        default=None,
+        help="Override high-index extinction coefficient k for constant/library fallback.",
     )
     parser.add_argument(
         "--nL",
@@ -1843,7 +2029,7 @@ def parse_args() -> argparse.Namespace:
         dest="sin_fit",
         type=str,
         default=None,
-        help="CSV with wavelength_nm,n,k for SiN when --materials fit.",
+        help="CSV with wavelength_nm,n,k for selected high-index material when --materials fit.",
     )
     parser.add_argument(
         "--sio2-fit",
@@ -1865,6 +2051,18 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=2,
         help="Number of Lorentz/Drude poles when fitting dispersive materials.",
+    )
+    parser.add_argument(
+        "--kappa-ref-lambda",
+        type=float,
+        default=1.55,
+        help="Reference wavelength (um) used to map constant k to Meep conductivity.",
+    )
+    parser.add_argument(
+        "--high-index-n2",
+        type=float,
+        default=None,
+        help="Override Kerr nonlinear index n2 (m^2/W) for the selected high-index material.",
     )
     parser.add_argument(
         "--pump-intensity",

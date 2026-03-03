@@ -44,6 +44,13 @@ import meep as mp
 import numpy as np
 
 from mode_targeting import get_cavity_materials, material_index_at_wavelength
+from nonlinear_materials import (
+    canonical_high_index_material,
+    high_index_material_choices,
+    resolve_high_index_index,
+    resolve_high_index_kappa,
+    resolve_high_index_n2,
+)
 
 try:
     from scipy.optimize import minimize  # type: ignore
@@ -124,11 +131,29 @@ def _configure_numeric_threads() -> None:
     os.environ.setdefault("NUMEXPR_NUM_THREADS", "1")
 
 
+def normalize_material_args(args: argparse.Namespace) -> argparse.Namespace:
+    args.high_index_material = canonical_high_index_material(
+        getattr(args, "high_index_material", "sin")
+    )
+    args.nH = resolve_high_index_index(getattr(args, "nH", None), args.high_index_material)
+    args.kH = resolve_high_index_kappa(getattr(args, "kH", None), args.high_index_material)
+    args.high_index_n2 = resolve_high_index_n2(
+        getattr(args, "high_index_n2", None), args.high_index_material
+    )
+    if getattr(args, "nL", None) is None:
+        args.nL = 1.45
+    args.kappa_ref_lambda = float(max(getattr(args, "kappa_ref_lambda", 1.55), 1e-9))
+    return args
+
+
 def build_material_payload(args: argparse.Namespace) -> Dict[str, object]:
     return {
         "materials": str(args.materials),
         "nH": float(args.nH),
+        "kH": float(args.kH),
         "nL": float(args.nL),
+        "high_index_material": str(args.high_index_material),
+        "kappa_ref_lambda": float(args.kappa_ref_lambda),
         "sin_fit": str(args.sin_fit),
         "sio2_fit": str(args.sio2_fit),
         "fit_window": (int(args.fit_window[0]), int(args.fit_window[1])),
@@ -143,7 +168,10 @@ def _material_payload_key(payload: Dict[str, object]) -> Tuple:
     return (
         str(payload.get("materials", "fit")),
         float(payload.get("nH", 2.0)),
+        float(payload.get("kH", 0.0)),
         float(payload.get("nL", 1.45)),
+        str(payload.get("high_index_material", "sin")),
+        float(payload.get("kappa_ref_lambda", 1.55)),
         str(payload.get("sin_fit", "si3n4.csv")),
         str(payload.get("sio2_fit", "sio2.csv")),
         fw0,
@@ -158,11 +186,14 @@ def _get_worker_materials(payload: Dict[str, object]) -> Tuple[mp.Medium, mp.Med
     if mats is not None:
         return mats
 
-    model, nH, nL, sin_csv, sio2_csv, fw0, fw1, fit_poles = key
+    model, nH, kH, nL, high_mat, kref, sin_csv, sio2_csv, fw0, fw1, fit_poles = key
     mat_sin, mat_sio2 = get_cavity_materials(
         model=str(model),
         index_high=float(nH),
+        kappa_high=float(kH),
         index_low=float(nL),
+        high_index_material=str(high_mat),
+        kappa_ref_wavelength_um=float(kref),
         sin_csv=str(sin_csv),
         sio2_csv=str(sio2_csv),
         lam_min=int(fw0),
@@ -223,7 +254,19 @@ def parse_args() -> argparse.Namespace:
     )
 
     ap.add_argument("--materials", choices=("library", "constant", "fit"), default="fit")
-    ap.add_argument("--sin-fit", dest="sin_fit", type=str, default="si3n4.csv")
+    ap.add_argument(
+        "--high-index-material",
+        choices=high_index_material_choices(),
+        default="sin",
+        help="High-index cavity/DBR material preset (default keeps existing SiN path).",
+    )
+    ap.add_argument(
+        "--sin-fit",
+        dest="sin_fit",
+        type=str,
+        default="si3n4.csv",
+        help="CSV with wavelength_nm,n,k for selected high-index material when --materials fit.",
+    )
     ap.add_argument("--sio2-fit", dest="sio2_fit", type=str, default="sio2.csv")
     ap.add_argument(
         "--fit-window",
@@ -233,8 +276,21 @@ def parse_args() -> argparse.Namespace:
         default=(600, 2000),
     )
     ap.add_argument("--fit-poles", type=int, default=2)
-    ap.add_argument("--nH", type=float, default=2.0)
+    ap.add_argument("--nH", type=float, default=None)
+    ap.add_argument("--kH", type=float, default=None)
     ap.add_argument("--nL", type=float, default=1.45)
+    ap.add_argument(
+        "--kappa-ref-lambda",
+        type=float,
+        default=1.55,
+        help="Reference wavelength (um) used when mapping constant kappa to Meep conductivity.",
+    )
+    ap.add_argument(
+        "--high-index-n2",
+        type=float,
+        default=None,
+        help="Override high-index Kerr nonlinear index n2 (m^2/W).",
+    )
 
     ap.add_argument("--probe-target-mode", choices=("exact", "band", "both"), default="both")
     ap.add_argument("--mirror-min", type=int, default=2)
@@ -507,6 +563,7 @@ def build_geometry_spec(
     t_sin_um: float,
     t_sio2_um: float,
     L_cav_um: float,
+    high_index_material: str = "sin",
 ) -> Dict:
     left: List[Dict[str, float]] = []
     right: List[Dict[str, float]] = []
@@ -537,6 +594,7 @@ def build_geometry_spec(
             "generated_on": utcnow_iso(),
             "generator": "optimize_cavity_geometry.py",
             "objective": "probe_rotation_optimization",
+            "high_index_material": str(high_index_material),
         },
     }
 
@@ -1088,6 +1146,7 @@ def objective_run(
         t_sin_um=design["t_sin_um"],
         t_sio2_um=design["t_sio2_um"],
         L_cav_um=design["L_cav_um"],
+        high_index_material=str(args.high_index_material),
     )
 
     # Enforce resonance constraint from structure modes (reflectance dips).
@@ -1250,8 +1309,14 @@ def objective_run(
         str(int(args.objective_resolution)),
         "--materials",
         args.materials,
+        "--high-index-material",
+        str(args.high_index_material),
         "--pump-intensity",
         str(float(args.pump_intensity)),
+        "--kappa-ref-lambda",
+        str(float(args.kappa_ref_lambda)),
+        "--high-index-n2",
+        str(float(args.high_index_n2)),
         "--decay-threshold",
         str(float(args.objective_decay_threshold)),
         "--geometry-file",
@@ -1265,8 +1330,12 @@ def objective_run(
         cmd.extend(["--sin-fit", args.sin_fit, "--sio2-fit", args.sio2_fit])
         cmd.extend(["--fit-window", str(args.fit_window[0]), str(args.fit_window[1])])
         cmd.extend(["--fit-poles", str(int(args.fit_poles))])
-    if args.materials == "constant":
-        cmd.extend(["--nH", str(float(args.nH)), "--nL", str(float(args.nL))])
+    if args.nH is not None:
+        cmd.extend(["--nH", str(float(args.nH))])
+    if args.kH is not None:
+        cmd.extend(["--kH", str(float(args.kH))])
+    if args.nL is not None:
+        cmd.extend(["--nL", str(float(args.nL))])
 
     env = os.environ.copy()
     env.setdefault("OMP_NUM_THREADS", "1")
@@ -2551,6 +2620,7 @@ def write_outputs(
         t_sin_um=best.t_sin_um,
         t_sio2_um=best.t_sio2_um,
         L_cav_um=best.L_cav_um,
+        high_index_material=str(args.high_index_material),
     )
     modes_spec = build_modes_spec(best.probe_um, best.pump1_um, best.pump2_um)
 
@@ -2671,6 +2741,11 @@ def write_outputs(
             "evaluations_total": int(evals_total),
             "profiles_considered": list(profile_diags.keys()),
             "materials": args.materials,
+            "high_index_material": str(args.high_index_material),
+            "high_index_constant_n": float(args.nH),
+            "high_index_constant_k": float(args.kH),
+            "high_index_kappa_ref_lambda_um": float(args.kappa_ref_lambda),
+            "high_index_n2_m2_per_w": float(args.high_index_n2),
             "optimizer": optimizer_mode,
             "optimizer_settings": {
                 "workers": int(args.workers),
@@ -2748,6 +2823,7 @@ def write_outputs(
 def main() -> None:
     _configure_numeric_threads()
     args = parse_args()
+    args = normalize_material_args(args)
     mp.verbosity(int(args.meep_verbosity))
 
     if float(args.cavity_max_length) <= float(args.cavity_min_length):
@@ -2765,7 +2841,10 @@ def main() -> None:
     mat_sin, mat_sio2 = get_cavity_materials(
         model=args.materials,
         index_high=float(args.nH),
+        kappa_high=float(args.kH),
         index_low=float(args.nL),
+        high_index_material=str(args.high_index_material),
+        kappa_ref_wavelength_um=float(args.kappa_ref_lambda),
         sin_csv=args.sin_fit,
         sio2_csv=args.sio2_fit,
         lam_min=int(args.fit_window[0]),
@@ -2859,6 +2938,7 @@ def main() -> None:
         t_sin_um=best_overall.t_sin_um,
         t_sio2_um=best_overall.t_sio2_um,
         L_cav_um=best_overall.L_cav_um,
+        high_index_material=str(args.high_index_material),
     )
     final_modes = build_modes_spec(
         probe_um=best_overall.probe_um,

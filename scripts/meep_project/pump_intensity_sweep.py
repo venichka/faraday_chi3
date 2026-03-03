@@ -22,6 +22,7 @@ from typing import Any, Dict, List, Sequence, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
+from nonlinear_materials import high_index_material_choices
 
 C0 = 299792458.0
 FS_PER_MEEP = (1e-6 / C0) * 1e15
@@ -222,8 +223,12 @@ def _build_args(
         dim=int(dim),
         mode=namespace.mode,
         materials=namespace.materials,
+        high_index_material=namespace.high_index_material,
         nH=namespace.nH,
+        kH=namespace.kH,
         nL=namespace.nL,
+        kappa_ref_lambda=namespace.kappa_ref_lambda,
+        high_index_n2=namespace.high_index_n2,
         sin_fit=namespace.sin_fit,
         sio2_fit=namespace.sio2_fit,
         fit_window=tuple(namespace.fit_window),
@@ -417,6 +422,13 @@ def _write_dim_markdown_summary(
     lines.append(f"- Workers: `{global_config['workers_effective']}`")
     lines.append(f"- Mode: `{global_config['mode']}`")
     lines.append(f"- Materials: `{global_config['materials']}`")
+    lines.append(f"- High-index material: `{global_config.get('high_index_material')}`")
+    lines.append(
+        f"- High-index n/k/n2: "
+        f"`{global_config.get('high_index_n')}` / "
+        f"`{global_config.get('high_index_k')}` / "
+        f"`{global_config.get('high_index_n2_m2_per_w')}`"
+    )
     lines.append(f"- Geometry file: `{global_config['geometry_file']}`")
     lines.append(f"- Cavity modes file: `{global_config['cavity_modes_file']}`")
     lines.append(f"- Decay threshold: `{global_config['decay_threshold']}`")
@@ -703,6 +715,13 @@ def _write_global_markdown_summary(output_root: Path, sweep_report: Dict[str, An
     )
     lines.append(f"- Number of points: `{sweep_report.get('num_points')}`")
     lines.append(f"- Mode/materials: `{sweep_report.get('mode')}` / `{sweep_report.get('materials')}`")
+    lines.append(
+        f"- High-index material n/k/n2: "
+        f"`{sweep_report.get('high_index_material')}` / "
+        f"`{sweep_report.get('high_index_n')}` / "
+        f"`{sweep_report.get('high_index_k')}` / "
+        f"`{sweep_report.get('high_index_n2_m2_per_w')}`"
+    )
     lines.append("")
 
     multi_plot = sweep_report.get("plot_paths", {}).get("rotation_vs_intensity_by_dim")
@@ -808,8 +827,27 @@ def main() -> None:
         default="library",
         help="Material model forwarded to the simulation.",
     )
+    parser.add_argument(
+        "--high-index-material",
+        choices=high_index_material_choices(),
+        default="sin",
+        help="High-index material preset forwarded to the simulation.",
+    )
     parser.add_argument("--nH", type=float, default=None, help="Override high-index value when --materials constant.")
+    parser.add_argument("--kH", type=float, default=None, help="Override high-index extinction coefficient k.")
     parser.add_argument("--nL", type=float, default=None, help="Override low-index value when --materials constant.")
+    parser.add_argument(
+        "--kappa-ref-lambda",
+        type=float,
+        default=1.55,
+        help="Reference wavelength (um) for mapping constant k to conductivity.",
+    )
+    parser.add_argument(
+        "--high-index-n2",
+        type=float,
+        default=None,
+        help="Override Kerr nonlinear index n2 (m^2/W) for high-index material.",
+    )
     parser.add_argument("--sin-fit", dest="sin_fit", type=str, default=None, help="CSV for SiN when --materials fit.")
     parser.add_argument("--sio2-fit", dest="sio2_fit", type=str, default=None, help="CSV for SiO2 when --materials fit.")
     parser.add_argument(
@@ -978,6 +1016,13 @@ def main() -> None:
         "workers_requested": int(args.workers),
         "mode": str(args.mode),
         "materials": str(args.materials),
+        "high_index_material": str(args.high_index_material),
+        "high_index_n": (float(args.nH) if args.nH is not None else None),
+        "high_index_k": (float(args.kH) if args.kH is not None else None),
+        "high_index_n2_m2_per_w": (
+            float(args.high_index_n2) if args.high_index_n2 is not None else None
+        ),
+        "kappa_ref_lambda_um": float(args.kappa_ref_lambda),
         "geometry_file": str(args.geometry_file),
         "cavity_modes_file": str(args.cavity_modes_file),
         "decay_threshold": float(args.decay_threshold),
@@ -1214,6 +1259,13 @@ def main() -> None:
         "dims": [int(d) for d in sorted(results_by_dim.keys())],
         "mode": str(args.mode),
         "materials": str(args.materials),
+        "high_index_material": str(args.high_index_material),
+        "high_index_n": (float(args.nH) if args.nH is not None else None),
+        "high_index_k": (float(args.kH) if args.kH is not None else None),
+        "high_index_n2_m2_per_w": (
+            float(args.high_index_n2) if args.high_index_n2 is not None else None
+        ),
+        "kappa_ref_lambda_um": float(args.kappa_ref_lambda),
         "geometry_file": str(args.geometry_file),
         "cavity_modes_file": str(args.cavity_modes_file),
         "range_scale": str(args.range_scale),

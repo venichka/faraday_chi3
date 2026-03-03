@@ -5,14 +5,21 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .DS_Store
+.vscode/
+.last_pipeline_compare_run
+.ipynb_checkpoints/
 
 # Heavy simulation outputs
 output_*/
 pump_intensity_sweep_*/
+pump_intensity_sweep_outputs/
 faraday_*outputs/
+faraday_*_outputs/
 .opt_eval_tmp/
+pipeline_*/
 
 # Generated reports/plots
 *.png
 *.pdf
 *.svg
+*.tar.gz

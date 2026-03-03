@@ -4,6 +4,12 @@ import meep as mp
 from math import isfinite, log
 from copy import deepcopy
 from typing import Dict, List, Any, Optional, Sequence, Tuple
+from nonlinear_materials import (
+    build_constant_nk_medium,
+    canonical_high_index_material,
+    resolve_high_index_index,
+    resolve_high_index_kappa,
+)
 
 # ------------------ Targets & weights (all wavelengths in μm) ------------------
 LAM_PROBE = 0.800
@@ -96,6 +102,9 @@ def get_cavity_materials(
     model: str = "library",
     index_high: float = 2.0,
     index_low: float = 1.45,
+    high_index_material: str = "sin",
+    kappa_high: float = 0.0,
+    kappa_ref_wavelength_um: float = 1.55,
     sin_csv: Optional[str] = None,
     sio2_csv: Optional[str] = None,
     lam_min: Optional[int] = None,
@@ -103,23 +112,41 @@ def get_cavity_materials(
     fit_poles: int = 6,
 ) -> Tuple[mp.Medium, mp.Medium]:
     """
-    Return (SiN, SiO2) media according to the requested model:
-      • "library": try mp.materials.Si3N4_NIR and mp.materials.SiO2 (fallback to constants)
-      • "constant": simple lossless media with provided indices.
+    Return (high-index, SiO2) media according to the requested model:
+      • "library": use Meep library when available, otherwise constants.
+      • "constant": constant n,k medium around reference wavelength.
       • "fit": fit dispersive materials from CSV tables using material_fit.fit_meep_material_from_csv
     Nonlinear susceptibilities are cleared to keep the response linear.
     """
+    high_key = canonical_high_index_material(high_index_material)
+    n_high = resolve_high_index_index(index_high, high_key)
+    k_high = resolve_high_index_kappa(kappa_high, high_key)
+    k_ref = float(max(kappa_ref_wavelength_um, 1e-9))
+    n_low = float(index_low)
     model_lc = (model or "").lower()
     if model_lc == "library":
-        mat_sin = _material_from_library(["Si3N4_NIR", "SiN"])
+        if high_key == "sin":
+            mat_sin = _material_from_library(["Si3N4_NIR", "SiN"])
+        else:
+            mat_sin = None
         mat_sio2 = _material_from_library(["SiO2", "FusedSilica", "Silica"])
         if mat_sin is None:
-            mat_sin = mp.Medium(index=index_high)
+            mat_sin = build_constant_nk_medium(
+                mp,
+                n=n_high,
+                k=k_high,
+                reference_wavelength_um=k_ref,
+            )
         if mat_sio2 is None:
-            mat_sio2 = mp.Medium(index=index_low)
+            mat_sio2 = mp.Medium(index=n_low)
     elif model_lc == "constant":
-        mat_sin = mp.Medium(index=index_high)
-        mat_sio2 = mp.Medium(index=index_low)
+        mat_sin = build_constant_nk_medium(
+            mp,
+            n=n_high,
+            k=k_high,
+            reference_wavelength_um=k_ref,
+        )
+        mat_sio2 = mp.Medium(index=n_low)
     elif model_lc == "fit":
         if sin_csv is None or sio2_csv is None:
             raise ValueError("Fit model requires sin_csv and sio2_csv paths.")
@@ -130,7 +157,7 @@ def get_cavity_materials(
                 "material_fit module (with scipy) is required for 'fit' materials."
             ) from exc
         mat_sin = fit_meep_material_from_csv(
-            sin_csv, material_name="SiN_fit", n_poles=fit_poles,
+            sin_csv, material_name=f"{high_key}_fit", n_poles=fit_poles,
             lambda_min=lam_min, lambda_max=lam_max
         )
         mat_sio2 = fit_meep_material_from_csv(
