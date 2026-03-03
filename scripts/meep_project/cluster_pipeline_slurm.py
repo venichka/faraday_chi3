@@ -68,6 +68,49 @@ def parse_fidelity(text: str) -> List[str]:
     raise ValueError("Fidelity must be one of: low, high, both.")
 
 
+def parse_stages(text: str) -> List[str]:
+    """Parse stage selector.
+
+    Accepted tokens:
+      - all
+      - opt / optimize / optimizers
+      - sim / sims / simulation / simulations
+      - sweep / sweeps
+    """
+    tokens = split_csv_tokens(text)
+    if not tokens:
+        return ["opt", "sim", "sweep"]
+    if "all" in tokens:
+        return ["opt", "sim", "sweep"]
+
+    mapped: List[str] = []
+    alias = {
+        "opt": "opt",
+        "optimize": "opt",
+        "optimizers": "opt",
+        "sim": "sim",
+        "sims": "sim",
+        "simulation": "sim",
+        "simulations": "sim",
+        "sweep": "sweep",
+        "sweeps": "sweep",
+    }
+    bad: List[str] = []
+    for tok in tokens:
+        key = alias.get(tok)
+        if key is None:
+            bad.append(tok)
+        else:
+            mapped.append(key)
+    if bad:
+        raise ValueError(
+            f"Invalid stage token(s): {bad}. Allowed: all,opt,sim,sweep"
+        )
+    if not mapped:
+        raise ValueError("At least one stage must be selected.")
+    return sorted(set(mapped))
+
+
 def shell_join(cmd: Sequence[str]) -> str:
     return shlex.join([str(x) for x in cmd])
 
@@ -203,6 +246,8 @@ def add_submission_flags(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--mem", type=str, default="0", help="Slurm memory request (e.g. 200G or 0).")
     parser.add_argument("--time-limit", type=str, default="24:00:00", help="Slurm walltime.")
     parser.add_argument("--partition", type=str, default="", help="Slurm partition.")
+    parser.add_argument("--nodelist", type=str, default="", help="Slurm node list constraint, e.g. cpu[001-004].")
+    parser.add_argument("--exclude-nodes", type=str, default="", help="Slurm exclude list, e.g. cpu009,cpu010.")
     parser.add_argument("--account", type=str, default="", help="Slurm account.")
     parser.add_argument("--qos", type=str, default="", help="Slurm QoS.")
     parser.add_argument("--constraint", type=str, default="", help="Slurm constraint.")
@@ -227,6 +272,11 @@ def add_submission_flags(parser: argparse.ArgumentParser) -> None:
         default=[],
         help="Additional raw sbatch option (repeatable), e.g. --sbatch-extra=--exclusive",
     )
+    parser.add_argument(
+        "--show-default-parameters",
+        action="store_true",
+        help="Print resolved parameters (including CPU-derived defaults) and exit.",
+    )
 
 
 def add_runtime_flags(parser: argparse.ArgumentParser) -> None:
@@ -234,6 +284,26 @@ def add_runtime_flags(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--run-root", type=str, default="")
     parser.add_argument("--python-exe", type=str, default="python")
     parser.add_argument("--mpi-launcher", type=str, default="mpirun")
+    parser.add_argument(
+        "--stages",
+        type=str,
+        default="all",
+        help="Pipeline stages: all or comma-list of opt,sim,sweep.",
+    )
+    parser.add_argument(
+        "--skip-optimizers",
+        action="store_true",
+        help="Skip optimizer stage even if selected in --stages.",
+    )
+    parser.add_argument(
+        "--source-run-root",
+        type=str,
+        default="",
+        help=(
+            "Existing run root used to source optimized_geometry.json + cavity_modes.json "
+            "when optimizer stage is skipped."
+        ),
+    )
 
     parser.add_argument(
         "--preset",
@@ -242,7 +312,24 @@ def add_runtime_flags(parser: argparse.ArgumentParser) -> None:
         help="Smoke for quick sanity checks; full for high-fidelity defaults.",
     )
     parser.add_argument("--optimizers", type=str, default="new,mf", help="Comma list: new,mf")
-    parser.add_argument("--optimizer-workers", type=int, default=6)
+    parser.add_argument(
+        "--optimizer-workers",
+        type=int,
+        default=None,
+        help="Optimizer worker pool size (default: total allocated CPUs).",
+    )
+    parser.add_argument(
+        "--parallel-optimizers",
+        action="store_true",
+        default=True,
+        help="Run selected optimizers in parallel stage processes (default: enabled).",
+    )
+    parser.add_argument(
+        "--no-parallel-optimizers",
+        dest="parallel_optimizers",
+        action="store_false",
+        help="Run selected optimizers sequentially.",
+    )
     parser.add_argument("--optimizer-debug", action="store_true")
     parser.add_argument("--objective-mode", choices=("quick", "full"), default="")
     parser.add_argument("--objective-resolution", type=int, default=0)
@@ -267,9 +354,14 @@ def add_runtime_flags(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--sim-cutoff", type=float, default=1e-4)
     parser.add_argument("--sim-1d-res-low", type=int, default=40)
     parser.add_argument("--sim-1d-res-high", type=int, default=100)
-    parser.add_argument("--sim-3d-res-low", type=int, default=20)
-    parser.add_argument("--sim-3d-res-high", type=int, default=30)
-    parser.add_argument("--sim-3d-mpi-ranks", type=int, default=16)
+    parser.add_argument("--sim-3d-res-low", type=int, default=30)
+    parser.add_argument("--sim-3d-res-high", type=int, default=60)
+    parser.add_argument(
+        "--sim-3d-mpi-ranks",
+        type=int,
+        default=None,
+        help="MPI ranks for 3D simulation stage (default: total CPUs / 2).",
+    )
 
     parser.add_argument("--skip-sweeps", action="store_true")
     parser.add_argument("--sweep-dims", type=str, default="1,3", help="Comma list of dims.")
@@ -278,14 +370,46 @@ def add_runtime_flags(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--sweep-range-scale", choices=("log", "linear"), default="log")
     parser.add_argument("--sweep-i-min", type=float, default=1e8)
     parser.add_argument("--sweep-i-max", type=float, default=2e12)
-    parser.add_argument("--sweep-points", type=int, default=6)
-    parser.add_argument("--sweep-1d-workers", type=int, default=6)
-    parser.add_argument("--sweep-3d-workers", type=int, default=1)
+    parser.add_argument(
+        "--sweep-points",
+        type=int,
+        default=None,
+        help="Global sweep points override (applies to both dims if dim-specific points are unset).",
+    )
+    parser.add_argument(
+        "--sweep-1d-points",
+        type=int,
+        default=None,
+        help="Number of 1D sweep points (default: total CPUs).",
+    )
+    parser.add_argument(
+        "--sweep-3d-points",
+        type=int,
+        default=None,
+        help="Number of 3D sweep points (default: total CPUs / 2).",
+    )
+    parser.add_argument(
+        "--sweep-1d-workers",
+        type=int,
+        default=None,
+        help="Parallel workers for 1D sweep (default: total CPUs).",
+    )
+    parser.add_argument(
+        "--sweep-3d-workers",
+        type=int,
+        default=1,
+        help="Parallel workers for 3D sweep launcher script.",
+    )
     parser.add_argument("--sweep-1d-res-low", type=int, default=40)
     parser.add_argument("--sweep-1d-res-high", type=int, default=100)
-    parser.add_argument("--sweep-3d-res-low", type=int, default=20)
-    parser.add_argument("--sweep-3d-res-high", type=int, default=30)
-    parser.add_argument("--sweep-3d-mpi-ranks", type=int, default=16)
+    parser.add_argument("--sweep-3d-res-low", type=int, default=30)
+    parser.add_argument("--sweep-3d-res-high", type=int, default=60)
+    parser.add_argument(
+        "--sweep-3d-mpi-ranks",
+        type=int,
+        default=None,
+        help="MPI ranks for 3D sweep stage (default: total CPUs / 2).",
+    )
     parser.add_argument(
         "--parallel-sweep-dims",
         action="store_true",
@@ -353,6 +477,132 @@ def apply_cluster_profile(ns: argparse.Namespace) -> None:
         ns.cpus_per_task = 16
 
 
+def _parse_int_env(name: str, default: int = 0) -> int:
+    raw = str(os.environ.get(name, "")).strip()
+    if not raw:
+        return int(default)
+    try:
+        return int(raw)
+    except Exception:
+        return int(default)
+
+
+def estimate_total_cpus(ns: argparse.Namespace) -> int:
+    # In-allocation path: use Slurm environment when available.
+    ntasks = _parse_int_env("SLURM_NTASKS", 0)
+    cpus_per_task = _parse_int_env("SLURM_CPUS_PER_TASK", 1)
+    if (bool(ns.run_in_allocation) or bool_in_slurm()) and ntasks > 0 and cpus_per_task > 0:
+        return int(ntasks) * int(cpus_per_task)
+
+    # Otherwise prefer explicit CLI values (submit-time profile/custom overrides).
+    if ns.nodes is not None and ns.ntasks_per_node is not None and ns.cpus_per_task is not None:
+        total = int(ns.nodes) * int(ns.ntasks_per_node) * int(ns.cpus_per_task)
+        if total > 0:
+            return total
+
+    # Generic fallback to Slurm env if present.
+    if ntasks > 0 and cpus_per_task > 0:
+        return int(ntasks) * int(cpus_per_task)
+
+    # Last fallback to a safe single-core default.
+    return 1
+
+
+def apply_resource_defaults(ns: argparse.Namespace) -> None:
+    total_cpus = max(1, int(estimate_total_cpus(ns)))
+    half_cpus = max(1, total_cpus // 2)
+
+    if ns.optimizer_workers is None:
+        ns.optimizer_workers = int(total_cpus)
+    if ns.sim_3d_mpi_ranks is None:
+        ns.sim_3d_mpi_ranks = int(half_cpus)
+    if ns.sweep_1d_workers is None:
+        ns.sweep_1d_workers = int(total_cpus)
+    if ns.sweep_3d_mpi_ranks is None:
+        ns.sweep_3d_mpi_ranks = int(half_cpus)
+
+    # Backward-compatible point selection:
+    #   1) if dim-specific value is set, use it
+    #   2) else if global --sweep-points is set, use that
+    #   3) else use CPU-derived defaults (1D=total, 3D=half)
+    if ns.sweep_1d_points is None:
+        ns.sweep_1d_points = int(ns.sweep_points) if ns.sweep_points is not None else int(total_cpus)
+    if ns.sweep_3d_points is None:
+        ns.sweep_3d_points = int(ns.sweep_points) if ns.sweep_points is not None else int(half_cpus)
+
+    if int(ns.optimizer_workers) < 1:
+        raise ValueError("--optimizer-workers must be >= 1")
+    if int(ns.sim_3d_mpi_ranks) < 1:
+        raise ValueError("--sim-3d-mpi-ranks must be >= 1")
+    if int(ns.sweep_1d_workers) < 1:
+        raise ValueError("--sweep-1d-workers must be >= 1")
+    if int(ns.sweep_3d_workers) < 1:
+        raise ValueError("--sweep-3d-workers must be >= 1")
+    if int(ns.sweep_3d_mpi_ranks) < 1:
+        raise ValueError("--sweep-3d-mpi-ranks must be >= 1")
+    if int(ns.sweep_1d_points) < 1 or int(ns.sweep_3d_points) < 1:
+        raise ValueError("--sweep-1d-points and --sweep-3d-points must be >= 1")
+
+
+def resolved_defaults_dict(ns: argparse.Namespace) -> Dict[str, Any]:
+    total_cpus = int(estimate_total_cpus(ns))
+    return {
+        "cluster": {
+            "cluster_profile": ns.cluster_profile,
+            "submit": bool(ns.submit),
+            "run_in_allocation": bool(ns.run_in_allocation),
+            "nodes": int(ns.nodes),
+            "ntasks_per_node": int(ns.ntasks_per_node),
+            "cpus_per_task": int(ns.cpus_per_task),
+            "estimated_total_cpus": int(total_cpus),
+            "partition": str(ns.partition),
+            "nodelist": str(ns.nodelist),
+            "exclude_nodes": str(ns.exclude_nodes),
+            "time_limit": str(ns.time_limit),
+            "mem": str(ns.mem),
+        },
+        "stages": {
+            "stages": str(ns.stages),
+            "skip_optimizers": bool(ns.skip_optimizers),
+            "skip_sims": bool(ns.skip_sims),
+            "skip_sweeps": bool(ns.skip_sweeps),
+        },
+        "optimizers": {
+            "optimizers": str(ns.optimizers),
+            "parallel_optimizers": bool(ns.parallel_optimizers),
+            "workers": int(ns.optimizer_workers),
+            "preset": str(ns.preset),
+            "objective_mode": str(ns.objective_mode),
+            "objective_resolution": int(ns.objective_resolution),
+            "objective_decay_threshold": float(ns.objective_decay_threshold),
+            "pump_intensity_w_cm2": float(ns.optimizer_pump_intensity),
+        },
+        "simulations": {
+            "dims": str(ns.sim_dims),
+            "fidelity": str(ns.sim_fidelity),
+            "sim_cutoff": float(ns.sim_cutoff),
+            "sim_1d_res_low": int(ns.sim_1d_res_low),
+            "sim_1d_res_high": int(ns.sim_1d_res_high),
+            "sim_3d_res_low": int(ns.sim_3d_res_low),
+            "sim_3d_res_high": int(ns.sim_3d_res_high),
+            "sim_3d_mpi_ranks": int(ns.sim_3d_mpi_ranks),
+        },
+        "sweeps": {
+            "dims": str(ns.sweep_dims),
+            "fidelity": str(ns.sweep_fidelity),
+            "sweep_cutoff": float(ns.sweep_cutoff),
+            "sweep_i_min_w_cm2": float(ns.sweep_i_min),
+            "sweep_i_max_w_cm2": float(ns.sweep_i_max),
+            "sweep_range_scale": str(ns.sweep_range_scale),
+            "sweep_1d_points": int(ns.sweep_1d_points),
+            "sweep_3d_points": int(ns.sweep_3d_points),
+            "sweep_1d_workers": int(ns.sweep_1d_workers),
+            "sweep_3d_workers": int(ns.sweep_3d_workers),
+            "sweep_3d_mpi_ranks": int(ns.sweep_3d_mpi_ranks),
+        },
+    }
+
+
 def bool_in_slurm() -> bool:
     return bool(os.environ.get("SLURM_JOB_ID"))
 
@@ -380,6 +630,10 @@ def submit_to_slurm(ns: argparse.Namespace, remaining_run_args: List[str]) -> No
         sbatch_cmd += ["--error", ns.slurm_error]
     if ns.partition:
         sbatch_cmd += ["--partition", ns.partition]
+    if ns.nodelist:
+        sbatch_cmd += ["--nodelist", ns.nodelist]
+    if ns.exclude_nodes:
+        sbatch_cmd += ["--exclude", ns.exclude_nodes]
     if ns.account:
         sbatch_cmd += ["--account", ns.account]
     if ns.qos:
@@ -501,6 +755,41 @@ def maybe_wrap_mpi(cmd: Sequence[str], dim: int, ranks: int, launcher: str) -> S
     return [launcher, "-np", str(int(ranks)), *cmd]
 
 
+def resolve_optimizer_artifacts(
+    opt_name: str,
+    generated_root: Path,
+    source_root: Path,
+    expect_generated: bool,
+) -> Tuple[Path, Path]:
+    if expect_generated:
+        base = generated_root / "optimizers" / opt_name
+        geom = base / "optimized_geometry.json"
+        modes = base / "cavity_modes.json"
+        if not geom.exists() or not modes.exists():
+            raise FileNotFoundError(
+                f"Missing generated optimizer artifacts for '{opt_name}': {geom}, {modes}"
+            )
+        return geom, modes
+
+    candidates = [
+        source_root / "optimizers" / opt_name,
+        source_root / opt_name,
+        source_root,
+    ]
+    for base in candidates:
+        geom = base / "optimized_geometry.json"
+        modes = base / "cavity_modes.json"
+        if geom.exists() and modes.exists():
+            return geom, modes
+
+    raise FileNotFoundError(
+        "Could not locate optimizer artifacts for "
+        f"'{opt_name}' under source root '{source_root}'. "
+        "Expected optimized_geometry.json and cavity_modes.json under one of: "
+        f"{candidates[0]}, {candidates[1]}, {candidates[2]}"
+    )
+
+
 def build_report(
     run_root: Path,
     stage_times: Dict[str, Any],
@@ -553,14 +842,26 @@ def build_report(
 
 def run_pipeline(ns: argparse.Namespace) -> None:
     apply_preset(ns)
+    apply_resource_defaults(ns)
+    selected_stages = parse_stages(ns.stages)
+    run_opt = ("opt" in selected_stages) and (not ns.skip_optimizers)
+    run_sim = ("sim" in selected_stages) and (not ns.skip_sims)
+    run_sweep = ("sweep" in selected_stages) and (not ns.skip_sweeps)
+    if not (run_opt or run_sim or run_sweep):
+        raise ValueError(
+            "Nothing to run: all selected stages are skipped. "
+            "Adjust --stages and/or --skip-* flags."
+        )
+
     optimizer_names = parse_optimizers(ns.optimizers)
-    sim_dims = parse_dims(ns.sim_dims)
-    sim_fids = parse_fidelity(ns.sim_fidelity)
-    sweep_dims = parse_dims(ns.sweep_dims)
-    sweep_fids = parse_fidelity(ns.sweep_fidelity)
+    sim_dims = parse_dims(ns.sim_dims) if run_sim else []
+    sim_fids = parse_fidelity(ns.sim_fidelity) if run_sim else []
+    sweep_dims = parse_dims(ns.sweep_dims) if run_sweep else []
+    sweep_fids = parse_fidelity(ns.sweep_fidelity) if run_sweep else []
 
     project_root = Path(ns.project_root).resolve()
     run_root = Path(ns.run_root).resolve() if ns.run_root else (project_root / f"pipeline_cluster_{now_tag()}").resolve()
+    source_run_root = Path(ns.source_run_root).resolve() if ns.source_run_root else run_root
     ensure_dir(run_root)
     ensure_dir(run_root / "logs")
 
@@ -568,23 +869,42 @@ def run_pipeline(ns: argparse.Namespace) -> None:
     env = stage_env()
     stage_times: Dict[str, Any] = {}
 
-    optimizer_cmds = build_optimizer_cmds(ns, py, run_root, optimizer_names)
-    for name in optimizer_names:
-        run_stage(
-            f"opt_{name}",
-            optimizer_cmds[name],
-            cwd=project_root,
-            env=env,
-            log_dir=run_root / "logs",
-            stage_times=stage_times,
-        )
+    if run_opt:
+        optimizer_cmds = build_optimizer_cmds(ns, py, run_root, optimizer_names)
+        if ns.parallel_optimizers and len(optimizer_names) > 1:
+            batch = [(f"opt_{name}", optimizer_cmds[name]) for name in optimizer_names]
+            run_parallel_stages(
+                batch,
+                cwd=project_root,
+                env=env,
+                log_dir=run_root / "logs",
+                stage_times=stage_times,
+            )
+        else:
+            for name in optimizer_names:
+                run_stage(
+                    f"opt_{name}",
+                    optimizer_cmds[name],
+                    cwd=project_root,
+                    env=env,
+                    log_dir=run_root / "logs",
+                    stage_times=stage_times,
+                )
 
     mats = material_args(ns)
+    artifact_map: Dict[str, Tuple[Path, Path]] = {}
+    for opt in optimizer_names:
+        if run_opt or run_sim or run_sweep:
+            artifact_map[opt] = resolve_optimizer_artifacts(
+                opt_name=opt,
+                generated_root=run_root,
+                source_root=source_run_root,
+                expect_generated=run_opt,
+            )
 
-    if not ns.skip_sims:
+    if run_sim:
         for opt in optimizer_names:
-            geom = run_root / "optimizers" / opt / "optimized_geometry.json"
-            modes = run_root / "optimizers" / opt / "cavity_modes.json"
+            geom, modes = artifact_map[opt]
             for fid in sim_fids:
                 mode = sim_mode_for_fidelity(fid)
                 for dim in sim_dims:
@@ -621,16 +941,16 @@ def run_pipeline(ns: argparse.Namespace) -> None:
                         stage_times=stage_times,
                     )
 
-    if not ns.skip_sweeps:
+    if run_sweep:
         for opt in optimizer_names:
-            geom = run_root / "optimizers" / opt / "optimized_geometry.json"
-            modes = run_root / "optimizers" / opt / "cavity_modes.json"
+            geom, modes = artifact_map[opt]
             for fid in sweep_fids:
                 mode = sim_mode_for_fidelity(fid)
                 stage_batch: List[Tuple[str, Sequence[str]]] = []
                 for dim in sweep_dims:
                     res = sweep_res(ns, dim, fid)
                     workers = int(ns.sweep_1d_workers if dim == 1 else ns.sweep_3d_workers)
+                    points = int(ns.sweep_1d_points if dim == 1 else ns.sweep_3d_points)
                     out_root = ensure_dir(run_root / "sweeps" / opt / fid / f"dim{dim}")
                     base_cmd = [
                         py,
@@ -640,7 +960,7 @@ def run_pipeline(ns: argparse.Namespace) -> None:
                         "--intensity-range",
                         str(float(ns.sweep_i_min)),
                         str(float(ns.sweep_i_max)),
-                        str(int(ns.sweep_points)),
+                        str(points),
                         "--range-scale",
                         str(ns.sweep_range_scale),
                         "--workers",
@@ -704,11 +1024,34 @@ def run_pipeline(ns: argparse.Namespace) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Cluster-ready full pipeline launcher.")
+    parser = argparse.ArgumentParser(
+        description=(
+            "Cluster-ready launcher for optimization, simulations, and sweeps.\n"
+            "Can submit to Slurm or run inside an existing allocation."
+        ),
+        formatter_class=argparse.RawTextHelpFormatter,
+        epilog=(
+            "Examples:\n"
+            "  Submit full pipeline on debug profile:\n"
+            "    python cluster_pipeline_slurm.py --submit --cluster-profile debug --preset smoke\n\n"
+            "  Run only simulations and sweeps from existing optimizer outputs:\n"
+            "    python cluster_pipeline_slurm.py --submit --cluster-profile release \\\n"
+            "      --stages sim,sweep --source-run-root /path/to/prev_run --optimizers new,mf\n\n"
+            "  Pin to specific nodes in defq:\n"
+            "    python cluster_pipeline_slurm.py --submit --partition defq \\\n"
+            "      --nodelist cpu[001-004] --preset smoke\n"
+        ),
+    )
     add_submission_flags(parser)
     add_runtime_flags(parser)
     ns = parser.parse_args()
     apply_cluster_profile(ns)
+    apply_preset(ns)
+    apply_resource_defaults(ns)
+
+    if ns.show_default_parameters:
+        print(json.dumps(resolved_defaults_dict(ns), indent=2))
+        return
 
     # Build runtime argument list for sbatch submission by filtering out submit-only flags.
     submit_only = {
@@ -720,6 +1063,8 @@ def main() -> None:
         "--mem",
         "--time-limit",
         "--partition",
+        "--nodelist",
+        "--exclude-nodes",
         "--account",
         "--qos",
         "--constraint",
@@ -728,6 +1073,7 @@ def main() -> None:
         "--slurm-error",
         "--job-shell-init",
         "--job-env-activate",
+        "--show-default-parameters",
         "--sbatch-extra",
     }
     raw = sys.argv[1:]
@@ -749,6 +1095,8 @@ def main() -> None:
                 "--mem",
                 "--time-limit",
                 "--partition",
+                "--nodelist",
+                "--exclude-nodes",
                 "--account",
                 "--qos",
                 "--constraint",
@@ -757,6 +1105,7 @@ def main() -> None:
                 "--slurm-error",
                 "--job-shell-init",
                 "--job-env-activate",
+                "--show-default-parameters",
                 "--sbatch-extra",
             }:
                 i += 2
