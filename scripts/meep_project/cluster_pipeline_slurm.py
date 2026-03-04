@@ -257,7 +257,11 @@ def add_submission_flags(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--job-shell-init",
         type=str,
-        default='eval "$(micromamba shell hook --shell bash)"',
+        default=(
+            "export MAMBA_ROOT_PREFIX=/data/phi/nikita/envs/micromamba; "
+            "export PATH=/data/phi/nikita/bin:$PATH; "
+            'eval "$(micromamba shell hook --shell bash)"'
+        ),
         help="Shell init snippet run inside Slurm job before activation.",
     )
     parser.add_argument(
@@ -282,7 +286,7 @@ def add_submission_flags(parser: argparse.ArgumentParser) -> None:
 def add_runtime_flags(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--project-root", type=str, default=str(Path(__file__).resolve().parent))
     parser.add_argument("--run-root", type=str, default="")
-    parser.add_argument("--python-exe", type=str, default="python")
+    parser.add_argument("--python-exe", type=str, default=sys.executable)
     parser.add_argument("--mpi-launcher", type=str, default="mpirun")
     parser.add_argument(
         "--stages",

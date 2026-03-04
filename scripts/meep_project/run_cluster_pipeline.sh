@@ -218,6 +218,7 @@ CMD=(python "${SCRIPT_DIR}/cluster_pipeline_slurm.py" --cluster-profile "${PROFI
 if [[ ${SUBMIT} -eq 1 ]]; then
   CMD+=(--submit)
 fi
+CMD+=(--python-exe "$(command -v python)")
 if [[ ${#STAGE_SHORTCUT_ARGS[@]} -gt 0 ]]; then
   CMD+=("${STAGE_SHORTCUT_ARGS[@]}")
 fi
