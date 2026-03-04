@@ -120,6 +120,28 @@ def ensure_dir(path: Path) -> Path:
     return path
 
 
+def resolve_runtime_binaries(ns: argparse.Namespace) -> None:
+    py = str(Path(ns.python_exe).expanduser())
+    ns.python_exe = py
+
+    # Prefer MPI launcher from the same environment as the selected Python.
+    # This avoids mismatches between system mpirun and env-specific MPI builds.
+    launcher = str(ns.mpi_launcher).strip()
+    if not launcher:
+        ns.mpi_launcher = "mpirun"
+        launcher = "mpirun"
+    if os.path.isabs(launcher):
+        return
+    py_bin = Path(py).resolve().parent
+    preferred = py_bin / launcher
+    if preferred.exists():
+        ns.mpi_launcher = str(preferred)
+        return
+    fallback = py_bin / "mpirun"
+    if fallback.exists():
+        ns.mpi_launcher = str(fallback)
+
+
 def stage_env() -> Dict[str, str]:
     env = os.environ.copy()
     env.setdefault("OMP_NUM_THREADS", "1")
@@ -127,6 +149,11 @@ def stage_env() -> Dict[str, str]:
     env.setdefault("MKL_NUM_THREADS", "1")
     env.setdefault("NUMEXPR_NUM_THREADS", "1")
     env.setdefault("MPLCONFIGDIR", "/tmp/mplcache")
+    # On this cluster UCX sometimes picks unroutable link-local interfaces (169.254.*)
+    # and fails MPI init on multi-node runs. Force stable TCP transport by default.
+    env.setdefault("UCX_IB_DISABLE", "y")
+    env.setdefault("UCX_TLS", "tcp,sm,self")
+    env.setdefault("UCX_SOCKADDR_TLS_PRIORITY", "tcp")
     return env
 
 
@@ -144,6 +171,11 @@ def run_stage(
     with log_path.open("w", encoding="utf-8") as fh:
         fh.write(f"[stage] {name}\n")
         fh.write(f"[cmd] {shell_join(cmd)}\n\n")
+        fh.write(f"[env] pipeline_python_exe={env.get('PIPELINE_PYTHON_EXE', '')}\n")
+        fh.write(f"[env] pipeline_mpi_launcher={env.get('PIPELINE_MPI_LAUNCHER', '')}\n")
+        fh.write(f"[env] UCX_IB_DISABLE={env.get('UCX_IB_DISABLE', '')}\n")
+        fh.write(f"[env] UCX_TLS={env.get('UCX_TLS', '')}\n")
+        fh.write(f"[env] UCX_SOCKADDR_TLS_PRIORITY={env.get('UCX_SOCKADDR_TLS_PRIORITY', '')}\n\n")
         fh.flush()
         rc = subprocess.call(
             list(cmd),
@@ -178,6 +210,11 @@ def run_parallel_stages(
         fh = log_path.open("w", encoding="utf-8")
         fh.write(f"[stage] {name}\n")
         fh.write(f"[cmd] {shell_join(cmd)}\n\n")
+        fh.write(f"[env] pipeline_python_exe={env.get('PIPELINE_PYTHON_EXE', '')}\n")
+        fh.write(f"[env] pipeline_mpi_launcher={env.get('PIPELINE_MPI_LAUNCHER', '')}\n")
+        fh.write(f"[env] UCX_IB_DISABLE={env.get('UCX_IB_DISABLE', '')}\n")
+        fh.write(f"[env] UCX_TLS={env.get('UCX_TLS', '')}\n")
+        fh.write(f"[env] UCX_SOCKADDR_TLS_PRIORITY={env.get('UCX_SOCKADDR_TLS_PRIORITY', '')}\n\n")
         fh.flush()
         proc = subprocess.Popen(
             list(cmd),
@@ -564,6 +601,8 @@ def resolved_defaults_dict(ns: argparse.Namespace) -> Dict[str, Any]:
             "exclude_nodes": str(ns.exclude_nodes),
             "time_limit": str(ns.time_limit),
             "mem": str(ns.mem),
+            "python_exe": str(ns.python_exe),
+            "mpi_launcher": str(ns.mpi_launcher),
         },
         "stages": {
             "stages": str(ns.stages),
@@ -871,6 +910,8 @@ def run_pipeline(ns: argparse.Namespace) -> None:
 
     py = str(Path(ns.python_exe).expanduser())
     env = stage_env()
+    env["PIPELINE_PYTHON_EXE"] = str(py)
+    env["PIPELINE_MPI_LAUNCHER"] = str(ns.mpi_launcher)
     stage_times: Dict[str, Any] = {}
 
     if run_opt:
@@ -1049,6 +1090,7 @@ def main() -> None:
     add_submission_flags(parser)
     add_runtime_flags(parser)
     ns = parser.parse_args()
+    resolve_runtime_binaries(ns)
     apply_cluster_profile(ns)
     apply_preset(ns)
     apply_resource_defaults(ns)
