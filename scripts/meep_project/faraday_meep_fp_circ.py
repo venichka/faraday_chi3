@@ -572,6 +572,8 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
 
     if args.pump_intensity is not None:
         run.pump_intensity_w_cm2 = args.pump_intensity
+    if getattr(args, "probe_intensity", None) is not None:
+        run.probe_intensity_w_cm2 = float(args.probe_intensity)
     pump_amp1 = intensity_to_meep_amplitude(run.pump_intensity_w_cm2, n_source_medium)
     pump_amp2 = intensity_to_meep_amplitude(run.pump_intensity_w_cm2, n_source_medium)
     probe_amp = intensity_to_meep_amplitude(run.probe_intensity_w_cm2, n_source_medium)
@@ -758,6 +760,8 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
         },
         "probe_pol": {
             "theta_deg": [],
+            "Ex_fwd_mean": [],
+            "Ey_fwd_mean": [],
             "Ix": [],
             "Iy": [],
             "S0": [],
@@ -914,6 +918,8 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
         s0_tot = max(s0_fwd + s0_bwd, 1e-30)
         forward_fraction = float(s0_fwd / s0_tot)
         time_trace["probe_pol"]["theta_deg"].append(theta_deg)
+        time_trace["probe_pol"]["Ex_fwd_mean"].append(complex(np.mean(ex_fwd_c)))
+        time_trace["probe_pol"]["Ey_fwd_mean"].append(complex(np.mean(ey_fwd_c)))
         time_trace["probe_pol"]["Ix"].append(ix_c)
         time_trace["probe_pol"]["Iy"].append(iy_c)
         time_trace["probe_pol"]["S0"].append(stokes_c["S0"])
@@ -1057,6 +1063,8 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
     theta_deg_rel = wrap_linear_polarization_deg(
         theta_deg_wrapped - INIT_PROBE_POLARIZATION_DEG
     )
+    probe_ex_fwd_mean = np.array(time_trace["probe_pol"]["Ex_fwd_mean"], dtype=complex)
+    probe_ey_fwd_mean = np.array(time_trace["probe_pol"]["Ey_fwd_mean"], dtype=complex)
     probe_ix = np.array(time_trace["probe_pol"]["Ix"])
     probe_iy = np.array(time_trace["probe_pol"]["Iy"])
     probe_s0 = np.array(time_trace["probe_pol"]["S0"])
@@ -1091,25 +1099,118 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
     t_td_fs = t_td * FS_PER_MEEP
 
     # Rotation at output, relative to input polarization angle, from probe DFT monitor.
+    # Final value is mean over [end-M, end] valid points so the last computed sample
+    # is always included.
+    probe_rotation_tail_points_requested = max(
+        1, int(getattr(args, "probe_rotation_tail_points", 64))
+    )
+    probe_rotation_window_fs = getattr(args, "probe_rotation_window_fs", None)
+    if probe_rotation_window_fs is not None:
+        probe_rotation_window_fs = float(probe_rotation_window_fs)
+        if not np.isfinite(probe_rotation_window_fs) or probe_rotation_window_fs <= 0:
+            probe_rotation_window_fs = None
+    disable_strength_validity = bool(getattr(args, "disable_strength_validity", False))
+    strength_threshold_rel = 0.01
+    validity_policy = (
+        "finite_only" if disable_strength_validity else "strength_threshold_and_finite"
+    )
+
+    def select_final_window_indices(
+        values: np.ndarray, valid_mask: np.ndarray, points: int
+    ) -> np.ndarray:
+        vv = np.asarray(values, dtype=float)
+        if vv.size == 0:
+            return np.array([], dtype=int)
+        vm = np.asarray(valid_mask, dtype=bool)
+        if vm.size != vv.size:
+            vm = np.ones(vv.size, dtype=bool)
+        idx = np.where(vm & np.isfinite(vv))[0]
+        if idx.size == 0:
+            idx = np.where(np.isfinite(vv))[0]
+        if idx.size == 0:
+            return np.array([], dtype=int)
+        count = max(1, min(int(points), int(idx.size)))
+        return idx[-count:]
+
+    def weighted_arithmetic_mean(values: np.ndarray, weights: np.ndarray) -> float:
+        vv = np.asarray(values, dtype=float)
+        ww = np.asarray(weights, dtype=float)
+        valid = np.isfinite(vv) & np.isfinite(ww) & (ww > 0)
+        if np.any(valid):
+            return float(np.average(vv[valid], weights=ww[valid]))
+        vv = vv[np.isfinite(vv)]
+        return float(np.mean(vv)) if vv.size else float("nan")
+
+    def weighted_complex_mean(values: np.ndarray, weights: np.ndarray) -> complex:
+        vv = np.asarray(values, dtype=complex)
+        ww = np.asarray(weights, dtype=float)
+        valid = (
+            np.isfinite(vv.real)
+            & np.isfinite(vv.imag)
+            & np.isfinite(ww)
+            & (ww > 0)
+        )
+        if np.any(valid):
+            return complex(np.average(vv[valid], weights=ww[valid]))
+        vv = vv[np.isfinite(vv.real) & np.isfinite(vv.imag)]
+        return complex(np.mean(vv)) if vv.size else complex(np.nan, np.nan)
+
+    def weighted_circular_std_linear_pol_deg(
+        values_deg: np.ndarray, weights: np.ndarray
+    ) -> float:
+        vv = np.asarray(values_deg, dtype=float)
+        ww = np.asarray(weights, dtype=float)
+        valid = np.isfinite(vv) & np.isfinite(ww) & (ww > 0)
+        if not np.any(valid):
+            return float("nan")
+        angles = np.radians(2.0 * vv[valid])
+        w_use = ww[valid]
+        c = np.average(np.cos(angles), weights=w_use)
+        s = np.average(np.sin(angles), weights=w_use)
+        r = float(np.hypot(c, s))
+        r = max(min(r, 1.0), 1e-12)
+        sigma_rad = np.sqrt(max(-2.0 * np.log(r), 0.0))
+        return float(np.degrees(0.5 * sigma_rad))
+
+    def resolve_window_points_from_fs(
+        t_fs: np.ndarray, points_requested: int, window_fs: float | None
+    ) -> int:
+        if window_fs is None:
+            return int(points_requested)
+        tt = np.asarray(t_fs, dtype=float)
+        if tt.size < 2:
+            return int(points_requested)
+        dt = np.diff(tt)
+        dt = dt[np.isfinite(dt) & (dt > 0)]
+        if dt.size == 0:
+            return int(points_requested)
+        points_from_fs = int(np.ceil(float(window_fs) / float(np.median(dt))))
+        return max(1, points_from_fs)
+
+    probe_rotation_tail_points = resolve_window_points_from_fs(
+        t_arr_fs, probe_rotation_tail_points_requested, probe_rotation_window_fs
+    )
+    probe_rotation_tail_points_td = resolve_window_points_from_fs(
+        t_td_fs, probe_rotation_tail_points_requested, probe_rotation_window_fs
+    )
+
     probe_s0_dft = probe_s0
     intensity_threshold_dft = (
-        0.01 * float(np.max(probe_s0_dft)) if probe_s0_dft.size else 0.0
+        strength_threshold_rel * float(np.max(probe_s0_dft)) if probe_s0_dft.size else 0.0
     )
-    valid_probe_dft = probe_s0_dft > intensity_threshold_dft
+    if disable_strength_validity:
+        valid_probe_dft = np.isfinite(probe_s0_dft)
+    else:
+        valid_probe_dft = probe_s0_dft > intensity_threshold_dft
+    tail_idx_dft = select_final_window_indices(theta_deg_rel, valid_probe_dft, probe_rotation_tail_points)
     if np.any(valid_probe_dft):
         theta_probe_valid_dft = theta_deg_rel[valid_probe_dft]
-        theta_probe_valid_dft_unwrapped = theta_deg_rel_unwrapped[valid_probe_dft]
-        probe_rotation_final_rel = float(theta_probe_valid_dft[-1])
         probe_rotation_min_rel = float(np.min(theta_probe_valid_dft))
         probe_rotation_max_rel = float(np.max(theta_probe_valid_dft))
         probe_rotation_mean_rel = weighted_linear_mean_deg(
             theta_probe_valid_dft, probe_s0_dft[valid_probe_dft]
         )
-        probe_rotation_final_rel_unwrapped = float(theta_probe_valid_dft_unwrapped[-1])
     else:
-        probe_rotation_final_rel = (
-            float(theta_deg_rel[-1]) if theta_deg_rel.size else float("nan")
-        )
         probe_rotation_min_rel = (
             float(np.min(theta_deg_rel)) if theta_deg_rel.size else float("nan")
         )
@@ -1117,11 +1218,103 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
             float(np.max(theta_deg_rel)) if theta_deg_rel.size else float("nan")
         )
         probe_rotation_mean_rel = weighted_linear_mean_deg(theta_deg_rel)
-        probe_rotation_final_rel_unwrapped = (
+    if tail_idx_dft.size:
+        dft_tail_weights = (
+            np.asarray(probe_s0_dft[tail_idx_dft], dtype=float)
+            if probe_s0_dft.size == theta_deg_rel.size
+            else np.ones(tail_idx_dft.size, dtype=float)
+        )
+        probe_rotation_final_rel_window_mean = weighted_linear_mean_deg(
+            np.asarray(theta_deg_rel[tail_idx_dft], dtype=float), dft_tail_weights
+        )
+        probe_rotation_final_rel_unwrapped_window_mean = weighted_arithmetic_mean(
+            np.asarray(theta_deg_rel_unwrapped[tail_idx_dft], dtype=float), dft_tail_weights
+        )
+        probe_rotation_tail_window_fs = (
+            float(t_arr_fs[int(tail_idx_dft[0])]),
+            float(t_arr_fs[int(tail_idx_dft[-1])]),
+        )
+    else:
+        probe_rotation_final_rel_window_mean = (
+            float(theta_deg_rel[-1]) if theta_deg_rel.size else float("nan")
+        )
+        probe_rotation_final_rel_unwrapped_window_mean = (
             float(theta_deg_rel_unwrapped[-1])
             if theta_deg_rel_unwrapped.size
             else float("nan")
         )
+        probe_rotation_tail_window_fs = (float("nan"), float("nan"))
+
+    # Coherent final-window estimator: average Jones components over the selected
+    # end window and compute Stokes angle from the averaged complex field.
+    dft_window_weights = (
+        np.asarray(probe_s0_dft[tail_idx_dft], dtype=float)
+        if tail_idx_dft.size and probe_s0_dft.size == theta_deg_rel.size
+        else np.ones(tail_idx_dft.size, dtype=float)
+    )
+    coherent_ex = complex(np.nan, np.nan)
+    coherent_ey = complex(np.nan, np.nan)
+    coherent_theta_rel = float("nan")
+    coherent_chi_deg = float("nan")
+    coherent_dolp = float("nan")
+    coherent_docp = float("nan")
+    coherent_s0 = float("nan")
+    coherent_theta_std = float("nan")
+    coherent_signal_power = float("nan")
+    coherent_noise_power = float("nan")
+    coherent_snr_linear = float("nan")
+    coherent_snr_db = float("nan")
+    coherent_coherence = float("nan")
+    if tail_idx_dft.size:
+        ex_tail = np.asarray(probe_ex_fwd_mean[tail_idx_dft], dtype=complex)
+        ey_tail = np.asarray(probe_ey_fwd_mean[tail_idx_dft], dtype=complex)
+        coherent_ex = weighted_complex_mean(ex_tail, dft_window_weights)
+        coherent_ey = weighted_complex_mean(ey_tail, dft_window_weights)
+        if np.isfinite(coherent_ex.real) and np.isfinite(coherent_ex.imag) and np.isfinite(coherent_ey.real) and np.isfinite(coherent_ey.imag):
+            stokes_coherent = stokes_metrics(
+                np.array([coherent_ex], dtype=complex),
+                np.array([coherent_ey], dtype=complex),
+            )
+            coherent_theta_rel = float(
+                wrap_linear_polarization_deg(
+                    stokes_coherent["theta_deg"] - INIT_PROBE_POLARIZATION_DEG
+                )
+            )
+            coherent_chi_deg = float(stokes_coherent["chi_deg"])
+            coherent_dolp = float(stokes_coherent["dolp"])
+            coherent_docp = float(stokes_coherent["docp"])
+            coherent_s0 = float(stokes_coherent["S0"])
+            coherent_theta_std = weighted_circular_std_linear_pol_deg(
+                np.asarray(theta_deg_rel[tail_idx_dft], dtype=float), dft_window_weights
+            )
+            residual_tail = np.abs(ex_tail - coherent_ex) ** 2 + np.abs(ey_tail - coherent_ey) ** 2
+            coherent_noise_power = weighted_arithmetic_mean(
+                np.asarray(residual_tail, dtype=float), dft_window_weights
+            )
+            coherent_signal_power = float(np.abs(coherent_ex) ** 2 + np.abs(coherent_ey) ** 2)
+            coherent_snr_linear = float(
+                coherent_signal_power / max(coherent_noise_power, 1e-30)
+            )
+            coherent_snr_db = float(10.0 * np.log10(max(coherent_snr_linear, 1e-30)))
+            window_power = weighted_arithmetic_mean(
+                np.asarray(np.abs(ex_tail) ** 2 + np.abs(ey_tail) ** 2, dtype=float),
+                dft_window_weights,
+            )
+            coherent_coherence = float(
+                coherent_signal_power / max(window_power, 1e-30)
+            )
+
+    probe_rotation_final_rel = (
+        coherent_theta_rel
+        if np.isfinite(coherent_theta_rel)
+        else probe_rotation_final_rel_window_mean
+    )
+    probe_rotation_final_rel_unwrapped = probe_rotation_final_rel_unwrapped_window_mean
+    probe_rotation_final_method = (
+        "dft_probe_center_forward_jones_coherent_final_window"
+        if np.isfinite(coherent_theta_rel)
+        else "dft_monitor_center_frequency_forward_component_principal_linear_angle_final_window_mean"
+    )
 
     # Keep the TD envelope estimate for diagnostics.
     probe_eplus_td = epl_td[:, i_probe]
@@ -1130,23 +1323,21 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
     probe_ey_td = 1j * (-probe_eplus_td + probe_eminus_td) / np.sqrt(2.0)
     probe_s0_td = np.abs(probe_ex_td)**2 + np.abs(probe_ey_td)**2
     intensity_threshold_td = (
-        0.01 * float(np.max(probe_s0_td)) if probe_s0_td.size else 0.0
+        strength_threshold_rel * float(np.max(probe_s0_td)) if probe_s0_td.size else 0.0
     )
-    valid_probe_td = probe_s0_td > intensity_threshold_td
+    if disable_strength_validity:
+        valid_probe_td = np.isfinite(probe_s0_td)
+    else:
+        valid_probe_td = probe_s0_td > intensity_threshold_td
+    tail_idx_td = select_final_window_indices(theta_deg_t_rel, valid_probe_td, probe_rotation_tail_points_td)
     if np.any(valid_probe_td):
         theta_probe_valid_td = theta_deg_t_rel[valid_probe_td]
-        theta_probe_valid_td_unwrapped = theta_deg_t_rel_unwrapped[valid_probe_td]
-        probe_rotation_final_rel_td = float(theta_probe_valid_td[-1])
         probe_rotation_min_rel_td = float(np.min(theta_probe_valid_td))
         probe_rotation_max_rel_td = float(np.max(theta_probe_valid_td))
         probe_rotation_mean_rel_td = weighted_linear_mean_deg(
             theta_probe_valid_td, probe_s0_td[valid_probe_td]
         )
-        probe_rotation_final_rel_td_unwrapped = float(theta_probe_valid_td_unwrapped[-1])
     else:
-        probe_rotation_final_rel_td = (
-            float(theta_deg_t_rel[-1]) if theta_deg_t_rel.size else float("nan")
-        )
         probe_rotation_min_rel_td = (
             float(np.min(theta_deg_t_rel)) if theta_deg_t_rel.size else float("nan")
         )
@@ -1154,21 +1345,55 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
             float(np.max(theta_deg_t_rel)) if theta_deg_t_rel.size else float("nan")
         )
         probe_rotation_mean_rel_td = weighted_linear_mean_deg(theta_deg_t_rel)
+    if tail_idx_td.size:
+        td_tail_weights = (
+            np.asarray(probe_s0_td[tail_idx_td], dtype=float)
+            if probe_s0_td.size == theta_deg_t_rel.size
+            else np.ones(tail_idx_td.size, dtype=float)
+        )
+        probe_rotation_final_rel_td = weighted_linear_mean_deg(
+            np.asarray(theta_deg_t_rel[tail_idx_td], dtype=float), td_tail_weights
+        )
+        probe_rotation_final_rel_td_unwrapped = weighted_arithmetic_mean(
+            np.asarray(theta_deg_t_rel_unwrapped[tail_idx_td], dtype=float), td_tail_weights
+        )
+        probe_rotation_td_tail_window_fs = (
+            float(t_td_fs[int(tail_idx_td[0])]),
+            float(t_td_fs[int(tail_idx_td[-1])]),
+        )
+    else:
+        probe_rotation_final_rel_td = (
+            float(theta_deg_t_rel[-1]) if theta_deg_t_rel.size else float("nan")
+        )
         probe_rotation_final_rel_td_unwrapped = (
             float(theta_deg_t_rel_unwrapped[-1])
             if theta_deg_t_rel_unwrapped.size
             else float("nan")
         )
+        probe_rotation_td_tail_window_fs = (float("nan"), float("nan"))
 
     def safe_ratio(num: float, den: float) -> float:
         return float(num / den) if abs(den) > 1e-30 else float("nan")
 
+    def tail_start_index(
+        n_points: int, tail_fraction: float = 0.2, tail_points: int | None = None
+    ) -> int:
+        if n_points <= 0:
+            return 0
+        if tail_points is not None:
+            count = max(1, min(int(tail_points), int(n_points)))
+            return int(n_points - count)
+        return max(0, int((1.0 - tail_fraction) * n_points))
+
     def weighted_tail_mean(
-        values: np.ndarray, weights: np.ndarray, tail_fraction: float = 0.2
+        values: np.ndarray,
+        weights: np.ndarray,
+        tail_fraction: float = 0.2,
+        tail_points: int | None = None,
     ) -> float:
         if values.size == 0:
             return float("nan")
-        i0 = max(0, int((1.0 - tail_fraction) * values.size))
+        i0 = tail_start_index(values.size, tail_fraction=tail_fraction, tail_points=tail_points)
         v = np.asarray(values[i0:], dtype=float)
         w = np.asarray(weights[i0:], dtype=float)
         valid = np.isfinite(v) & np.isfinite(w) & (w > 0)
@@ -1177,11 +1402,14 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
         return float(np.average(v[valid], weights=w[valid]))
 
     def weighted_tail_std(
-        values: np.ndarray, weights: np.ndarray, tail_fraction: float = 0.2
+        values: np.ndarray,
+        weights: np.ndarray,
+        tail_fraction: float = 0.2,
+        tail_points: int | None = None,
     ) -> float:
         if values.size == 0:
             return float("nan")
-        i0 = max(0, int((1.0 - tail_fraction) * values.size))
+        i0 = tail_start_index(values.size, tail_fraction=tail_fraction, tail_points=tail_points)
         v = np.asarray(values[i0:], dtype=float)
         w = np.asarray(weights[i0:], dtype=float)
         valid = np.isfinite(v) & np.isfinite(w) & (w > 0)
@@ -1194,21 +1422,27 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
         return float(np.sqrt(max(var, 0.0)))
 
     def weighted_tail_linear_mean(
-        values: np.ndarray, weights: np.ndarray, tail_fraction: float = 0.2
+        values: np.ndarray,
+        weights: np.ndarray,
+        tail_fraction: float = 0.2,
+        tail_points: int | None = None,
     ) -> float:
         if values.size == 0:
             return float("nan")
-        i0 = max(0, int((1.0 - tail_fraction) * values.size))
+        i0 = tail_start_index(values.size, tail_fraction=tail_fraction, tail_points=tail_points)
         v = np.asarray(values[i0:], dtype=float)
         w = np.asarray(weights[i0:], dtype=float)
         return weighted_linear_mean_deg(v, w)
 
     def weighted_tail_linear_std(
-        values: np.ndarray, weights: np.ndarray, tail_fraction: float = 0.2
+        values: np.ndarray,
+        weights: np.ndarray,
+        tail_fraction: float = 0.2,
+        tail_points: int | None = None,
     ) -> float:
         if values.size == 0:
             return float("nan")
-        i0 = max(0, int((1.0 - tail_fraction) * values.size))
+        i0 = tail_start_index(values.size, tail_fraction=tail_fraction, tail_points=tail_points)
         v = np.asarray(values[i0:], dtype=float)
         w = np.asarray(weights[i0:], dtype=float)
         mu = weighted_linear_mean_deg(v, w)
@@ -1225,7 +1459,7 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
         theta_rel_deg: np.ndarray,
         weights: np.ndarray,
         valid_mask: np.ndarray,
-        tail_fraction: float = 0.2,
+        tail_points: int = 64,
     ) -> Dict[str, float] | None:
         tt = np.asarray(t_fs, dtype=float)
         th = np.asarray(theta_rel_deg, dtype=float)
@@ -1236,14 +1470,10 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
         if vm.size != tt.size:
             vm = np.ones_like(tt, dtype=bool)
 
-        idx = np.where(vm)[0]
-        if idx.size == 0:
-            idx = np.where(np.isfinite(tt) & np.isfinite(th))[0]
-        if idx.size < 4:
+        tail_idx = select_final_window_indices(th, vm, tail_points)
+        if tail_idx.size < 2:
             return None
 
-        tail_count = max(8, int(np.ceil(float(tail_fraction) * idx.size)))
-        tail_idx = idx[-tail_count:]
         t_tail = tt[tail_idx]
         th_tail = th[tail_idx]
         w_tail = ww[tail_idx] if ww.size == tt.size else np.ones_like(t_tail)
@@ -1275,6 +1505,7 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
             "theta_mean": float(theta_mean),
             "tail_start": float(x0),
             "tail_end": float(x1),
+            "tail_point_count": int(tail_idx.size),
         }
 
     # Coherent-mean monitor traces (legacy) and RMS/integrated traces (new primary).
@@ -1358,12 +1589,29 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
         pump2_dom_rms_tail ** 2, pump2_dom_rms_tail ** 2 + pump2_orth_rms_tail ** 2
     )
 
-    probe_theta_tail_rel = weighted_tail_linear_mean(theta_deg_rel, probe_s0_dft)
-    probe_theta_tail_std_rel = weighted_tail_linear_std(theta_deg_rel, probe_s0_dft)
-    probe_chi_tail = weighted_tail_mean(probe_chi_deg, probe_s0_dft)
-    probe_docp_tail = weighted_tail_mean(probe_docp, probe_s0_dft)
-    probe_dolp_tail = weighted_tail_mean(probe_dolp, probe_s0_dft)
-    probe_s0_tail = weighted_tail_mean(probe_s0_dft, np.ones_like(probe_s0_dft))
+    probe_theta_tail_rel = weighted_tail_linear_mean(
+        theta_deg_rel, probe_s0_dft, tail_points=probe_rotation_tail_points
+    )
+    probe_theta_tail_std_rel = weighted_tail_linear_std(
+        theta_deg_rel, probe_s0_dft, tail_points=probe_rotation_tail_points
+    )
+    probe_chi_tail = weighted_tail_mean(
+        probe_chi_deg, probe_s0_dft, tail_points=probe_rotation_tail_points
+    )
+    probe_docp_tail = weighted_tail_mean(
+        probe_docp, probe_s0_dft, tail_points=probe_rotation_tail_points
+    )
+    probe_dolp_tail = weighted_tail_mean(
+        probe_dolp, probe_s0_dft, tail_points=probe_rotation_tail_points
+    )
+    probe_s0_tail = weighted_tail_mean(
+        probe_s0_dft,
+        np.ones_like(probe_s0_dft),
+        tail_points=probe_rotation_tail_points,
+    )
+    probe_tail_points_effective = int(
+        min(int(probe_rotation_tail_points), int(probe_s0_dft.size))
+    ) if probe_s0_dft.size else 0
     probe_s0_max = float(np.max(probe_s0_dft)) if probe_s0_dft.size else float("nan")
     probe_s0_tail_rel_max = safe_ratio(probe_s0_tail, probe_s0_max)
 
@@ -1526,7 +1774,7 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
         theta_deg_rel,
         probe_s0_dft,
         valid_probe_dft,
-        tail_fraction=0.2,
+        tail_points=probe_rotation_tail_points,
     )
     if dft_zoom is not None:
         ax.axvspan(
@@ -1535,7 +1783,7 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
             color="C0",
             alpha=0.12,
             lw=0.0,
-            label="stabilized window",
+            label=f"final {int(probe_rotation_tail_points)}-point window",
         )
     ax.set_xlabel("time (fs)")
     ax.set_ylabel("polarization rotation (deg)")
@@ -1553,13 +1801,13 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
             color="C3",
             lw=1.2,
             ls="--",
-            label="tail mean",
+            label="window mean",
         )
         ax.set_xlim(dft_zoom["x0"], dft_zoom["x1"])
         ax.set_ylim(dft_zoom["y0"], dft_zoom["y1"])
         ax.set_xlabel("time (fs)")
         ax.set_ylabel("polarization rotation (deg)")
-        ax.set_title("Probe polarization angle (stabilized zoom, DFT)")
+        ax.set_title("Probe polarization angle (final-window zoom, DFT)")
         ax.grid(True, alpha=0.3)
         ax.legend(loc="best")
         plot_paths["probe_rotation_zoom"] = str(
@@ -1574,7 +1822,7 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
         theta_deg_t_rel,
         probe_s0_td,
         valid_probe_td,
-        tail_fraction=0.2,
+        tail_points=probe_rotation_tail_points_td,
     )
     if td_zoom is not None:
         ax.axvspan(
@@ -1583,7 +1831,7 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
             color="C0",
             alpha=0.12,
             lw=0.0,
-            label="stabilized window",
+            label=f"final {int(probe_rotation_tail_points_td)}-point window",
         )
     ax.set_xlabel("time (fs)")
     ax.set_ylabel("polarization rotation (deg)")
@@ -1601,13 +1849,13 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
             color="C3",
             lw=1.2,
             ls="--",
-            label="tail mean",
+            label="window mean",
         )
         ax.set_xlim(td_zoom["x0"], td_zoom["x1"])
         ax.set_ylim(td_zoom["y0"], td_zoom["y1"])
         ax.set_xlabel("time (fs)")
         ax.set_ylabel("polarization rotation (deg)")
-        ax.set_title("Probe polarization angle (stabilized zoom, TD)")
+        ax.set_title("Probe polarization angle (final-window zoom, TD)")
         ax.grid(True, alpha=0.3)
         ax.legend(loc="best")
         plot_paths["probe_rotation_td_zoom"] = str(
@@ -1809,10 +2057,27 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
         "probe_rotation_deg": {
             "initial_deg": INIT_PROBE_POLARIZATION_DEG,
             "final_relative_deg": probe_rotation_final_rel,
+            "final_relative_deg_window_mean": probe_rotation_final_rel_window_mean,
             "max_relative_deg": probe_rotation_max_rel,
             "min_relative_deg": probe_rotation_min_rel,
             "mean_relative_deg": probe_rotation_mean_rel,
             "final_relative_unwrapped_deg": probe_rotation_final_rel_unwrapped,
+            "final_relative_unwrapped_deg_window_mean": (
+                probe_rotation_final_rel_unwrapped_window_mean
+            ),
+            "final_window_policy": "mean_over_last_m_valid_points",
+            "final_window_points_requested": int(probe_rotation_tail_points_requested),
+            "final_window_points_effective": int(probe_rotation_tail_points),
+            "final_window_points_used": int(tail_idx_dft.size),
+            "final_window_fs_requested": (
+                float(probe_rotation_window_fs)
+                if probe_rotation_window_fs is not None
+                else None
+            ),
+            "final_window_time_fs": [
+                float(probe_rotation_tail_window_fs[0]),
+                float(probe_rotation_tail_window_fs[1]),
+            ],
             "wrapped_final_relative_deg": (
                 float(theta_deg_rel[-1])
                 if theta_deg_rel.size
@@ -1823,19 +2088,55 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
                 if theta_deg_wrapped.size
                 else float("nan")
             ),
-            "method": "dft_monitor_center_frequency_forward_component_principal_linear_angle",
+            "method": probe_rotation_final_method,
             "forward_decomposition": {
                 "using_fields": ["Ex", "Ey", "Hx", "Hy"],
                 "n_medium": float(n_monitor_medium),
                 "forward_relation": "Hy=n*Ex and Hx=-n*Ey",
             },
-            "intensity_threshold_rel": 0.01,
+            "coherent_window_estimate": {
+                "theta_relative_deg": float(coherent_theta_rel),
+                "theta_relative_std_deg": float(coherent_theta_std),
+                "chi_deg": float(coherent_chi_deg),
+                "dolp": float(coherent_dolp),
+                "docp": float(coherent_docp),
+                "S0": float(coherent_s0),
+                "Ex_forward_mean_real": float(np.real(coherent_ex)),
+                "Ex_forward_mean_imag": float(np.imag(coherent_ex)),
+                "Ey_forward_mean_real": float(np.real(coherent_ey)),
+                "Ey_forward_mean_imag": float(np.imag(coherent_ey)),
+                "signal_power": float(coherent_signal_power),
+                "noise_power": float(coherent_noise_power),
+                "snr_linear": float(coherent_snr_linear),
+                "snr_db": float(coherent_snr_db),
+                "coherence_factor": float(coherent_coherence),
+                "weights": "S0",
+            },
+            "validity_policy": validity_policy,
+            "strength_validity_enabled": bool(not disable_strength_validity),
+            "intensity_threshold_rel": (
+                float(strength_threshold_rel) if not disable_strength_validity else 0.0
+            ),
+            "intensity_threshold_abs": float(intensity_threshold_dft),
             "time_domain_reference": {
                 "final_relative_deg": probe_rotation_final_rel_td,
                 "max_relative_deg": probe_rotation_max_rel_td,
                 "min_relative_deg": probe_rotation_min_rel_td,
                 "mean_relative_deg": probe_rotation_mean_rel_td,
                 "final_relative_unwrapped_deg": probe_rotation_final_rel_td_unwrapped,
+                "final_window_policy": "mean_over_last_m_valid_points",
+                "final_window_points_requested": int(probe_rotation_tail_points_requested),
+                "final_window_points_effective": int(probe_rotation_tail_points_td),
+                "final_window_points_used": int(tail_idx_td.size),
+                "final_window_fs_requested": (
+                    float(probe_rotation_window_fs)
+                    if probe_rotation_window_fs is not None
+                    else None
+                ),
+                "final_window_time_fs": [
+                    float(probe_rotation_td_tail_window_fs[0]),
+                    float(probe_rotation_td_tail_window_fs[1]),
+                ],
                 "wrapped_final_relative_deg": (
                     float(theta_deg_t_rel[-1])
                     if theta_deg_t_rel.size
@@ -1846,8 +2147,13 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
                     if theta_deg_t_wrapped.size
                     else float("nan")
                 ),
-                "method": "time_domain_probe_envelope_at_output_principal_linear_angle",
-                "intensity_threshold_rel": 0.01,
+                "method": "time_domain_probe_envelope_at_output_principal_linear_angle_final_window_mean",
+                "validity_policy": validity_policy,
+                "strength_validity_enabled": bool(not disable_strength_validity),
+                "intensity_threshold_rel": (
+                    float(strength_threshold_rel) if not disable_strength_validity else 0.0
+                ),
+                "intensity_threshold_abs": float(intensity_threshold_td),
             },
         },
         "probe_stokes_dft": {
@@ -1871,7 +2177,15 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
                 "docp": float(probe_docp_tail),
                 "S0": float(probe_s0_tail),
                 "S0_rel_max": float(probe_s0_tail_rel_max),
-                "tail_fraction": 0.2,
+                "window_policy": "mean_over_last_m_points",
+                "window_points_requested": int(probe_rotation_tail_points_requested),
+                "window_points_effective": int(probe_rotation_tail_points),
+                "window_points_used": int(probe_tail_points_effective),
+                "window_fs_requested": (
+                    float(probe_rotation_window_fs)
+                    if probe_rotation_window_fs is not None
+                    else None
+                ),
                 "weights": "S0",
             },
         },
@@ -2071,6 +2385,12 @@ def parse_args() -> argparse.Namespace:
         help="Pump intensity in W/cm^2.",
     )
     parser.add_argument(
+        "--probe-intensity",
+        type=float,
+        default=None,
+        help="Probe intensity in W/cm^2.",
+    )
+    parser.add_argument(
         "--pump1-frequency",
         type=float,
         default=None,
@@ -2128,6 +2448,29 @@ def parse_args() -> argparse.Namespace:
         type=float,
         default=1e-7,
         help="Field-decay threshold for the source calibration helper runs.",
+    )
+    parser.add_argument(
+        "--probe-rotation-tail-points",
+        type=int,
+        default=64,
+        help="Number of final valid points used to compute reported final rotation.",
+    )
+    parser.add_argument(
+        "--probe-rotation-window-fs",
+        type=float,
+        default=None,
+        help=(
+            "Optional final averaging-window width in fs. "
+            "If set, it overrides --probe-rotation-tail-points."
+        ),
+    )
+    parser.add_argument(
+        "--disable-strength-validity",
+        action="store_true",
+        help=(
+            "Disable S0-based validity threshold when selecting rotation window; "
+            "use finite-only validity."
+        ),
     )
     return parser.parse_args()
 

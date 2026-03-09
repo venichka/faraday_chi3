@@ -261,6 +261,20 @@ def material_args(ns: argparse.Namespace) -> List[str]:
         "--nL",
         str(ns.nL),
     ]
+    if str(ns.materials).strip().lower() == "fit":
+        args.extend(
+            [
+                "--sin-fit",
+                str(ns.sin_fit),
+                "--sio2-fit",
+                str(ns.sio2_fit),
+                "--fit-window",
+                str(int(ns.fit_window[0])),
+                str(int(ns.fit_window[1])),
+                "--fit-poles",
+                str(int(ns.fit_poles)),
+            ]
+        )
     return args
 
 
@@ -466,6 +480,34 @@ def add_runtime_flags(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--nL", type=float, default=1.45)
     parser.add_argument("--high-index-n2", type=float, default=2.3e-18)
     parser.add_argument("--kappa-ref-lambda", type=float, default=1.55)
+    parser.add_argument(
+        "--sin-fit",
+        dest="sin_fit",
+        type=str,
+        default="si3n4.csv",
+        help="CSV with wavelength_nm,n,k for selected high-index material when --materials fit.",
+    )
+    parser.add_argument(
+        "--sio2-fit",
+        dest="sio2_fit",
+        type=str,
+        default="sio2.csv",
+        help="CSV with wavelength_nm,n,k for SiO2 when --materials fit.",
+    )
+    parser.add_argument(
+        "--fit-window",
+        type=int,
+        nargs=2,
+        metavar=("lambda_min", "lambda_max"),
+        default=(600, 2000),
+        help="Wavelength fit window (nm) forwarded to fit-based material construction.",
+    )
+    parser.add_argument(
+        "--fit-poles",
+        type=int,
+        default=2,
+        help="Number of poles used in fit-based material construction.",
+    )
 
 
 def apply_preset(ns: argparse.Namespace) -> None:

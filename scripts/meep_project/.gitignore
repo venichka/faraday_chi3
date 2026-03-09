@@ -7,16 +7,27 @@ __pycache__/
 .DS_Store
 .vscode/
 .last_pipeline_compare_run
+.last_*
 .ipynb_checkpoints/
+slurm-*.out
+slurm-*.err
 
 # Heavy simulation outputs
 output_*/
 pump_intensity_sweep_*/
 pump_intensity_sweep_outputs/
+probe_intensity_sweep_tio2_*/
+probe_intensity_sweep_tio2_parallel*/
+fixed_sin_geom_*/
 faraday_*outputs/
 faraday_*_outputs/
 .opt_eval_tmp/
 pipeline_*/
+
+# Fixed-geometry generated artifacts
+optimized_geometry_fixed_*.json
+cavity_modes_fixed_*.json
+fixed_geometry_modes_summary_*.json
 
 # Generated reports/plots
 *.png
