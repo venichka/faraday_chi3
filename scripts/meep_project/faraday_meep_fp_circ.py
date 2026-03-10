@@ -634,11 +634,20 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
 
     dft_freqs = [freq_p1, freq_p2, freq_probe, freq_sb_minus, freq_sb_plus]
     fixed_freqs = np.array(dft_freqs, dtype=float)
+    fixed_labels = ["pump1", "pump2", "probe", "sb_minus", "sb_plus"]
     nfreq_probe = 15
     probe_freqs = np.linspace(
         freq_probe - 0.5 * df_probe, freq_probe + 0.5 * df_probe, nfreq_probe
     )
     k_probe_center = nfreq_probe // 2
+    diagnostics_enabled = bool(getattr(args, "enable_nonlinear_diagnostics", False))
+    diagnostic_scan_points = max(5, int(getattr(args, "diagnostic_scan_points", 41)))
+    diagnostic_scan_span_factor = max(
+        0.05, float(getattr(args, "diagnostic_scan_span_factor", 0.75))
+    )
+    diagnostic_cavity_span_fraction = float(
+        np.clip(getattr(args, "diagnostic_cavity_span_fraction", 0.9), 0.05, 1.0)
+    )
 
     def build_pump1_sources(amp: float) -> List[mp.Source]:
         return circular_sources(
@@ -729,6 +738,42 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
         if capture_spatial_fields and dft_plane_xz is not None
         else None
     )
+    cavity_dft_fields = None
+    cavity_monitor_volume = None
+    cavity_scan_freqs: Dict[str, np.ndarray] = {}
+    cavity_scan_monitors: Dict[str, Any] = {}
+    if diagnostics_enabled:
+        cavity_length_um = max(float(spec.get("cavity", {}).get("L_um", 0.0)), 1e-6)
+        if is_quasi_1d:
+            cavity_monitor_volume = mp.Volume(
+                center=mp.Vector3(0, 0, cavity_center),
+                size=mp.Vector3(0, 0, cavity_length_um),
+            )
+        else:
+            cavity_span = diagnostic_cavity_span_fraction * max(float(run.span_xy), 1e-6)
+            cavity_monitor_volume = mp.Volume(
+                center=mp.Vector3(0, 0, cavity_center),
+                size=mp.Vector3(cavity_span, cavity_span, cavity_length_um),
+            )
+        cavity_dft_fields = simulation.add_dft_fields(
+            monitor_components, dft_freqs, where=cavity_monitor_volume
+        )
+
+        def build_hot_scan(center_freq: float, bandwidth: float) -> np.ndarray:
+            half_span = max(0.5 * diagnostic_scan_span_factor * float(bandwidth), 0.0025 * center_freq)
+            f_lo = max(center_freq - half_span, 1e-6)
+            f_hi = center_freq + half_span
+            return np.linspace(f_lo, f_hi, diagnostic_scan_points, dtype=float)
+
+        cavity_scan_freqs = {
+            "pump1": build_hot_scan(freq_p1, df_pump1),
+            "pump2": build_hot_scan(freq_p2, df_pump2),
+            "probe": build_hot_scan(freq_probe, df_probe),
+        }
+        for label, scan_freqs in cavity_scan_freqs.items():
+            cavity_scan_monitors[label] = simulation.add_dft_fields(
+                monitor_components, scan_freqs.tolist(), where=cavity_monitor_volume
+            )
 
     if not is_quasi_1d:
         simulation.plot2D(output_plane=mp.Volume(center=mp.Vector3(),
@@ -745,6 +790,13 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
     time_trace = {
         "t": [],
         "fixed": {
+            "Ex": [],
+            "Ey": [],
+            "absE": [],
+            "Eplus_rms": [],
+            "Eminus_rms": [],
+        },
+        "cavity_fixed": {
             "Ex": [],
             "Ey": [],
             "absE": [],
@@ -797,6 +849,10 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
     def plane_avg_mag(arr_ex: np.ndarray, arr_ey: np.ndarray) -> float:
         mag = np.sqrt(np.abs(arr_ex) ** 2 + np.abs(arr_ey) ** 2)
         return float(np.mean(mag))
+
+    def total_field_rms(arr_ex: np.ndarray, arr_ey: np.ndarray) -> float:
+        mag_sq = np.abs(arr_ex) ** 2 + np.abs(arr_ey) ** 2
+        return float(np.sqrt(np.mean(mag_sq)))
 
     def circular_components(
         ex_arr: np.ndarray | complex, ey_arr: np.ndarray | complex
@@ -882,6 +938,24 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
         time_trace["fixed"]["absE"].append(np.array(abs_vals))
         time_trace["fixed"]["Eplus_rms"].append(np.array(eplus_rms_vals))
         time_trace["fixed"]["Eminus_rms"].append(np.array(eminus_rms_vals))
+
+        if cavity_dft_fields is not None:
+            cavity_ex_vals, cavity_ey_vals, cavity_abs_vals = [], [], []
+            cavity_eplus_rms_vals, cavity_eminus_rms_vals = [], []
+            for idx in range(len(fixed_freqs)):
+                ex_arr = np.asarray(sim.get_dft_array(cavity_dft_fields, mp.Ex, idx))
+                ey_arr = np.asarray(sim.get_dft_array(cavity_dft_fields, mp.Ey, idx))
+                cavity_ex_vals.append(complex(np.mean(ex_arr)))
+                cavity_ey_vals.append(complex(np.mean(ey_arr)))
+                cavity_abs_vals.append(total_field_rms(ex_arr, ey_arr))
+                eplus_rms, eminus_rms = circular_rms(ex_arr, ey_arr)
+                cavity_eplus_rms_vals.append(eplus_rms)
+                cavity_eminus_rms_vals.append(eminus_rms)
+            time_trace["cavity_fixed"]["Ex"].append(np.array(cavity_ex_vals))
+            time_trace["cavity_fixed"]["Ey"].append(np.array(cavity_ey_vals))
+            time_trace["cavity_fixed"]["absE"].append(np.array(cavity_abs_vals))
+            time_trace["cavity_fixed"]["Eplus_rms"].append(np.array(cavity_eplus_rms_vals))
+            time_trace["cavity_fixed"]["Eminus_rms"].append(np.array(cavity_eminus_rms_vals))
 
         # Probe-band DFT monitor
         ex_pb, ey_pb, abs_pb = [], [], []
@@ -1051,6 +1125,18 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
     fixed_abs = np.vstack(time_trace["fixed"]["absE"])
     fixed_eplus_rms = np.vstack(time_trace["fixed"]["Eplus_rms"])
     fixed_eminus_rms = np.vstack(time_trace["fixed"]["Eminus_rms"])
+    if diagnostics_enabled and time_trace["cavity_fixed"]["Ex"]:
+        cavity_ex = np.vstack(time_trace["cavity_fixed"]["Ex"])
+        cavity_ey = np.vstack(time_trace["cavity_fixed"]["Ey"])
+        cavity_abs = np.vstack(time_trace["cavity_fixed"]["absE"])
+        cavity_eplus_rms = np.vstack(time_trace["cavity_fixed"]["Eplus_rms"])
+        cavity_eminus_rms = np.vstack(time_trace["cavity_fixed"]["Eminus_rms"])
+    else:
+        cavity_ex = None
+        cavity_ey = None
+        cavity_abs = None
+        cavity_eplus_rms = None
+        cavity_eminus_rms = None
 
     probe_ex = np.vstack(time_trace["probe_band"]["Ex"])
     probe_ey = np.vstack(time_trace["probe_band"]["Ey"])
@@ -1187,6 +1273,101 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
         points_from_fs = int(np.ceil(float(window_fs) / float(np.median(dt))))
         return max(1, points_from_fs)
 
+    def complex_parts(value: complex) -> Dict[str, float]:
+        vv = complex(value)
+        return {
+            "real": float(np.real(vv)),
+            "imag": float(np.imag(vv)),
+            "abs": float(np.abs(vv)),
+            "phase_deg": float(np.degrees(np.angle(vv))),
+        }
+
+    def summarize_fixed_trace(
+        ex_trace: np.ndarray,
+        ey_trace: np.ndarray,
+        eplus_rms_trace: np.ndarray,
+        eminus_rms_trace: np.ndarray,
+        abs_trace: np.ndarray | None,
+        idx: int,
+        label: str,
+        weights: np.ndarray,
+        tail_idx: np.ndarray,
+    ) -> Dict[str, Any]:
+        ex_tail = np.asarray(ex_trace[tail_idx, idx], dtype=complex)
+        ey_tail = np.asarray(ey_trace[tail_idx, idx], dtype=complex)
+        coherent_ex_loc = weighted_complex_mean(ex_tail, weights)
+        coherent_ey_loc = weighted_complex_mean(ey_tail, weights)
+        coherent_eplus, coherent_eminus = circular_components(
+            coherent_ex_loc, coherent_ey_loc
+        )
+        payload: Dict[str, Any] = {
+            "frequency_inv_um": float(fixed_freqs[idx]),
+            "wavelength_um": float(1.0 / fixed_freqs[idx]) if fixed_freqs[idx] > 0 else float("nan"),
+            "coherent_ex": complex_parts(coherent_ex_loc),
+            "coherent_ey": complex_parts(coherent_ey_loc),
+            "coherent_eplus": complex_parts(complex(np.asarray(coherent_eplus).item())),
+            "coherent_eminus": complex_parts(complex(np.asarray(coherent_eminus).item())),
+            "eplus_rms_tail": float(
+                weighted_arithmetic_mean(
+                    np.asarray(eplus_rms_trace[tail_idx, idx], dtype=float), weights
+                )
+            ),
+            "eminus_rms_tail": float(
+                weighted_arithmetic_mean(
+                    np.asarray(eminus_rms_trace[tail_idx, idx], dtype=float), weights
+                )
+            ),
+        }
+        if abs_trace is not None:
+            payload["field_rms_tail"] = float(
+                weighted_arithmetic_mean(
+                    np.asarray(abs_trace[tail_idx, idx], dtype=float), weights
+                )
+            )
+        if label == "probe":
+            e_parallel = (coherent_ex_loc + coherent_ey_loc) / np.sqrt(2.0)
+            e_orth = (coherent_ex_loc - coherent_ey_loc) / np.sqrt(2.0)
+            ratio = e_orth / e_parallel if np.abs(e_parallel) > 1e-30 else complex(np.nan, np.nan)
+            payload["linear_basis_projection"] = {
+                "parallel_45deg": complex_parts(e_parallel),
+                "orthogonal_minus45deg": complex_parts(e_orth),
+                "orth_over_parallel": complex_parts(ratio),
+                "power_ratio_orth_over_parallel": (
+                    float((np.abs(e_orth) ** 2) / max(np.abs(e_parallel) ** 2, 1e-30))
+                    if np.isfinite(np.abs(e_parallel))
+                    else float("nan")
+                ),
+            }
+        return payload
+
+    def extract_hot_scan_summary(label: str, center_freq: float) -> Dict[str, Any]:
+        scan_freqs = cavity_scan_freqs[label]
+        monitor = cavity_scan_monitors[label]
+        amplitudes = []
+        for scan_idx in range(scan_freqs.size):
+            ex_arr = np.asarray(simulation.get_dft_array(monitor, mp.Ex, int(scan_idx)))
+            ey_arr = np.asarray(simulation.get_dft_array(monitor, mp.Ey, int(scan_idx)))
+            amplitudes.append(total_field_rms(ex_arr, ey_arr))
+        scan_abs = np.asarray(amplitudes, dtype=float)
+        peak_idx = int(np.argmax(scan_abs))
+        peak_freq = float(scan_freqs[peak_idx])
+        target_lambda = float(1.0 / center_freq) if center_freq > 0 else float("nan")
+        peak_lambda = float(1.0 / peak_freq) if peak_freq > 0 else float("nan")
+        return {
+            "target_frequency_inv_um": float(center_freq),
+            "target_wavelength_um": target_lambda,
+            "scan_frequency_inv_um": scan_freqs.tolist(),
+            "scan_wavelength_um": (1.0 / scan_freqs).tolist(),
+            "scan_field_rms": scan_abs.tolist(),
+            "peak_index": peak_idx,
+            "peak_frequency_inv_um": peak_freq,
+            "peak_wavelength_um": peak_lambda,
+            "peak_field_rms": float(scan_abs[peak_idx]),
+            "detuning_from_target_inv_um": float(peak_freq - center_freq),
+            "detuning_from_target_nm": float((peak_lambda - target_lambda) * 1e3),
+            "peak_at_scan_boundary": bool(peak_idx == 0 or peak_idx == (scan_abs.size - 1)),
+        }
+
     probe_rotation_tail_points = resolve_window_points_from_fs(
         t_arr_fs, probe_rotation_tail_points_requested, probe_rotation_window_fs
     )
@@ -1303,6 +1484,141 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
             coherent_coherence = float(
                 coherent_signal_power / max(window_power, 1e-30)
             )
+
+    nonlinear_diagnostics: Dict[str, Any] = {"enabled": bool(diagnostics_enabled)}
+    if diagnostics_enabled and t_arr.size:
+        diagnostic_tail_idx = (
+            np.asarray(tail_idx_dft, dtype=int)
+            if tail_idx_dft.size
+            else np.array([int(t_arr.size - 1)], dtype=int)
+        )
+        diagnostic_weights = (
+            np.asarray(dft_window_weights, dtype=float)
+            if tail_idx_dft.size
+            else np.ones(diagnostic_tail_idx.size, dtype=float)
+        )
+        output_fixed_summary = {
+            label: summarize_fixed_trace(
+                fixed_ex,
+                fixed_ey,
+                fixed_eplus_rms,
+                fixed_eminus_rms,
+                fixed_abs,
+                idx,
+                label,
+                diagnostic_weights,
+                diagnostic_tail_idx,
+            )
+            for idx, label in enumerate(fixed_labels)
+        }
+        cavity_fixed_summary = {}
+        if cavity_ex is not None and cavity_ey is not None:
+            cavity_fixed_summary = {
+                label: summarize_fixed_trace(
+                    cavity_ex,
+                    cavity_ey,
+                    cavity_eplus_rms,
+                    cavity_eminus_rms,
+                    cavity_abs,
+                    idx,
+                    label,
+                    diagnostic_weights,
+                    diagnostic_tail_idx,
+                )
+                for idx, label in enumerate(fixed_labels)
+            }
+
+        hot_scan_summary = (
+            {
+                "pump1": extract_hot_scan_summary("pump1", freq_p1),
+                "pump2": extract_hot_scan_summary("pump2", freq_p2),
+                "probe": extract_hot_scan_summary("probe", freq_probe),
+            }
+            if cavity_scan_monitors
+            else {}
+        )
+        cavity_p1_dom = (
+            float(cavity_fixed_summary["pump1"]["eminus_rms_tail"])
+            if cavity_fixed_summary
+            else float("nan")
+        )
+        cavity_p2_dom = (
+            float(cavity_fixed_summary["pump2"]["eplus_rms_tail"])
+            if cavity_fixed_summary
+            else float("nan")
+        )
+        cavity_p1_orth = (
+            float(cavity_fixed_summary["pump1"]["eplus_rms_tail"])
+            if cavity_fixed_summary
+            else float("nan")
+        )
+        cavity_p2_orth = (
+            float(cavity_fixed_summary["pump2"]["eminus_rms_tail"])
+            if cavity_fixed_summary
+            else float("nan")
+        )
+        probe_projection = output_fixed_summary["probe"].get("linear_basis_projection", {})
+        nonlinear_diagnostics = {
+            "enabled": True,
+            "tail_window_fs": [
+                float(t_arr_fs[int(diagnostic_tail_idx[0])]),
+                float(t_arr_fs[int(diagnostic_tail_idx[-1])]),
+            ],
+            "cavity_monitor": {
+                "center_z_um": float(cavity_center),
+                "volume_size_um": (
+                    {
+                        "x": float(cavity_monitor_volume.size.x),
+                        "y": float(cavity_monitor_volume.size.y),
+                        "z": float(cavity_monitor_volume.size.z),
+                    }
+                    if cavity_monitor_volume is not None
+                    else None
+                ),
+                "scan_points": int(diagnostic_scan_points),
+                "scan_span_factor_times_source_fwidth": float(diagnostic_scan_span_factor),
+            },
+            "intracavity_fixed_freqs": cavity_fixed_summary,
+            "output_fixed_freqs": output_fixed_summary,
+            "hot_frequency_scans": hot_scan_summary,
+            "intracavity_pump_drive_metrics": {
+                "definition": {
+                    "pump1_dominant_component": "|e-| at f_p1",
+                    "pump2_dominant_component": "|e+| at f_p2",
+                    "pump1_orthogonal_component": "|e+| at f_p1",
+                    "pump2_orthogonal_component": "|e-| at f_p2",
+                    "dominant_product_metric": "pump1_dominant * pump2_dominant",
+                },
+                "tail_weighted_rms": {
+                    "pump1_dominant": cavity_p1_dom,
+                    "pump2_dominant": cavity_p2_dom,
+                    "pump1_orthogonal": cavity_p1_orth,
+                    "pump2_orthogonal": cavity_p2_orth,
+                    "dominant_product": float(cavity_p1_dom * cavity_p2_dom),
+                    "purity_pump1": float(cavity_p1_dom / max(cavity_p1_dom + cavity_p1_orth, 1e-30)),
+                    "purity_pump2": float(cavity_p2_dom / max(cavity_p2_dom + cavity_p2_orth, 1e-30)),
+                },
+            },
+            "probe_output_projection": probe_projection,
+            "sideband_generation": {
+                "cavity_sb_minus_field_rms_tail": (
+                    float(cavity_fixed_summary.get("sb_minus", {}).get("field_rms_tail", float("nan")))
+                    if cavity_fixed_summary
+                    else float("nan")
+                ),
+                "cavity_sb_plus_field_rms_tail": (
+                    float(cavity_fixed_summary.get("sb_plus", {}).get("field_rms_tail", float("nan")))
+                    if cavity_fixed_summary
+                    else float("nan")
+                ),
+                "output_sb_minus_field_rms_tail": float(output_fixed_summary["sb_minus"]["field_rms_tail"]),
+                "output_sb_plus_field_rms_tail": float(output_fixed_summary["sb_plus"]["field_rms_tail"]),
+                "output_sb_minus_eplus_rms_tail": float(output_fixed_summary["sb_minus"]["eplus_rms_tail"]),
+                "output_sb_minus_eminus_rms_tail": float(output_fixed_summary["sb_minus"]["eminus_rms_tail"]),
+                "output_sb_plus_eplus_rms_tail": float(output_fixed_summary["sb_plus"]["eplus_rms_tail"]),
+                "output_sb_plus_eminus_rms_tail": float(output_fixed_summary["sb_plus"]["eminus_rms_tail"]),
+            },
+        }
 
     probe_rotation_final_rel = (
         coherent_theta_rel
@@ -2189,6 +2505,7 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
                 "weights": "S0",
             },
         },
+        "nonlinear_diagnostics": nonlinear_diagnostics,
         "pump_monitor_metrics": {
             "definition": {
                 "pump1_dominant_component": "|e-| at f_p1",
@@ -2470,6 +2787,38 @@ def parse_args() -> argparse.Namespace:
         help=(
             "Disable S0-based validity threshold when selecting rotation window; "
             "use finite-only validity."
+        ),
+    )
+    parser.add_argument(
+        "--enable-nonlinear-diagnostics",
+        action="store_true",
+        help=(
+            "Add cavity DFT monitors and narrow hot-frequency scans around pump/probe "
+            "to quantify nonlinear resonance alignment and output-mode projection."
+        ),
+    )
+    parser.add_argument(
+        "--diagnostic-scan-points",
+        type=int,
+        default=41,
+        help="Number of frequency samples in each cavity hot-frequency scan.",
+    )
+    parser.add_argument(
+        "--diagnostic-scan-span-factor",
+        type=float,
+        default=0.75,
+        help=(
+            "Half-width of each hot-frequency scan, in units of the corresponding "
+            "source Gaussian fwidth."
+        ),
+    )
+    parser.add_argument(
+        "--diagnostic-cavity-span-fraction",
+        type=float,
+        default=0.9,
+        help=(
+            "For 3D runs, fraction of the transverse simulation span included in the "
+            "cavity diagnostic monitor."
         ),
     )
     return parser.parse_args()

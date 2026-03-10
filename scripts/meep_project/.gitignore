@@ -34,3 +34,17 @@ fixed_geometry_modes_summary_*.json
 *.pdf
 *.svg
 *.tar.gz
+
+# Local SiN analysis artifacts
+SiN_optimizations/reflectance_analysis_*/
+SiN_optimizations/reflectance_meep_vs_tmm_*/
+SiN_optimizations/mode_spectra_analysis_*/
+SiN_optimizations/nonlinear_diagnostics_compare_*/
+SiN_optimizations/optimized_geometry_sin_*.json
+SiN_optimizations/cavity_modes_sin_*.json
+
+# One-off local analysis helpers
+analyze_mode_spectra_compare.py
+analyze_nonlinear_diagnostics_compare.py
+analyze_reflectance_meep_vs_tmm.py
+analyze_reflectance_tmm.py

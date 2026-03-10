@@ -22,6 +22,12 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Sequence, Tuple
 
+from nonlinear_materials import (
+    resolve_high_index_index,
+    resolve_high_index_kappa,
+    resolve_high_index_n2,
+)
+
 
 def now_tag() -> str:
     return datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -245,17 +251,20 @@ def run_parallel_stages(
 
 
 def material_args(ns: argparse.Namespace) -> List[str]:
+    resolved_nh = float(resolve_high_index_index(ns.nH, ns.high_index_material))
+    resolved_kh = float(resolve_high_index_kappa(ns.kH, ns.high_index_material))
+    resolved_n2 = float(resolve_high_index_n2(ns.high_index_n2, ns.high_index_material))
     args = [
         "--materials",
         str(ns.materials),
         "--high-index-material",
         str(ns.high_index_material),
         "--nH",
-        str(ns.nH),
+        str(resolved_nh),
         "--kH",
-        str(ns.kH),
+        str(resolved_kh),
         "--high-index-n2",
-        str(ns.high_index_n2),
+        str(resolved_n2),
         "--kappa-ref-lambda",
         str(ns.kappa_ref_lambda),
         "--nL",
@@ -475,10 +484,25 @@ def add_runtime_flags(parser: argparse.ArgumentParser) -> None:
 
     parser.add_argument("--materials", choices=("library", "constant", "fit"), default="constant")
     parser.add_argument("--high-index-material", type=str, default="tio2")
-    parser.add_argument("--nH", type=float, default=2.31)
-    parser.add_argument("--kH", type=float, default=8e-6)
+    parser.add_argument(
+        "--nH",
+        type=float,
+        default=None,
+        help="Override high-index refractive index. If omitted, resolve from the selected material preset.",
+    )
+    parser.add_argument(
+        "--kH",
+        type=float,
+        default=None,
+        help="Override high-index extinction coefficient. If omitted, resolve from the selected material preset.",
+    )
     parser.add_argument("--nL", type=float, default=1.45)
-    parser.add_argument("--high-index-n2", type=float, default=2.3e-18)
+    parser.add_argument(
+        "--high-index-n2",
+        type=float,
+        default=None,
+        help="Override Kerr n2. If omitted, resolve from the selected material preset.",
+    )
     parser.add_argument("--kappa-ref-lambda", type=float, default=1.55)
     parser.add_argument(
         "--sin-fit",
@@ -629,6 +653,9 @@ def apply_resource_defaults(ns: argparse.Namespace) -> None:
 
 def resolved_defaults_dict(ns: argparse.Namespace) -> Dict[str, Any]:
     total_cpus = int(estimate_total_cpus(ns))
+    resolved_nh = float(resolve_high_index_index(ns.nH, ns.high_index_material))
+    resolved_kh = float(resolve_high_index_kappa(ns.kH, ns.high_index_material))
+    resolved_n2 = float(resolve_high_index_n2(ns.high_index_n2, ns.high_index_material))
     return {
         "cluster": {
             "cluster_profile": ns.cluster_profile,
@@ -684,6 +711,19 @@ def resolved_defaults_dict(ns: argparse.Namespace) -> Dict[str, Any]:
             "sweep_1d_workers": int(ns.sweep_1d_workers),
             "sweep_3d_workers": int(ns.sweep_3d_workers),
             "sweep_3d_mpi_ranks": int(ns.sweep_3d_mpi_ranks),
+        },
+        "materials": {
+            "materials_model": str(ns.materials),
+            "high_index_material": str(ns.high_index_material),
+            "resolved_nH": float(resolved_nh),
+            "resolved_kH": float(resolved_kh),
+            "resolved_high_index_n2": float(resolved_n2),
+            "kappa_ref_lambda_um": float(ns.kappa_ref_lambda),
+            "nL": float(ns.nL),
+            "fit_window_nm": [int(ns.fit_window[0]), int(ns.fit_window[1])],
+            "fit_poles": int(ns.fit_poles),
+            "sin_fit": str(ns.sin_fit),
+            "sio2_fit": str(ns.sio2_fit),
         },
     }
 
