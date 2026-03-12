@@ -205,7 +205,7 @@ function rhs_coro!(dy, y, p, t)
         sqrt(rates.κs)*splus
     dy[4] = (im*rates.Δs - rates.κs/2)*a₋ + im*σ₋*a₋ +
         im*( (coup.m_p_A + coup.m_p_C)*(p2*conj(p1))*b_p_m +
-             (coup.m_m_A + coup.m_m_C)*(p1*conj(p2))*b_m_p ) +
+             (coup.m_m_A + coup.m_m_C)*(p1*conj(p2))*b_m_m ) +
         sqrt(rates.κs)*sminus
 
     # Sidebands @ Ω+ and Ω−
