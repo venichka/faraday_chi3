@@ -63,6 +63,55 @@ Base.@kwdef mutable struct Rates
     κΩm_m::Float64 = κΩm; ΔΩm_m::Float64 = ΔΩm  # Ω−, −
 end
 
+"""
+Directly extracted counter-rotating coefficients normalized to probe kappa.
+These correspond to the derivation coefficients α, ζ, η after mode-overlap
+projection and time normalization τ = κs * t.
+"""
+Base.@kwdef mutable struct CounterDerived
+    α1_plus::ComplexF64
+    α2_plus::ComplexF64
+    α1_minus::ComplexF64
+    α2_minus::ComplexF64
+    ζ_plus::ComplexF64
+    ζ_minus::ComplexF64
+    η_plus::ComplexF64
+    η_minus::ComplexF64
+end
+
+"""
+Directly extracted co-rotating coefficients normalized to probe kappa.
+Diagonal generation/back-mixing terms follow the derivation; optional Λ terms
+capture linear circular mixing inside each sideband arm.
+"""
+Base.@kwdef mutable struct CoroDerived
+    α1_plus::ComplexF64
+    α2_plus::ComplexF64
+    α1_minus::ComplexF64
+    α2_minus::ComplexF64
+    ζ_pp::ComplexF64
+    ζ_pm::ComplexF64
+    ζ_mp::ComplexF64
+    ζ_mm::ComplexF64
+    η_pp::ComplexF64
+    η_pm::ComplexF64
+    η_mp::ComplexF64
+    η_mm::ComplexF64
+    ΛΩp::ComplexF64 = 0.0 + 0.0im
+    ΛΩm::ComplexF64 = 0.0 + 0.0im
+end
+
+"""
+Simple probe-output mapping. With κ_out the same for both circulars and zero
+direct term, output rotation matches the intracavity a+/a− ratio.
+"""
+Base.@kwdef mutable struct ProbeOutput
+    κ_out_plus::Float64 = 1.0
+    κ_out_minus::Float64 = 1.0
+    c_plus::ComplexF64 = 0.0 + 0.0im
+    c_minus::ComplexF64 = 0.0 + 0.0im
+end
+
 # ------------------------ χ^(3)_eff helper functions ------------------------- #
 
 """
@@ -150,6 +199,43 @@ function rhs_counter!(dy, y, p, t)
     return nothing
 end
 
+"""
+RHS for counter-rotating pumps using derivation-consistent extracted
+coefficients instead of the legacy Norms/Chi proxy decomposition.
+"""
+function rhs_counter_derived!(dy, y, p, t)
+    rates::Rates = p.rates
+    coeff::CounterDerived = p.derived
+    drives = p.drives
+
+    p1, p2, a₊, a₋, b₊, b₋ = y
+
+    S1 = drives.S1!(t)
+    S2 = drives.S2!(t)
+    splus  = drives.splus!(t)
+    sminus = drives.sminus!(t)
+
+    I1 = abs2(p1)
+    I2 = abs2(p2)
+    Φ₊ = coeff.α1_plus * I1 + coeff.α2_plus * I2
+    Φ₋ = coeff.α1_minus * I1 + coeff.α2_minus * I2
+
+    dy[1] = (im * rates.Δ1 - rates.κ1 / 2) * p1 + sqrt(rates.κ1) * S1
+    dy[2] = (im * rates.Δ2 - rates.κ2 / 2) * p2 + sqrt(rates.κ2) * S2
+
+    dy[3] = (im * rates.Δs - rates.κs / 2) * a₊ + im * Φ₊ * a₊ +
+        im * coeff.η_minus * (p2 * conj(p1)) * b₋ + sqrt(rates.κs) * splus
+    dy[4] = (im * rates.Δs - rates.κs / 2) * a₋ + im * Φ₋ * a₋ +
+        im * coeff.η_plus * (p1 * conj(p2)) * b₊ + sqrt(rates.κs) * sminus
+
+    dy[5] = (im * rates.ΔΩp - rates.κΩp / 2) * b₊ +
+        im * coeff.ζ_plus * (p1 * conj(p2)) * a₋
+    dy[6] = (im * rates.ΔΩm - rates.κΩm / 2) * b₋ +
+        im * coeff.ζ_minus * (p2 * conj(p1)) * a₊
+
+    return nothing
+end
+
 # =================== CO-rotating ODE (p1, p2 ∥ e+) ========================== #
 
 "Precompute couplings for co-rotating case."
@@ -217,6 +303,53 @@ function rhs_coro!(dy, y, p, t)
     return nothing
 end
 
+"""
+RHS for co-rotating pumps using derivation-consistent extracted coefficients.
+"""
+function rhs_coro_derived!(dy, y, p, t)
+    rates::Rates = p.rates
+    coeff::CoroDerived = p.derived
+    drives = p.drives
+
+    p1, p2, a₊, a₋, b_p_p, b_p_m, b_m_p, b_m_m = y
+
+    S1 = drives.S1!(t)
+    S2 = drives.S2!(t)
+    splus  = drives.splus!(t)
+    sminus = drives.sminus!(t)
+
+    I1 = abs2(p1)
+    I2 = abs2(p2)
+    Φ₊ = coeff.α1_plus * I1 + coeff.α2_plus * I2
+    Φ₋ = coeff.α1_minus * I1 + coeff.α2_minus * I2
+
+    dy[1] = (im * rates.Δ1 - rates.κ1 / 2) * p1 + sqrt(rates.κ1) * S1
+    dy[2] = (im * rates.Δ2 - rates.κ2 / 2) * p2 + sqrt(rates.κ2) * S2
+
+    dy[3] = (im * rates.Δs - rates.κs / 2) * a₊ + im * Φ₊ * a₊ +
+        im * (
+            coeff.η_pp * (p2 * conj(p1)) * b_p_p +
+            coeff.η_mp * (p1 * conj(p2)) * b_m_p
+        ) + sqrt(rates.κs) * splus
+
+    dy[4] = (im * rates.Δs - rates.κs / 2) * a₋ + im * Φ₋ * a₋ +
+        im * (
+            coeff.η_pm * (p2 * conj(p1)) * b_p_m +
+            coeff.η_mm * (p1 * conj(p2)) * b_m_m
+        ) + sqrt(rates.κs) * sminus
+
+    dy[5] = (im * rates.ΔΩp_p - rates.κΩp_p / 2) * b_p_p +
+        im * coeff.ΛΩp * b_p_m + im * coeff.ζ_pp * (p1 * conj(p2)) * a₊
+    dy[6] = (im * rates.ΔΩp_m - rates.κΩp_m / 2) * b_p_m +
+        im * conj(coeff.ΛΩp) * b_p_p + im * coeff.ζ_pm * (p1 * conj(p2)) * a₋
+    dy[7] = (im * rates.ΔΩm_p - rates.κΩm_p / 2) * b_m_p +
+        im * coeff.ΛΩm * b_m_m + im * coeff.ζ_mp * (p2 * conj(p1)) * a₊
+    dy[8] = (im * rates.ΔΩm_m - rates.κΩm_m / 2) * b_m_m +
+        im * conj(coeff.ΛΩm) * b_m_p + im * coeff.ζ_mm * (p2 * conj(p1)) * a₋
+
+    return nothing
+end
+
 # ============================= Helpers / API ================================ #
 
 "Pack parameters for either :counter or :coro case."
@@ -226,14 +359,29 @@ function make_parameters(; case::Symbol,
     return (; norms, rates, chidir, chisb, drives, coup)
 end
 
+"Pack derivation-consistent parameters."
+function make_parameters_derived(; case::Symbol, rates::Rates, derived, drives::Drives,
+    output::ProbeOutput=ProbeOutput())
+    if case == :counter
+        derived isa CounterDerived || error("counter case requires CounterDerived")
+    elseif case == :coro
+        derived isa CoroDerived || error("coro case requires CoroDerived")
+    else
+        error("case must be :counter or :coro")
+    end
+    return (; rates, derived, drives, output)
+end
+
 "Run simulation. Returns (t, sol)."
 function run_sim(case, params; T=(0.0, 30.0), saveat=0.02)
     if case == :counter
         y0 = zeros(ComplexF64, 6)
-        prob = ODEProblem{true}(rhs_counter!, y0, T, params)  # in-place rhs! → {true}
+        rhs! = haskey(params, :derived) ? rhs_counter_derived! : rhs_counter!
+        prob = ODEProblem{true}(rhs!, y0, T, params)
     elseif case == :coro
         y0 = zeros(ComplexF64, 8)
-        prob = ODEProblem{true}(rhs_coro!, y0, T, params)
+        rhs! = haskey(params, :derived) ? rhs_coro_derived! : rhs_coro!
+        prob = ODEProblem{true}(rhs!, y0, T, params)
     else
         error("case must be :counter or :coro")
     end
@@ -251,11 +399,48 @@ function rotation_ellipticity(a_plus::AbstractVector, a_minus::AbstractVector)
     return θ, ε
 end
 
+"Return Stokes parameters from circular-basis fields."
+function stokes_from_circular(e_plus::AbstractVector, e_minus::AbstractVector)
+    s0 = abs2.(e_plus) .+ abs2.(e_minus)
+    s1 = 2 .* real.(e_plus .* conj.(e_minus))
+    s2 = 2 .* imag.(e_plus .* conj.(e_minus))
+    s3 = abs2.(e_plus) .- abs2.(e_minus)
+    return s0, s1, s2, s3
+end
+
+"Map intracavity probe amplitudes to output fields under a simple port model."
+function output_probe_fields(a_plus::AbstractVector, a_minus::AbstractVector;
+    output::ProbeOutput=ProbeOutput(),
+    splus_in::Union{Nothing,AbstractVector}=nothing,
+    sminus_in::Union{Nothing,AbstractVector}=nothing)
+    e_plus = sqrt(output.κ_out_plus) .* a_plus
+    e_minus = sqrt(output.κ_out_minus) .* a_minus
+    if splus_in !== nothing
+        e_plus .+= output.c_plus .* splus_in
+    end
+    if sminus_in !== nothing
+        e_minus .+= output.c_minus .* sminus_in
+    end
+    return e_plus, e_minus
+end
+
+"Compute physical rotation ψ and ellipticity angle χ from circular fields."
+function rotation_ellipticity_physical(e_plus::AbstractVector, e_minus::AbstractVector)
+    ρ = e_plus ./ (e_minus .+ 1e-30)
+    ψ = 0.5 .* angle.(ρ)
+    ratio = (abs2.(e_plus) .- abs2.(e_minus)) ./ (abs2.(e_plus) .+ abs2.(e_minus) .+ 1e-30)
+    χ = 0.5 .* asin.(clamp.(real.(ratio), -1.0, 1.0))
+    return ψ, χ
+end
+
 # ------------------------------ explicit exports ----------------------------- #
 
 export Norms, ChiDirect, ChiSideband, Rates, Drives,
+       CounterDerived, CoroDerived, ProbeOutput,
        chi_eff3_counter, chi_eff3_coro,
        couplings_counter, couplings_coro,
-       gauss, make_parameters, run_sim, rotation_ellipticity
+       gauss, make_parameters, make_parameters_derived, run_sim,
+       rotation_ellipticity, stokes_from_circular,
+       output_probe_fields, rotation_ellipticity_physical
 
 end # module
