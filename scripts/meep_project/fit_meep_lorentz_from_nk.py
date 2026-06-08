@@ -24,9 +24,10 @@ from pathlib import Path
 # ---- user inputs ----
 FILE_SIO2 = "sio2_from_slowsio2_2min42s_fastsn_3min2s_no6_tape_backside.csv"
 FILE_SINX = "sn_from_slowsio2_2min42s_fastsn_3min2s_no6_tape_backside.csv"
-FIT_FILE = FILE_SINX     # choose which file to fit
-N_POLES = 2             # number of Lorentz/Drude poles
-OUT_PREFIX = "fit_sinx"   # prefix for outputs (png)
+FILE_SIC = "sic.csv"
+FIT_FILE = FILE_SIC       # choose which file to fit
+N_POLES = 4             # number of Lorentz/Drude poles
+OUT_PREFIX = "fit_sic"    # prefix for outputs (png)
 # Optional wavelength window (nm). Use None to disable.
 LAMBDA_MIN = 600         # e.g., 450.0
 LAMBDA_MAX = 2000         # e.g., 900.0
@@ -98,9 +99,14 @@ def fit_lorentz(f, eps_real, eps_imag, n_poles=3):
 
     target = eps_real + 1j * eps_imag
 
+    # Normalize so real and imaginary residuals have comparable weight
+    scale_r = max(np.ptp(eps_real), 1e-12)
+    scale_i = max(np.ptp(eps_imag), 1e-12)
+
     def resid(p):
         est = eps_model(f, p)
-        r = np.concatenate([est.real - target.real, est.imag - target.imag])
+        r = np.concatenate([(est.real - target.real) / scale_r,
+                            (est.imag - target.imag) / scale_i])
         return r
 
     p0 = initial_guess(f, eps_real, n_poles)
