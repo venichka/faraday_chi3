@@ -491,10 +491,10 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument(
         "--bayes-batch-size",
         type=int,
-        default=1,
+        default=0,
         help=(
-            "Number of BO acquisition candidates to evaluate per iteration "
-            "(>1 improves worker utilization)."
+            "Number of BO acquisition candidates to evaluate per iteration. "
+            "0 (default) auto-scales to --workers count."
         ),
     )
     ap.add_argument(
@@ -512,8 +512,14 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument(
         "--bayes-gp-restarts",
         type=int,
-        default=1,
+        default=3,
         help="Number of hyperparameter optimizer restarts for the GP model.",
+    )
+    ap.add_argument(
+        "--bayes-ard",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Use per-dimension ARD length scales in GP kernel (default: on).",
     )
     ap.add_argument("--random-seed", type=int, default=0)
     ap.add_argument(
@@ -690,6 +696,24 @@ def random_vector_in_bounds(
     bounds: Sequence[Tuple[float, float]], rng: np.random.Generator
 ) -> np.ndarray:
     return np.array([rng.uniform(lo, hi) for (lo, hi) in bounds], dtype=float)
+
+
+def sobol_vectors_in_bounds(
+    bounds: Sequence[Tuple[float, float]],
+    count: int,
+    seed: int = 0,
+) -> np.ndarray:
+    """Return *count* Sobol quasi-random points mapped to *bounds*."""
+    d = len(bounds)
+    lo = np.array([b[0] for b in bounds], dtype=float)
+    hi = np.array([b[1] for b in bounds], dtype=float)
+    try:
+        from scipy.stats.qmc import Sobol
+        m = max(1, int(np.ceil(np.log2(max(count, 1)))))
+        raw = Sobol(d=d, scramble=True, seed=seed).random_base2(m)[:count]
+    except ImportError:
+        raw = np.random.default_rng(seed).uniform(size=(count, d))
+    return raw * (hi - lo) + lo
 
 
 def normal_cdf(z: np.ndarray) -> np.ndarray:
@@ -1731,7 +1755,11 @@ def objective_search_profile(
                 need = int(init_min - x_obs.shape[0])
                 if need <= 0:
                     break
-                boot_jobs = [(int(n_per), random_vector_in_bounds(cfg.bounds, rng)) for _ in range(need)]
+                boot_vecs = sobol_vectors_in_bounds(
+                    cfg.bounds, need,
+                    seed=int(args.random_seed) + int(n_per) * 100 + x_obs.shape[0],
+                )
+                boot_jobs = [(int(n_per), boot_vecs[i]) for i in range(need)]
                 evaluate_batch(boot_jobs)
 
             for it in range(max(0, int(args.bayes_iters))):
@@ -1765,11 +1793,12 @@ def objective_search_profile(
                     )
                     continue
 
-                n_pool = max(64, int(args.bayes_candidates))
-                x_pool = np.array(
-                    [random_vector_in_bounds(cfg.bounds, rng) for _ in range(n_pool)],
-                    dtype=float,
-                )
+                # --- candidate pool: Sobol + local perturbations ---
+                user_batch = int(args.bayes_batch_size)
+                batch_sz = max(1, int(args.workers) if user_batch <= 0 else user_batch)
+                n_pool = max(64, int(args.bayes_candidates), batch_sz * 32)
+                sobol_seed = int(args.random_seed) + int(n_per) * 1000 + it
+                x_pool = sobol_vectors_in_bounds(cfg.bounds, n_pool, seed=sobol_seed)
                 x_best_obs = x_u[int(np.argmax(y_u))]
                 span = np.array([hi - lo for (lo, hi) in cfg.bounds], dtype=float)
                 local = x_best_obs[None, :] + rng.normal(
@@ -1778,17 +1807,27 @@ def objective_search_profile(
                 local = np.array([clip_to_bounds(row, cfg.bounds) for row in local], dtype=float)
                 x_pool = np.vstack([x_pool, local, x_u])
 
+                # --- GP with ARD kernel ---
+                n_dims = len(cfg.bounds)
                 if HAVE_SKLEARN:
+                    if getattr(args, "bayes_ard", True):
+                        mat_kernel = Matern(
+                            length_scale=np.ones(n_dims),
+                            length_scale_bounds=[(1e-2, 1e2)] * n_dims,
+                            nu=2.5,
+                        )
+                    else:
+                        mat_kernel = Matern(length_scale=np.ones(n_dims), nu=2.5)
                     gp = GaussianProcessRegressor(
                         kernel=(
                             ConstantKernel(1.0, (1e-3, 1e3))
-                            * Matern(length_scale=np.ones(len(cfg.bounds)), nu=2.5)
+                            * mat_kernel
                             + WhiteKernel(noise_level=1e-6, noise_level_bounds=(1e-12, 1e-2))
                         ),
                         alpha=1e-9,
                         normalize_y=True,
                         n_restarts_optimizer=max(0, int(args.bayes_gp_restarts)),
-                        random_state=int(args.random_seed) + int(n_per) * 1000 + it,
+                        random_state=sobol_seed,
                     )
                     try:
                         gp.fit(x_u, y_u)
@@ -1812,24 +1851,47 @@ def objective_search_profile(
                         x_query=x_pool,
                         bounds=cfg.bounds,
                     )
-                ei = expected_improvement(mu, sigma, best=float(np.max(y_u)), xi=float(args.bayes_xi))
-                order = np.argsort(ei)[::-1]
 
-                batch_sz = max(1, int(getattr(args, "bayes_batch_size", 1)))
+                # --- Kriging Believer batch selection ---
                 x_next_batch: List[np.ndarray] = []
-                for idx in order:
-                    x_try = clip_to_bounds(x_pool[int(idx)], cfg.bounds)
-                    if np.min(np.linalg.norm(x_u - x_try[None, :], axis=1)) <= 1e-5:
-                        continue
-                    if x_next_batch:
-                        d_batch = np.min(
-                            [float(np.linalg.norm(x_try - x_prev)) for x_prev in x_next_batch]
-                        )
-                        if d_batch <= 1e-5:
-                            continue
-                    x_next_batch.append(x_try)
-                    if len(x_next_batch) >= batch_sz:
+                x_aug = x_u.copy()
+                y_aug = y_u.copy()
+                mu_cur = mu.copy()
+                sigma_cur = sigma.copy()
+                pool_mask = np.ones(len(x_pool), dtype=bool)
+                # Limit GP re-fits: at most 4, and only when we have enough
+                # observations for a stable fit (>= 2*n_dims).
+                kb_refit_limit = min(batch_sz, 4)
+                kb_can_refit = HAVE_SKLEARN and x_u.shape[0] >= 2 * n_dims
+
+                for kb_step in range(batch_sz):
+                    if not np.any(pool_mask):
                         break
+                    ei = expected_improvement(
+                        mu_cur, sigma_cur,
+                        best=float(np.max(y_aug)),
+                        xi=float(args.bayes_xi),
+                    )
+                    ei[~pool_mask] = -1.0
+                    best_idx = int(np.argmax(ei))
+                    if ei[best_idx] <= 0.0:
+                        break
+                    x_try = clip_to_bounds(x_pool[best_idx], cfg.bounds)
+                    if np.min(np.linalg.norm(x_aug - x_try[None, :], axis=1)) <= 1e-5:
+                        pool_mask[best_idx] = False
+                        continue
+                    x_next_batch.append(x_try)
+                    pool_mask[best_idx] = False
+                    # "Believe" GP prediction for diversity in subsequent picks
+                    x_aug = np.vstack([x_aug, x_try[None, :]])
+                    y_aug = np.append(y_aug, mu_cur[best_idx])
+                    if kb_can_refit and len(x_next_batch) < batch_sz and kb_step < kb_refit_limit:
+                        try:
+                            gp.fit(x_aug, y_aug)
+                            mu_cur, sigma_cur = gp.predict(x_pool, return_std=True)
+                        except Exception:
+                            kb_can_refit = False  # stop re-fitting on failure
+
                 while len(x_next_batch) < batch_sz:
                     x_next_batch.append(random_vector_in_bounds(cfg.bounds, rng))
 
@@ -2830,8 +2892,8 @@ def main() -> None:
         raise SystemExit("--cavity-max-length must be larger than --cavity-min-length.")
     if int(args.workers) < 1:
         raise SystemExit("--workers must be >= 1.")
-    if int(args.bayes_batch_size) < 1:
-        raise SystemExit("--bayes-batch-size must be >= 1.")
+    if int(args.bayes_batch_size) < 0:
+        raise SystemExit("--bayes-batch-size must be >= 0 (0 = auto-scale to workers).")
 
     if args.materials == "fit" and (not args.sin_fit or not args.sio2_fit):
         raise SystemExit("For --materials fit provide both --sin-fit and --sio2-fit.")

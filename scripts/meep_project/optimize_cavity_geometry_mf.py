@@ -250,8 +250,11 @@ def _candidate_vectors_for_n(
             [rng.normal(0.0, 0.01 * (hi - lo)) for (lo, hi) in cfg.bounds], dtype=float
         )
         out.append(base.clip_to_bounds(x0 + jitter, cfg.bounds))
-    while len(out) < int(count):
-        out.append(base.random_vector_in_bounds(cfg.bounds, rng))
+    remaining = int(count) - len(out)
+    if remaining > 0:
+        sobol_seed = int(rng.integers(0, 2**31))
+        sobol_pts = base.sobol_vectors_in_bounds(cfg.bounds, remaining, seed=sobol_seed)
+        out.extend(sobol_pts)
 
     uniq: List[np.ndarray] = []
     seen = set()

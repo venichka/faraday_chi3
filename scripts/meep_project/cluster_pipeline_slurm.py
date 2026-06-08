@@ -402,9 +402,12 @@ def add_runtime_flags(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--probe-target-mode", choices=("exact", "band", "both"), default="both")
     parser.add_argument("--bayes-init", type=int, default=6)
     parser.add_argument("--bayes-iters", type=int, default=12)
-    parser.add_argument("--bayes-batch-size", type=int, default=1)
+    parser.add_argument("--bayes-batch-size", type=int, default=0)
     parser.add_argument("--bayes-candidates", type=int, default=256)
     parser.add_argument("--bayes-xi", type=float, default=0.01)
+    parser.add_argument("--bayes-gp-restarts", type=int, default=3)
+    parser.add_argument("--bayes-ard", action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument("--cavity-max-length", type=float, default=4.5)
     parser.add_argument("--random-seed", type=int, default=0)
     parser.add_argument("--mf-probe-epsilon", type=float, default=0.02)
     parser.add_argument("--mf-stage1-per-n", type=int, default=6)
@@ -824,6 +827,11 @@ def build_optimizer_cmds(
             str(int(ns.bayes_candidates)),
             "--bayes-xi",
             str(float(ns.bayes_xi)),
+            "--bayes-gp-restarts",
+            str(int(ns.bayes_gp_restarts)),
+            *(["--bayes-ard"] if ns.bayes_ard else ["--no-bayes-ard"]),
+            "--cavity-max-length",
+            str(float(ns.cavity_max_length)),
             "--random-seed",
             str(int(ns.random_seed)),
             "--out-geom",
