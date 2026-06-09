@@ -2845,8 +2845,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--decay-threshold",
         type=float,
-        default=1e-9,
-        help="Field-decay stopping threshold used when --until-time is not provided.",
+        default=1e-4,
+        help=(
+            "Field-decay stopping threshold used when --until-time is not provided. "
+            "Default 1e-4 (trustworthy 1D everyday value); use 1e-3 for a fast check "
+            "or 1e-6 for a converged measurement."
+        ),
     )
     parser.add_argument(
         "--resolution",

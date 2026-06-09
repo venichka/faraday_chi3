@@ -887,8 +887,9 @@ def main() -> None:
     parser.add_argument(
         "--decay-threshold",
         type=float,
-        default=1e-3,
-        help="Field-decay threshold when --until-time is not provided.",
+        default=1e-4,
+        help="Field-decay threshold when --until-time is not provided. Default 1e-4 "
+        "(use 1e-3 for a fast sweep, 1e-6 for converged).",
     )
     parser.add_argument("--resolution", type=int, default=None, help="Resolution override for each run.")
     parser.add_argument("--calibrate-sources", action="store_true", help="Forward source calibration flag.")
