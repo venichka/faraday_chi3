@@ -214,6 +214,7 @@ class ProbeRotationTrace:
     max_deg: float
     time_domain_time: np.ndarray | None = None
     time_domain_theta_deg_rel: np.ndarray | None = None
+    theta_total_deg_rel: np.ndarray | None = None
 
 
 @dataclass
@@ -714,6 +715,7 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
     sources += build_pump2_sources(pump_amp2)
     sources += build_probe_sources(probe_amp)
 
+    courant_val = float(getattr(args, "courant", None) or 0.5)
     simulation = mp.Simulation(
         cell_size=cell,
         geometry=geometry,
@@ -723,6 +725,7 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
         dimensions=simulation_dimensions,
         default_material=mp.air,
         force_complex_fields=True,
+        Courant=courant_val,
     )
 
     monitor_components = [mp.Ex, mp.Ey]
@@ -825,6 +828,11 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
             "chi_deg": [],
             "dolp": [],
             "docp": [],
+            # Total-field (no forward/backward split) Stokes diagnostics, for comparison
+            # against the forward-isolated angle above.
+            "theta_total_deg": [],
+            "S0_total": [],
+            "dolp_total": [],
         },
     }
     xz_snapshot = {
@@ -985,6 +993,9 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
         )
         stokes_c = stokes_metrics(ex_fwd_c, ey_fwd_c)
         theta_deg = stokes_c["theta_deg"]
+        # Same Stokes angle on the raw total field (forward + backward, no split):
+        # the "naive detector" reading, for comparison against the forward-isolated one.
+        stokes_total_c = stokes_metrics(ex_c, ey_c)
         ix_c = float(np.mean(np.abs(ex_fwd_c) ** 2))
         iy_c = float(np.mean(np.abs(ey_fwd_c) ** 2))
         s0_bwd = float(np.mean(np.abs(ex_bwd_c) ** 2 + np.abs(ey_bwd_c) ** 2))
@@ -1005,6 +1016,9 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
         time_trace["probe_pol"]["chi_deg"].append(stokes_c["chi_deg"])
         time_trace["probe_pol"]["dolp"].append(stokes_c["dolp"])
         time_trace["probe_pol"]["docp"].append(stokes_c["docp"])
+        time_trace["probe_pol"]["theta_total_deg"].append(stokes_total_c["theta_deg"])
+        time_trace["probe_pol"]["S0_total"].append(stokes_total_c["S0"])
+        time_trace["probe_pol"]["dolp_total"].append(stokes_total_c["dolp"])
 
         # Time-domain plane averages and demodulation
         ex_td = np.asarray(
@@ -1162,6 +1176,13 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
     probe_chi_deg = np.array(time_trace["probe_pol"]["chi_deg"])
     probe_dolp = np.array(time_trace["probe_pol"]["dolp"])
     probe_docp = np.array(time_trace["probe_pol"]["docp"])
+    # Total-field (no forward/backward split) angle trace, relative to the input.
+    theta_total_deg_wrapped = np.array(time_trace["probe_pol"]["theta_total_deg"])
+    theta_total_deg_rel = wrap_linear_polarization_deg(
+        theta_total_deg_wrapped - INIT_PROBE_POLARIZATION_DEG
+    )
+    probe_s0_total = np.array(time_trace["probe_pol"]["S0_total"])
+    probe_dolp_total = np.array(time_trace["probe_pol"]["dolp_total"])
 
     t_td = np.array(td_env["t"])
     epl_td = np.vstack(td_env["Eplus"])
@@ -1931,6 +1952,34 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
     probe_s0_max = float(np.max(probe_s0_dft)) if probe_s0_dft.size else float("nan")
     probe_s0_tail_rel_max = safe_ratio(probe_s0_tail, probe_s0_max)
 
+    # Total-field (no forward/backward split) tail/final aggregates, S0-weighted like
+    # the forward-isolated ones, for the three-way comparison.
+    probe_s0_total_w = (
+        probe_s0_total
+        if probe_s0_total.size == theta_total_deg_rel.size
+        else np.ones_like(theta_total_deg_rel)
+    )
+    probe_theta_total_tail_rel = weighted_tail_linear_mean(
+        theta_total_deg_rel, probe_s0_total_w, tail_points=probe_rotation_tail_points
+    )
+    probe_theta_total_tail_std_rel = weighted_tail_linear_std(
+        theta_total_deg_rel, probe_s0_total_w, tail_points=probe_rotation_tail_points
+    )
+    probe_dolp_total_tail = weighted_tail_mean(
+        probe_dolp_total, probe_s0_total_w, tail_points=probe_rotation_tail_points
+    )
+    probe_theta_total_final_rel = (
+        float(theta_total_deg_rel[-1]) if theta_total_deg_rel.size else float("nan")
+    )
+    probe_dolp_total_final = (
+        float(probe_dolp_total[-1]) if probe_dolp_total.size else float("nan")
+    )
+    probe_s0_total_tail = weighted_tail_mean(
+        probe_s0_total,
+        np.ones_like(probe_s0_total),
+        tail_points=probe_rotation_tail_points,
+    ) if probe_s0_total.size else float("nan")
+
     plot_paths: Dict[str, str] = {}
 
     fig = plt.figure(figsize=(7.2, 4))
@@ -2084,7 +2133,22 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
 
     fig = plt.figure(figsize=(7.0, 3.6))
     ax = fig.add_subplot(1, 1, 1)
-    ax.plot(t_arr_fs, theta_deg_rel, "k-")
+    ax.plot(
+        t_arr_fs,
+        theta_total_deg_rel,
+        color="0.7",
+        lw=1.0,
+        label="total-field θ (no fwd/bwd split)",
+    )
+    ax.plot(t_arr_fs, theta_deg_rel, "k-", lw=1.2, label="forward-isolated θ (incoherent)")
+    if np.isfinite(coherent_theta_rel):
+        ax.axhline(
+            coherent_theta_rel,
+            color="C2",
+            lw=1.3,
+            ls=":",
+            label=f"forward coherent (final) = {coherent_theta_rel:.3f}°",
+        )
     dft_zoom = stabilized_zoom_window(
         t_arr_fs,
         theta_deg_rel,
@@ -2105,27 +2169,37 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
     ax.set_ylabel("polarization rotation (deg)")
     ax.set_title("Probe polarization angle vs time (relative to input)")
     ax.grid(True, alpha=0.3)
+    ax.legend(loc="best", fontsize=7)
     plot_paths["probe_rotation"] = str(
         save_figure(fig, "probe_polarization.png", output_dir)
     )
     if dft_zoom is not None:
         fig = plt.figure(figsize=(7.0, 3.6))
         ax = fig.add_subplot(1, 1, 1)
-        ax.plot(t_arr_fs, theta_deg_rel, color="0.75", lw=1.0, label="full trace")
+        ax.plot(t_arr_fs, theta_total_deg_rel, color="0.8", lw=1.0, label="total-field θ")
+        ax.plot(t_arr_fs, theta_deg_rel, color="0.4", lw=1.0, label="forward θ (incoherent)")
         ax.axhline(
             dft_zoom["theta_mean"],
             color="C3",
             lw=1.2,
             ls="--",
-            label="window mean",
+            label="forward incoherent window mean",
         )
+        if np.isfinite(coherent_theta_rel):
+            ax.axhline(
+                coherent_theta_rel,
+                color="C2",
+                lw=1.3,
+                ls=":",
+                label=f"forward coherent = {coherent_theta_rel:.3f}°",
+            )
         ax.set_xlim(dft_zoom["x0"], dft_zoom["x1"])
         ax.set_ylim(dft_zoom["y0"], dft_zoom["y1"])
         ax.set_xlabel("time (fs)")
         ax.set_ylabel("polarization rotation (deg)")
         ax.set_title("Probe polarization angle (final-window zoom, DFT)")
         ax.grid(True, alpha=0.3)
-        ax.legend(loc="best")
+        ax.legend(loc="best", fontsize=7)
         plot_paths["probe_rotation_zoom"] = str(
             save_figure(fig, "probe_polarization_zoom.png", output_dir)
         )
@@ -2296,6 +2370,7 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
         max_deg=probe_rotation_max_rel,
         time_domain_time=t_td.copy(),
         time_domain_theta_deg_rel=theta_deg_t_rel.copy(),
+        theta_total_deg_rel=theta_total_deg_rel.copy(),
     )
 
     dft_trace = FieldTrace(
@@ -2505,6 +2580,26 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
                 "weights": "S0",
             },
         },
+        "probe_stokes_total": {
+            "description": (
+                "Total-field Stokes angle at the probe monitor (raw Ex,Ey, no "
+                "forward/backward split). Naive-detector reading; compare against "
+                "probe_stokes_dft (forward, incoherent) and "
+                "probe_rotation_deg.final_relative_deg (forward, coherent)."
+            ),
+            "final": {
+                "theta_relative_deg": probe_theta_total_final_rel,
+                "dolp": probe_dolp_total_final,
+            },
+            "tail_weighted": {
+                "theta_relative_deg": float(probe_theta_total_tail_rel),
+                "theta_relative_std_deg": float(probe_theta_total_tail_std_rel),
+                "dolp": float(probe_dolp_total_tail),
+                "S0": float(probe_s0_total_tail),
+                "window_points_requested": int(probe_rotation_tail_points_requested),
+                "weights": "S0",
+            },
+        },
         "nonlinear_diagnostics": nonlinear_diagnostics,
         "pump_monitor_metrics": {
             "definition": {
@@ -2570,7 +2665,11 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
         "plot_paths": plot_paths,
         "theta_deg_rel_I": {
             "pump_intensity_w_cm2": float(run.pump_intensity_w_cm2),
+            # Primary metric (unchanged): forward-isolated, coherent window estimate.
             "final_relative_deg": probe_rotation_final_rel,
+            # Companion readings for comparison (do not feed the optimizer objective).
+            "forward_incoherent_final_relative_deg": float(probe_theta_tail_rel),
+            "total_field_final_relative_deg": float(probe_theta_total_tail_rel),
         },
         "objective_quality": {
             "abs_rotation_deg": float(abs(probe_rotation_final_rel)),
@@ -2754,6 +2853,16 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=None,
         help="Override default resolution (px/um) for the selected mode.",
+    )
+    parser.add_argument(
+        "--courant",
+        type=float,
+        default=None,
+        help=(
+            "Courant factor for the FDTD time step (Meep default 0.5). Lower it "
+            "(e.g. 0.25) to keep dispersive (Lorentzian) media stable at coarse "
+            "resolution, e.g. res-30 3D runs with high-frequency fit poles."
+        ),
     )
     parser.add_argument(
         "--calibrate-sources",

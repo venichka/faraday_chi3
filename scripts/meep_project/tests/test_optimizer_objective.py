@@ -58,6 +58,23 @@ def test_rotation_guard_uses_wrapped_if_raw_is_unphysical():
     assert score == pytest.approx(12.0)
 
 
+def test_objective_uses_forward_coherent_not_companions():
+    # The companion readings (forward-incoherent in probe_stokes_dft.theta, and the
+    # total-field probe_stokes_total) must NOT change the rotation the objective scores;
+    # only probe_rotation_deg.final_relative_deg (forward-coherent) should.
+    data = _summary_template(theta=3.0, wrapped=3.0)
+    data["probe_stokes_dft"]["tail_weighted"]["theta_relative_deg"] = 42.0
+    data["probe_stokes_total"] = {"tail_weighted": {"theta_relative_deg": -99.0, "dolp": 0.1}}
+    rot, abs_rot, score, _ = _objective_from_summary_data(
+        data,
+        objective_metric="abs_rotation",
+        quality_std_ref_deg=15.0,
+    )
+    assert rot == pytest.approx(3.0)
+    assert abs_rot == pytest.approx(3.0)
+    assert score == pytest.approx(3.0)
+
+
 def test_candidate_score_fallbacks():
     c = Candidate(
         profile="exact",

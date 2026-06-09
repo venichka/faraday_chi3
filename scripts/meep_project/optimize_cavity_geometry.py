@@ -99,6 +99,10 @@ class Candidate:
     abs_rotation_deg: float
     objective_summary: str
     score: float = float("nan")
+    # Companion rotation readings (NOT used by the objective; recorded for comparison
+    # against rotation_deg, which is the forward-isolated coherent angle).
+    rotation_forward_incoherent_deg: float = float("nan")
+    rotation_total_field_deg: float = float("nan")
     quality_factor: float = float("nan")
     quality_dolp_tail: float = float("nan")
     quality_theta_std_deg: float = float("nan")
@@ -1449,6 +1453,17 @@ def objective_run(
             getattr(args, "quality_pump_balance_sigma_dec", 0.35)
         ),
     )
+    # Companion rotation readings for comparison (not part of the objective).
+    rot_forward_incoherent = _summary_float(
+        summary_data,
+        ["probe_stokes_dft", "tail_weighted", "theta_relative_deg"],
+        default=np.nan,
+    )
+    rot_total_field = _summary_float(
+        summary_data,
+        ["probe_stokes_total", "tail_weighted", "theta_relative_deg"],
+        default=np.nan,
+    )
     return Candidate(
         profile=profile,
         N_per=n_per,
@@ -1465,6 +1480,8 @@ def objective_run(
         abs_rotation_deg=float(abs_rot),
         objective_summary=str(summary_path),
         score=float(score),
+        rotation_forward_incoherent_deg=float(rot_forward_incoherent),
+        rotation_total_field_deg=float(rot_total_field),
         quality_factor=float(quality.get("quality_factor", float("nan"))),
         quality_dolp_tail=float(quality.get("dolp_tail", float("nan"))),
         quality_theta_std_deg=float(quality.get("theta_std_deg", float("nan"))),
@@ -2770,6 +2787,12 @@ def write_outputs(
             "pump_handedness": {"pump1": "sigma_plus", "pump2": "sigma_minus"},
             "rotation_deg": float(best.rotation_deg),
             "abs_rotation_deg": float(best.abs_rotation_deg),
+            "rotation_methods_deg": {
+                "forward_coherent": float(best.rotation_deg),
+                "forward_incoherent": float(best.rotation_forward_incoherent_deg),
+                "total_field": float(best.rotation_total_field_deg),
+                "note": "objective uses forward_coherent; others are for comparison",
+            },
             "objective_score": float(candidate_score(best)),
             "objective_metric": str(args.objective_metric),
             "quality_metrics": {

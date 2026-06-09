@@ -138,6 +138,12 @@ def _write_trace_bundle(result, output_dir: Path) -> Path:
         td_abs_eplus=np.asarray(result.time_domain_traces.abs_eplus, dtype=float),
         td_abs_eminus=np.asarray(result.time_domain_traces.abs_eminus, dtype=float),
         theta_deg_rel=np.asarray(result.probe_rotation.theta_deg_rel, dtype=float),
+        theta_total_deg_rel=np.asarray(
+            getattr(result.probe_rotation, "theta_total_deg_rel", None)
+            if getattr(result.probe_rotation, "theta_total_deg_rel", None) is not None
+            else result.probe_rotation.theta_deg_rel,
+            dtype=float,
+        ),
     )
     return path
 
@@ -510,6 +516,7 @@ def _plot_rotation_vs_intensity(
     output_path: Path,
     title: str,
     fit_power: Dict[str, float] | None = None,
+    companions: Sequence[Tuple[str, Sequence[float], str]] | None = None,
 ) -> None:
     intensities_arr = np.asarray(intensities, dtype=float)
     final_arr = np.asarray(final_deg, dtype=float)
@@ -528,8 +535,23 @@ def _plot_rotation_vs_intensity(
         color="tab:blue",
         lw=2.0,
         ms=5.5,
-        label="|final theta_rel|",
+        label="|theta| forward-isolated, coherent (objective)",
     )
+    # Companion readings (forward incoherent, raw total-field) for comparison.
+    for label, values, color in companions or []:
+        comp = np.abs(np.asarray(values, dtype=float))
+        if not np.any(np.isfinite(comp)):
+            continue
+        ax.plot(
+            intensities_arr,
+            np.clip(comp, eps, None),
+            "s--",
+            color=color,
+            lw=1.4,
+            ms=4.0,
+            alpha=0.85,
+            label=label,
+        )
     if power_pred is not None:
         ax.plot(
             intensities_arr,
@@ -1072,6 +1094,27 @@ def main() -> None:
         fit_linear = _fit_linear_vs_log_intensity(sweep_intensities, final_rot)
         fit_power = _fit_power_law_abs_rotation(sweep_intensities, final_rot)
 
+        fwd_incoherent_rot = [
+            float(
+                _nested_get(
+                    _load_summary_cached(res),
+                    ["probe_stokes_dft", "tail_weighted", "theta_relative_deg"],
+                    np.nan,
+                )
+            )
+            for res in dim_results
+        ]
+        total_field_rot = [
+            float(
+                _nested_get(
+                    _load_summary_cached(res),
+                    ["probe_stokes_total", "tail_weighted", "theta_relative_deg"],
+                    np.nan,
+                )
+            )
+            for res in dim_results
+        ]
+
         rotation_plot = dim_root / "rotation_vs_intensity.png"
         _plot_rotation_vs_intensity(
             sweep_intensities,
@@ -1079,6 +1122,10 @@ def main() -> None:
             rotation_plot,
             title=f"Faraday rotation vs pump intensity (dim={dim})",
             fit_power=fit_power,
+            companions=[
+                ("|theta| forward-isolated, incoherent", fwd_incoherent_rot, "tab:green"),
+                ("|theta| total-field (no fwd/bwd split)", total_field_rot, "tab:red"),
+            ],
         )
 
         dft_plot = dim_root / "dft_traces_vs_intensity.png"
@@ -1107,8 +1154,31 @@ def main() -> None:
             points_rows.append(
                 {
                     "pump_intensity_w_cm2": float(res["pump_intensity_w_cm2"]),
+                    # Primary metric: forward-isolated, coherent (= optimizer objective).
                     "final_relative_deg": float(res["final_deg"]),
                     "abs_final_relative_deg": float(abs(float(res["final_deg"]))),
+                    # Companion readings (forward-isolated incoherent; raw total-field).
+                    "forward_incoherent_final_relative_deg": float(
+                        _nested_get(
+                            summary,
+                            ["probe_stokes_dft", "tail_weighted", "theta_relative_deg"],
+                            np.nan,
+                        )
+                    ),
+                    "total_field_final_relative_deg": float(
+                        _nested_get(
+                            summary,
+                            ["probe_stokes_total", "tail_weighted", "theta_relative_deg"],
+                            np.nan,
+                        )
+                    ),
+                    "total_field_dolp_tail": float(
+                        _nested_get(
+                            summary,
+                            ["probe_stokes_total", "tail_weighted", "dolp"],
+                            np.nan,
+                        )
+                    ),
                     "min_relative_deg": float(res["min_deg"]),
                     "max_relative_deg": float(res["max_deg"]),
                     "span_relative_deg": float(float(res["max_deg"]) - float(res["min_deg"])),
