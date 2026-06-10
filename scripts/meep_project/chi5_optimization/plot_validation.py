@@ -58,7 +58,7 @@ def fields_plot(name, geom, modes):
     fig, axs = plt.subplots(3, 1, figsize=(9.5, 7.4), sharex=True)
     for ax, (k, c) in zip(axs, MODE_COLORS.items()):
         mo = tmm.find_mode(layers, idx, modes[k]["frequency"])
-        z, E, eps = tmm.field_profile(layers, idx, mo["freq"])
+        z, E, H, eps = tmm.field_profile(layers, idx, mo["freq"])
         I = np.abs(E) ** 2; I = I / I.max()
         ax2 = ax.twinx()
         ax2.fill_between(z, eps, color="0.85", lw=0, zorder=0)

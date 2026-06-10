@@ -148,12 +148,12 @@ def field_profile(layers, idx, f0, sub_label="SiO2", ppw=80):
     Ltot = sum(s[0] for s in slices)
     EH = np.array([1.0, ns], dtype=complex)     # outgoing wave at the substrate face
     z = Ltot
-    zg, Eg, epsg = [z], [EH[0]], [ns.real ** 2]
+    zg, Eg, Hg, epsg = [z], [EH[0]], [EH[1]], [ns.real ** 2]
     for dz, N in reversed(slices):              # propagate substrate -> air
         EH = _layer_matrix(N, dz, f0) @ EH
         z -= dz
-        zg.append(z); Eg.append(EH[0]); epsg.append(N.real ** 2)
-    return (np.array(zg[::-1]), np.array(Eg[::-1]), np.array(epsg[::-1]))
+        zg.append(z); Eg.append(EH[0]); Hg.append(EH[1]); epsg.append(N.real ** 2)
+    return (np.array(zg[::-1]), np.array(Eg[::-1]), np.array(Hg[::-1]), np.array(epsg[::-1]))
 
 
 def mode_volume(z, E, eps):
