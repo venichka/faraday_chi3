@@ -134,6 +134,21 @@ def find_mode(layers, idx, f_center, f_halfwin=0.02, sub_label="SiO2", n=4000):
     return {"freq": f0, "lambda_um": 1.0 / f0, "Q": Q, "T_peak": Tpk}
 
 
+def find_modes_in_band(layers, idx, fmin, fmax, sub_label="SiO2", n=4000, t_min=0.05):
+    """All transmission-peak cavity modes in [fmin, fmax] with loaded Q (group delay).
+    Returns list of dict(freq, lambda_um, Q, T_peak), low to high frequency."""
+    fs = np.linspace(fmin, fmax, n)
+    _, T = spectrum(layers, idx, fs, sub_label=sub_label)
+    out = []
+    for i in range(1, len(fs) - 1):
+        if T[i] >= T[i - 1] and T[i] > T[i + 1] and T[i] > t_min:
+            f0 = float(fs[i])
+            out.append({"freq": f0, "lambda_um": 1.0 / f0,
+                        "Q": mode_Q(layers, idx, f0, sub_label=sub_label),
+                        "T_peak": float(T[i])})
+    return out
+
+
 def field_profile(layers, idx, f0, sub_label="SiO2", ppw=80):
     """Complex E(z) of the resonant field at f0 (drive normalized to a unit transmitted
     wave). Returns (z_um, E_complex, eps_real). |E|^2 peaks in the defect."""
