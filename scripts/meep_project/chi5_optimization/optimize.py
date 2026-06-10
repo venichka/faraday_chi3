@@ -62,9 +62,11 @@ def build_geometry(base, n_pairs, t_hi, t_lo, L_cav):
 
 
 def select_operating_point(geom, chi_iso, sub_label="SiO2"):
-    """Hybrid operating-point selector -> (best score dict, freqs) or (None, None)."""
-    idx = tmm.index_map()
-    layers = tmm.build_layers(geom)
+    """Hybrid operating-point selector -> (best score dict, freqs) or (None, None).
+    Builds one per-geometry context (field cache) and passes the already-found mode Q's
+    so the inner pump-pair loop only recomputes the sidebands."""
+    ctx = objective.make_ctx(geom, sub_label)
+    layers, idx = ctx["layers"], ctx["idx"]
     probe_modes = []
     for lo, hi in PROBE_WINDOWS:
         probe_modes += tmm.find_modes_in_band(layers, idx, 1.0 / hi, 1.0 / lo, sub_label)
@@ -76,16 +78,17 @@ def select_operating_point(geom, chi_iso, sub_label="SiO2"):
         fs = pm["freq"]
         for i in range(len(pumps)):
             for j in range(i, len(pumps)):
-                f1, f2 = max(pumps[i]["freq"], pumps[j]["freq"]), min(pumps[i]["freq"], pumps[j]["freq"])
+                hi_p = pumps[i] if pumps[i]["freq"] >= pumps[j]["freq"] else pumps[j]
+                lo_p = pumps[j] if pumps[i]["freq"] >= pumps[j]["freq"] else pumps[i]
+                f1, f2 = hi_p["freq"], lo_p["freq"]
                 d = f1 - f2
-                if abs(f1 + f2 - fs) > FWM_SUM_TOL:
-                    continue
-                if not (DELTA_RANGE[0] <= d <= DELTA_RANGE[1]):
+                if abs(f1 + f2 - fs) > FWM_SUM_TOL or not (DELTA_RANGE[0] <= d <= DELTA_RANGE[1]):
                     continue
                 freqs = {"probe": fs, "pump1": f1, "pump2": f2,
                          "sb_plus": fs + d, "sb_minus": fs - d}
+                q_known = {"probe": pm["Q"], "pump1": hi_p["Q"], "pump2": lo_p["Q"]}
                 try:
-                    s = objective.chi5_score(geom, freqs, chi_iso, 1.0, sub_label)
+                    s = objective.chi5_score(geom, freqs, chi_iso, ctx=ctx, q_known=q_known)
                 except Exception:
                     continue
                 if best is None or s["fom_rotation"] > best["fom_rotation"]:

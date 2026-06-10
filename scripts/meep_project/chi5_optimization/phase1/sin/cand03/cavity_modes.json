@@ -1,0 +1,20 @@
+{
+  "probe": {
+    "frequency": 1.1367702606766243,
+    "lambda_um": 0.8796852227685685
+  },
+  "pump1": {
+    "frequency": 0.597910466627646,
+    "lambda_um": 1.6724912103315943
+  },
+  "pump2": {
+    "frequency": 0.5396724639035217,
+    "lambda_um": 1.8529757712054988
+  },
+  "sidebands": {
+    "frequency_plus": 1.1950082634007486,
+    "frequency_minus": 1.0785322579525,
+    "delta_frequency": 0.05823800272412427,
+    "pump_separation_um": 0.18048456087390452
+  }
+}

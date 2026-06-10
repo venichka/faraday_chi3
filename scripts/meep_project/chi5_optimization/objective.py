@@ -52,17 +52,33 @@ def chi3_mask(geom, zc):
     return mask
 
 
-def counter_coefficients(geom, freqs, chi_iso, kappa_s, sub_label="SiO2", npts=8000):
-    """Derived counter-rotating coefficients (raw and /kappa_s) from TMM fields.
-    freqs: dict with probe/pump1/pump2/sb_plus/sb_minus -> frequency (1/um)."""
+def make_ctx(geom, sub_label="SiO2", npts=8000):
+    """Per-geometry context (grid, chi3 mask, mode-field cache) reused across the
+    operating-point loop so probe/pump fields are computed once, not per pump pair."""
     idx = tmm.index_map()
     layers = tmm.build_layers(geom)
     Ltot = sum(d for d, _ in layers)
     zc = np.linspace(0.0, Ltot, npts)
-    mask = chi3_mask(geom, zc)
-    u = {k: normalized_mode(layers, idx, freqs[k], zc, sub_label)
-         for k in ("probe", "pump1", "pump2", "sb_plus", "sb_minus")}
-    us, u1, u2, ubp, ubm = u["probe"], u["pump1"], u["pump2"], u["sb_plus"], u["sb_minus"]
+    return {"idx": idx, "layers": layers, "zc": zc,
+            "mask": chi3_mask(geom, zc), "cache": {}, "sub": sub_label}
+
+
+def _u(ctx, f):
+    k = round(float(f), 9)
+    c = ctx["cache"]
+    if k not in c:
+        c[k] = normalized_mode(ctx["layers"], ctx["idx"], f, ctx["zc"], ctx["sub"])
+    return c[k]
+
+
+def counter_coefficients(geom, freqs, chi_iso, kappa_s=1.0, sub_label="SiO2", npts=8000, ctx=None):
+    """Derived counter-rotating coefficients (raw and /kappa_s) from TMM fields.
+    freqs: dict with probe/pump1/pump2/sb_plus/sb_minus -> frequency (1/um)."""
+    if ctx is None:
+        ctx = make_ctx(geom, sub_label, npts)
+    zc, mask = ctx["zc"], ctx["mask"]
+    us, u1, u2, ubp, ubm = (_u(ctx, freqs[k]) for k in
+                            ("probe", "pump1", "pump2", "sb_plus", "sb_minus"))
     chi = complex(chi_iso)
 
     def I(v):
@@ -95,7 +111,8 @@ def q_cap(f, pulse_fs=100.0):
     return f / fwidth
 
 
-def chi5_score(geom, freqs, chi_iso, kappa_s, sub_label="SiO2", pulse_fs=100.0):
+def chi5_score(geom, freqs, chi_iso, kappa_s=1.0, sub_label="SiO2", pulse_fs=100.0,
+               ctx=None, q_known=None):
     """FDTD-light chi5 rotation figure of merit from TMM + the derived coefficients.
 
     Steady state (balanced sigma+sigma-): theta ~ (B_s/omega_s) * |Re(Sigma+ - Sigma-)|,
@@ -105,10 +122,14 @@ def chi5_score(geom, freqs, chi_iso, kappa_s, sub_label="SiO2", pulse_fs=100.0):
     gives Re=0 = pure ellipticity); Im(.) is the ellipticity/DoLP-loss channel.
     Drops the fixed |S1|^2|S2|^2; relative score for ranking geometries.
     """
-    idx = tmm.index_map()
-    layers = tmm.build_layers(geom)
-    raw, _ = counter_coefficients(geom, freqs, chi_iso, kappa_s, sub_label)
-    Q = {k: tmm.find_mode(layers, idx, freqs[k])["Q"] for k in ("probe", "pump1", "pump2")}
+    if ctx is None:
+        ctx = make_ctx(geom, sub_label)
+    layers, idx = ctx["layers"], ctx["idx"]
+    raw, _ = counter_coefficients(geom, freqs, chi_iso, kappa_s, sub_label, ctx=ctx)
+    if q_known is not None:
+        Q = q_known
+    else:
+        Q = {k: tmm.find_mode(layers, idx, freqs[k])["Q"] for k in ("probe", "pump1", "pump2")}
     # sideband modes nearest the generated sideband frequencies omega_s +- Delta
     msbp = tmm.find_mode(layers, idx, freqs["sb_plus"])
     msbm = tmm.find_mode(layers, idx, freqs["sb_minus"])

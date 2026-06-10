@@ -1,0 +1,107 @@
+{
+  "materials": {
+    "SiC": {
+      "type": "Medium",
+      "params": {
+        "index": 2.56
+      }
+    },
+    "SiO2": {
+      "type": "Medium",
+      "params": {
+        "index": 1.456812738340945
+      }
+    }
+  },
+  "pads": {
+    "pml_um": 1.0,
+    "air_um": 0.8,
+    "substrate_um": 0.8
+  },
+  "spacers": {
+    "left_um": 0.0,
+    "right_um": 0.0
+  },
+  "cavity": {
+    "mat": "SiC",
+    "L_um": 2.6408906072378158
+  },
+  "mirrors": {
+    "left": [
+      {
+        "mat": "SiC",
+        "thk_um": 0.2660756512531067
+      },
+      {
+        "mat": "SiO2",
+        "thk_um": 0.364934406190062
+      },
+      {
+        "mat": "SiC",
+        "thk_um": 0.2660756512531067
+      },
+      {
+        "mat": "SiO2",
+        "thk_um": 0.364934406190062
+      },
+      {
+        "mat": "SiC",
+        "thk_um": 0.2660756512531067
+      },
+      {
+        "mat": "SiO2",
+        "thk_um": 0.364934406190062
+      },
+      {
+        "mat": "SiC",
+        "thk_um": 0.2660756512531067
+      },
+      {
+        "mat": "SiO2",
+        "thk_um": 0.364934406190062
+      }
+    ],
+    "right": [
+      {
+        "mat": "SiO2",
+        "thk_um": 0.364934406190062
+      },
+      {
+        "mat": "SiC",
+        "thk_um": 0.2660756512531067
+      },
+      {
+        "mat": "SiO2",
+        "thk_um": 0.364934406190062
+      },
+      {
+        "mat": "SiC",
+        "thk_um": 0.2660756512531067
+      },
+      {
+        "mat": "SiO2",
+        "thk_um": 0.364934406190062
+      },
+      {
+        "mat": "SiC",
+        "thk_um": 0.2660756512531067
+      },
+      {
+        "mat": "SiO2",
+        "thk_um": 0.364934406190062
+      },
+      {
+        "mat": "SiC",
+        "thk_um": 0.2660756512531067
+      }
+    ]
+  },
+  "meta": {
+    "generated_on": "2026-06-08",
+    "generator": "manual: best_absolute mirrors + SiC cavity, L=3.2um",
+    "objective": "probe_rotation_study_sic",
+    "high_index_material": "sic",
+    "derived_from": "SiN_optimizations/best_absolute/geometry.json",
+    "notes": "Material labels are SiC; linear n,k supplied at runtime via --materials fit --sin-fit sic.csv. Mirror layer thicknesses identical to best_absolute (SiN-optimized); only cavity material and length (5.894->3.2 um) changed."
+  }
+}

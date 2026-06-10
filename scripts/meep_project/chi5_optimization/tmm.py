@@ -83,13 +83,26 @@ def rt_at(layers, idx, lam, n_inc=1.0 + 0j, sub_label="SiO2"):
     return R, float(np.real(T))
 
 
-def spectrum(layers, idx, freqs, sub_label="SiO2"):
-    """R, T over an array of frequencies f=1/lambda (1/um)."""
-    R = np.empty_like(freqs)
-    T = np.empty_like(freqs)
-    for i, f in enumerate(freqs):
-        R[i], T[i] = rt_at(layers, idx, 1.0 / f, sub_label=sub_label)
-    return R, T
+def spectrum(layers, idx, freqs, sub_label="SiO2", n_inc=1.0):
+    """R, T over an array of frequencies f=1/lambda (1/um). Vectorized over frequency
+    (only the 13-ish layers are a Python loop) -> ~50x faster than scalar rt_at."""
+    f = np.asarray(freqs, dtype=float)
+    lam = 1.0 / f
+    m00 = np.ones_like(f, dtype=complex); m01 = np.zeros_like(f, dtype=complex)
+    m10 = np.zeros_like(f, dtype=complex); m11 = np.ones_like(f, dtype=complex)
+    for d, mat in layers:
+        N = np.asarray(idx[mat](lam), dtype=complex)
+        delta = 2.0 * np.pi * N * d * f
+        c, s = np.cos(delta), np.sin(delta)
+        a00, a01, a10, a11 = c, 1j * s / N, 1j * N * s, c
+        m00, m01, m10, m11 = (m00 * a00 + m01 * a10, m00 * a01 + m01 * a11,
+                              m10 * a00 + m11 * a10, m10 * a01 + m11 * a11)
+    ns = np.asarray(idx[sub_label](lam), dtype=complex)
+    B, C = m00 + m01 * ns, m10 + m11 * ns
+    den = n_inc * B + C
+    R = np.abs((n_inc * B - C) / den) ** 2
+    T = 4.0 * n_inc * np.real(ns) / np.abs(den) ** 2
+    return R, np.real(T)
 
 
 def _layer_matrix(N, d, f):

@@ -1,0 +1,89 @@
+{
+  "materials": {
+    "SiN": {
+      "type": "Medium",
+      "params": {
+        "index": 2.06687952693004
+      }
+    },
+    "SiO2": {
+      "type": "Medium",
+      "params": {
+        "index": 1.456812738340945
+      }
+    }
+  },
+  "pads": {
+    "pml_um": 1.0,
+    "air_um": 0.8,
+    "substrate_um": 0.8
+  },
+  "spacers": {
+    "left_um": 0.0,
+    "right_um": 0.0
+  },
+  "cavity": {
+    "mat": "SiN",
+    "L_um": 5.323432245173896
+  },
+  "mirrors": {
+    "left": [
+      {
+        "mat": "SiN",
+        "thk_um": 0.26473936244409924
+      },
+      {
+        "mat": "SiO2",
+        "thk_um": 0.383380337237997
+      },
+      {
+        "mat": "SiN",
+        "thk_um": 0.26473936244409924
+      },
+      {
+        "mat": "SiO2",
+        "thk_um": 0.383380337237997
+      },
+      {
+        "mat": "SiN",
+        "thk_um": 0.26473936244409924
+      },
+      {
+        "mat": "SiO2",
+        "thk_um": 0.383380337237997
+      }
+    ],
+    "right": [
+      {
+        "mat": "SiO2",
+        "thk_um": 0.383380337237997
+      },
+      {
+        "mat": "SiN",
+        "thk_um": 0.26473936244409924
+      },
+      {
+        "mat": "SiO2",
+        "thk_um": 0.383380337237997
+      },
+      {
+        "mat": "SiN",
+        "thk_um": 0.26473936244409924
+      },
+      {
+        "mat": "SiO2",
+        "thk_um": 0.383380337237997
+      },
+      {
+        "mat": "SiN",
+        "thk_um": 0.26473936244409924
+      }
+    ]
+  },
+  "meta": {
+    "generated_on": "2026-03-24T21:30:34.650713Z",
+    "generator": "optimize_cavity_geometry.py",
+    "objective": "probe_rotation_optimization",
+    "high_index_material": "sin"
+  }
+}
