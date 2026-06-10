@@ -24,11 +24,13 @@ sys.path.insert(0, str(HERE))
 import tmm          # noqa: E402
 import objective    # noqa: E402
 
-# probe windows (um) and pump-band / matching tolerances
+# probe windows (um) and pump-band / Delta tolerances
 PROBE_WINDOWS = [(0.790, 0.810), (0.850, 0.950)]
 PUMP_BAND = (1.40, 1.95)
-FWM_SUM_TOL = 0.02          # |f1+f2 - f_probe| <= this (near-octave FWM)
-DELTA_RANGE = (0.002, 0.06)  # useful Delta = f1-f2 (small ~ Gamma_s .. modest)
+# NOTE: the f1+f2~=f_probe (octave) constraint was REMOVED (2026-06-10) -- the 1D-FDTD
+# operating-point diagnostic showed it is wrong: max |theta| is at the resonant pump modes
+# (NOT octave-matched) with small Delta. So pumps are chosen by buildup+small-Delta only.
+DELTA_RANGE = (0.005, 0.030)  # Delta = f1-f2 small (sidebands inside the probe mode, M5)
 
 
 def sobol(bounds, count, seed=0):
@@ -82,7 +84,7 @@ def select_operating_point(geom, chi_iso, sub_label="SiO2"):
                 lo_p = pumps[j] if pumps[i]["freq"] >= pumps[j]["freq"] else pumps[i]
                 f1, f2 = hi_p["freq"], lo_p["freq"]
                 d = f1 - f2
-                if abs(f1 + f2 - fs) > FWM_SUM_TOL or not (DELTA_RANGE[0] <= d <= DELTA_RANGE[1]):
+                if not (DELTA_RANGE[0] <= d <= DELTA_RANGE[1]):   # small Delta only (no octave constraint)
                     continue
                 freqs = {"probe": fs, "pump1": f1, "pump2": f2,
                          "sb_plus": fs + d, "sb_minus": fs - d}

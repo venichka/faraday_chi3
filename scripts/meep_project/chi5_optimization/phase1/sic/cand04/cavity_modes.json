@@ -1,20 +1,20 @@
 {
   "probe": {
-    "frequency": 1.0913719141859768,
-    "lambda_um": 0.9162779314747819
+    "frequency": 1.2350368417233235,
+    "lambda_um": 0.8096924449675833
   },
   "pump1": {
-    "frequency": 0.5590683385131998,
-    "lambda_um": 1.7886900958466452
+    "frequency": 0.5883384765605322,
+    "lambda_um": 1.6997018550377154
   },
   "pump2": {
-    "frequency": 0.5152890786799265,
-    "lambda_um": 1.9406582467492064
+    "frequency": 0.5711088944397272,
+    "lambda_um": 1.750979558777536
   },
   "sidebands": {
-    "frequency_plus": 1.1351511740192501,
-    "frequency_minus": 1.0475926543527034,
-    "delta_frequency": 0.043779259833273354,
-    "pump_separation_um": 0.15196815090256122
+    "frequency_plus": 1.2522664238441283,
+    "frequency_minus": 1.2178072596025187,
+    "delta_frequency": 0.017229582120804943,
+    "pump_separation_um": 0.05127770373982066
   }
 }

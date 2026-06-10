@@ -36,29 +36,29 @@
     "k_constant_used": 0.0,
     "kappa_ref_lambda_um": 1.55,
     "n2_m2_per_w_used": 5e-18,
-    "n_linear_probe": 2.678273783628546,
-    "chi3_si": 1.2693696619305489e-19,
-    "E_chi3_diag_meep": 0.01801562147680469
+    "n_linear_probe": 2.651530199076171,
+    "chi3_si": 1.2441459482454143e-19,
+    "E_chi3_diag_meep": 0.0176576320812652
   },
   "cell_size_um": {
     "x": 0.0,
     "y": 0.0,
-    "z": 11.688971066783166
+    "z": 12.386943936028722
   },
-  "cavity_center_um": -0.2000000000000004,
+  "cavity_center_um": -0.20000000000000018,
   "frequencies_inv_um": {
-    "pump1": 0.652773083,
-    "pump2": 0.604056692,
-    "probe": 1.2647833000600517,
-    "sb_minus": 1.2160669090600518,
-    "sb_plus": 1.3134996910600516,
-    "pump1_cold": 0.6527730833807354,
-    "pump2_cold": 0.6040566918286349
+    "pump1": 0.698819393,
+    "pump2": 0.669700392,
+    "probe": 1.1669326000230709,
+    "sb_minus": 1.1378135990230709,
+    "sb_plus": 1.1960516010230708,
+    "pump1_cold": 0.698819393493062,
+    "pump2_cold": 0.6697003921309999
   },
   "wavelengths_um": {
-    "pump1": 1.5319259112281747,
-    "pump2": 1.6554737547713485,
-    "probe": 0.7906492756130795
+    "pump1": 1.4309849011302411,
+    "pump2": 1.4932050390676792,
+    "probe": 0.8569475220593112
   },
   "intensities_w_cm2": {
     "pump": 200000000000.0,
@@ -76,48 +76,48 @@
     "per_source": {}
   },
   "probe_band_frequencies_inv_um": [
-    1.2416623988477888,
-    1.2449653847352549,
-    1.2482683706227211,
-    1.2515713565101871,
-    1.2548743423976534,
-    1.2581773282851194,
-    1.2614803141725857,
-    1.2647833000600517,
-    1.2680862859475177,
-    1.271389271834984,
-    1.27469225772245,
-    1.2779952436099162,
-    1.2812982294973823,
-    1.2846012153848485,
-    1.2879042012723145
+    1.143811698810808,
+    1.147114684698274,
+    1.1504176705857403,
+    1.1537206564732063,
+    1.1570236423606726,
+    1.1603266282481386,
+    1.1636296141356048,
+    1.1669326000230709,
+    1.170235585910537,
+    1.1735385717980031,
+    1.1768415576854692,
+    1.1801445435729354,
+    1.1834475294604014,
+    1.1867505153478677,
+    1.1900535012353337
   ],
-  "monitor_plane_z_um": 4.444485533391583,
-  "monitor_medium_index_probe": 1.458643276027638,
+  "monitor_plane_z_um": 4.7934719680143605,
+  "monitor_medium_index_probe": 1.4574910198669786,
   "plot_time_units": {
     "unit": "fs",
     "fs_per_meep_time": 3.3356409519815204
   },
   "probe_rotation_deg": {
     "initial_deg": 45.0,
-    "final_relative_deg": -0.017901163994963554,
-    "final_relative_deg_window_mean": -0.017901182208485536,
-    "max_relative_deg": 89.92480825089783,
-    "min_relative_deg": -89.88845642748407,
-    "mean_relative_deg": -0.020323267718614077,
-    "final_relative_unwrapped_deg": 719.9820988177905,
-    "final_relative_unwrapped_deg_window_mean": 719.9820988177905,
+    "final_relative_deg": 0.07319837454127764,
+    "final_relative_deg_window_mean": 0.07319839972925396,
+    "max_relative_deg": 89.60626816495869,
+    "min_relative_deg": -89.69017386129329,
+    "mean_relative_deg": -0.0022214410992215153,
+    "final_relative_unwrapped_deg": 360.0731983997296,
+    "final_relative_unwrapped_deg_window_mean": 360.0731983997296,
     "final_window_policy": "mean_over_last_m_valid_points",
     "final_window_points_requested": 64,
     "final_window_points_effective": 64,
     "final_window_points_used": 64,
     "final_window_fs_requested": null,
     "final_window_time_fs": [
-      1425.819724924501,
-      1436.3269939232428
+      1205.0002939033243,
+      1215.5075629020662
     ],
-    "wrapped_final_relative_deg": -0.022251635370210465,
-    "raw_final_relative_deg": -0.022251635370210465,
+    "wrapped_final_relative_deg": 0.07486519559023463,
+    "raw_final_relative_deg": 0.07486519559022753,
     "method": "dft_probe_center_forward_jones_coherent_final_window",
     "forward_decomposition": {
       "using_fields": [
@@ -126,76 +126,76 @@
         "Hx",
         "Hy"
       ],
-      "n_medium": 1.458643276027638,
+      "n_medium": 1.4574910198669786,
       "forward_relation": "Hy=n*Ex and Hx=-n*Ey"
     },
     "coherent_window_estimate": {
-      "theta_relative_deg": -0.017901163994963554,
-      "theta_relative_std_deg": 0.002124982320582818,
-      "chi_deg": 0.006189234677582071,
-      "dolp": 0.9999999766622693,
-      "docp": 0.00021604504492416662,
-      "S0": 0.03140585051963623,
-      "Ex_forward_mean_real": 0.05308758794013018,
-      "Ex_forward_mean_imag": 0.11355371208839495,
-      "Ey_forward_mean_real": 0.053029906904422636,
-      "Ey_forward_mean_imag": 0.11349423761138429,
-      "signal_power": 0.03140585051963623,
-      "noise_power": 1.6629701496960853e-09,
-      "snr_linear": 18885396.42481002,
-      "snr_db": 72.76126105568125,
-      "coherence_factor": 0.9999999470490357,
+      "theta_relative_deg": 0.07319837454127764,
+      "theta_relative_std_deg": 0.0022697181401576693,
+      "chi_deg": -0.3564893463525564,
+      "dolp": 0.9999225766002544,
+      "docp": -0.012443504534848004,
+      "S0": 0.12049824497267073,
+      "Ex_forward_mean_real": -0.1737093574585879,
+      "Ex_forward_mean_imag": -0.172974711598563,
+      "Ey_forward_mean_real": -0.17629817794577163,
+      "Ey_forward_mean_imag": -0.17123669497041305,
+      "signal_power": 0.12049824497267073,
+      "noise_power": 7.358512923106606e-10,
+      "snr_linear": 163753527.69211274,
+      "snr_db": 82.14190664637658,
+      "coherence_factor": 0.9999999938932611,
       "weights": "S0"
     },
     "validity_policy": "strength_threshold_and_finite",
     "strength_validity_enabled": true,
     "intensity_threshold_rel": 0.01,
-    "intensity_threshold_abs": 0.000706945230169877,
+    "intensity_threshold_abs": 0.0014655523447307127,
     "time_domain_reference": {
-      "final_relative_deg": 61.16960743946012,
-      "max_relative_deg": 89.97961170339889,
-      "min_relative_deg": -89.90795259038516,
-      "mean_relative_deg": -1.3049838390414723,
-      "final_relative_unwrapped_deg": 1141.1965111885413,
+      "final_relative_deg": -77.25903303953204,
+      "max_relative_deg": 89.99400365396917,
+      "min_relative_deg": -89.98871945376831,
+      "mean_relative_deg": -45.09491440533366,
+      "final_relative_unwrapped_deg": 822.7391320545438,
       "final_window_policy": "mean_over_last_m_valid_points",
       "final_window_points_requested": 64,
       "final_window_points_effective": 64,
       "final_window_points_used": 64,
       "final_window_fs_requested": null,
       "final_window_time_fs": [
-        519.3592962235227,
-        530.3669113650617
+        593.4105253575125,
+        603.9177943562543
       ],
-      "wrapped_final_relative_deg": 18.75686127989738,
-      "raw_final_relative_deg": 18.756861279897386,
+      "wrapped_final_relative_deg": -58.77202663759594,
+      "raw_final_relative_deg": -58.77202663759594,
       "method": "time_domain_probe_envelope_at_output_principal_linear_angle_final_window_mean",
       "validity_policy": "strength_threshold_and_finite",
       "strength_validity_enabled": true,
       "intensity_threshold_rel": 0.01,
-      "intensity_threshold_abs": 0.0005603072316901638
+      "intensity_threshold_abs": 0.00039195576949221234
     }
   },
   "probe_stokes_dft": {
     "final": {
-      "theta_relative_deg": -0.022251635370210465,
-      "chi_deg": 0.010599128686006692,
-      "dolp": 0.9999999315576272,
-      "docp": 0.00036997937838603826,
-      "S0": 0.03138672084110822,
-      "S0_backward": 0.0010844711510804971,
-      "forward_fraction": 0.9666020529415311,
-      "S1": 2.4378959690648377e-05,
-      "S2": 0.031386709225008455,
-      "S3": 1.161243946636933e-05
+      "theta_relative_deg": 0.07486519559023463,
+      "chi_deg": -0.35784760444843855,
+      "dolp": 0.9999219855030602,
+      "docp": -0.012490913001764333,
+      "S0": 0.1204796221024212,
+      "S0_backward": 0.0041526415207035206,
+      "forward_fraction": 0.9666808465161101,
+      "S1": -0.00031482306776095537,
+      "S2": 0.12046981158335492,
+      "S3": -0.0015049004781667865
     },
     "tail_weighted": {
-      "theta_relative_deg": -0.017901182208485536,
-      "theta_relative_std_deg": 0.0021249822630144926,
-      "chi_deg": 0.0061900377778543415,
-      "dolp": 0.9999999711348755,
-      "docp": 0.0002160730772660109,
-      "S0": 0.031405847902437334,
-      "S0_rel_max": 0.444247256536275,
+      "theta_relative_deg": 0.07319839972925396,
+      "theta_relative_std_deg": 0.002269718092173851,
+      "chi_deg": -0.35648935023527256,
+      "dolp": 0.9999225736251709,
+      "docp": -0.012443504633360958,
+      "S0": 0.12049824488635028,
+      "S0_rel_max": 0.8222036239073479,
       "window_policy": "mean_over_last_m_points",
       "window_points_requested": 64,
       "window_points_effective": 64,
@@ -207,14 +207,14 @@
   "probe_stokes_total": {
     "description": "Total-field Stokes angle at the probe monitor (raw Ex,Ey, no forward/backward split). Naive-detector reading; compare against probe_stokes_dft (forward, incoherent) and probe_rotation_deg.final_relative_deg (forward, coherent).",
     "final": {
-      "theta_relative_deg": -0.022255659548164886,
-      "dolp": 0.99999993152504
+      "theta_relative_deg": 0.07487532288487841,
+      "dolp": 0.9999219853657171
     },
     "tail_weighted": {
-      "theta_relative_deg": -0.017903398247544767,
-      "theta_relative_std_deg": 0.0021261840043564893,
-      "dolp": 0.9999999711063017,
-      "S0": 0.044166421421143756,
+      "theta_relative_deg": 0.07319936058976272,
+      "theta_relative_std_deg": 0.0022704741383726096,
+      "dolp": 0.9999225730624772,
+      "S0": 0.16939281378753768,
       "window_points_requested": 64,
       "weights": "S0"
     }
@@ -232,54 +232,54 @@
     },
     "coherent_reference": {
       "final_abs": {
-        "pump1_dominant": 33.48428189013012,
-        "pump2_dominant": 34.64930521865944,
-        "pump1_orthogonal": 0.0006059123698967968,
-        "pump2_orthogonal": 0.0010453710141020219
+        "pump1_dominant": 32.3877250720023,
+        "pump2_dominant": 29.246316129873534,
+        "pump1_orthogonal": 0.24233603437918314,
+        "pump2_orthogonal": 0.17313379491965047
       },
       "tail_weighted_abs": {
-        "pump1_dominant": 33.48428956387017,
-        "pump2_dominant": 34.64929808777386,
-        "pump1_orthogonal": 0.0006130531452892984,
-        "pump2_orthogonal": 0.0010531346998019623,
+        "pump1_dominant": 32.37873222016433,
+        "pump2_dominant": 29.24631619350909,
+        "pump1_orthogonal": 0.24227822158586712,
+        "pump2_orthogonal": 0.17308094072674457,
         "tail_fraction": 0.2,
         "weights": "pump1_dominant + pump2_dominant"
       },
       "ratio_p2_over_p1": {
-        "final": 1.0347931406249666,
-        "tail_weighted": 1.0347926905148002
+        "final": 0.9030061872161448,
+        "tail_weighted": 0.9032569896388815
       },
       "dominant_purity": {
-        "pump1_final": 0.9999999996725555,
-        "pump2_final": 0.9999999990897684,
-        "pump1_tail_weighted": 0.9999999996647922,
-        "pump2_tail_weighted": 0.999999999076198
+        "pump1_final": 0.9999440176929489,
+        "pump2_final": 0.9999649566079549,
+        "pump1_tail_weighted": 0.9999440133143256,
+        "pump2_tail_weighted": 0.9999649780001486
       }
     },
     "rms_integrated": {
       "final_abs": {
-        "pump1_dominant": 33.48428189013012,
-        "pump2_dominant": 34.64930521865944,
-        "pump1_orthogonal": 0.0006059123698967968,
-        "pump2_orthogonal": 0.0010453710141020219
+        "pump1_dominant": 32.3877250720023,
+        "pump2_dominant": 29.246316129873534,
+        "pump1_orthogonal": 0.24233603437918314,
+        "pump2_orthogonal": 0.17313379491965047
       },
       "tail_weighted_abs": {
-        "pump1_dominant": 33.48428956387017,
-        "pump2_dominant": 34.64929808777386,
-        "pump1_orthogonal": 0.0006130531452892984,
-        "pump2_orthogonal": 0.0010531346998019623,
+        "pump1_dominant": 32.37873222016433,
+        "pump2_dominant": 29.24631619350909,
+        "pump1_orthogonal": 0.24227822158586712,
+        "pump2_orthogonal": 0.17308094072674457,
         "tail_fraction": 0.2,
         "weights": "pump1_dominant + pump2_dominant"
       },
       "ratio_p2_over_p1": {
-        "final": 1.0347931406249666,
-        "tail_weighted": 1.0347926905148002
+        "final": 0.9030061872161448,
+        "tail_weighted": 0.9032569896388815
       },
       "dominant_purity": {
-        "pump1_final": 0.9999999996725555,
-        "pump2_final": 0.9999999990897684,
-        "pump1_tail_weighted": 0.9999999996647922,
-        "pump2_tail_weighted": 0.999999999076198
+        "pump1_final": 0.9999440176929489,
+        "pump2_final": 0.9999649566079549,
+        "pump1_tail_weighted": 0.9999440133143256,
+        "pump2_tail_weighted": 0.9999649780001486
       }
     }
   },
@@ -299,15 +299,15 @@
   },
   "theta_deg_rel_I": {
     "pump_intensity_w_cm2": 200000000000.0,
-    "final_relative_deg": -0.017901163994963554,
-    "forward_incoherent_final_relative_deg": -0.017901182208485536,
-    "total_field_final_relative_deg": -0.017903398247544767
+    "final_relative_deg": 0.07319837454127764,
+    "forward_incoherent_final_relative_deg": 0.07319839972925396,
+    "total_field_final_relative_deg": 0.07319936058976272
   },
   "objective_quality": {
-    "abs_rotation_deg": 0.017901163994963554,
-    "probe_dolp_tail": 0.9999999711348755,
-    "probe_theta_tail_std_deg": 0.0021249822630144926,
-    "probe_s0_tail": 0.031405847902437334,
-    "probe_s0_tail_rel_max": 0.444247256536275
+    "abs_rotation_deg": 0.07319837454127764,
+    "probe_dolp_tail": 0.9999225736251709,
+    "probe_theta_tail_std_deg": 0.002269718092173851,
+    "probe_s0_tail": 0.12049824488635028,
+    "probe_s0_tail_rel_max": 0.8222036239073479
   }
 }
