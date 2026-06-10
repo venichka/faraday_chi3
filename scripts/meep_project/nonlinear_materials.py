@@ -46,6 +46,17 @@ HIGH_INDEX_PRESETS: Dict[str, HighIndexMaterialPreset] = {
             "(Guan et al., Opt. Express 2018)"
         ),
     ),
+    # 4H-SiC. Linear n,k come from the sic.csv ellipsometry fit at runtime
+    # (under --materials fit); n2 is specified by the user for this study.
+    "sic": HighIndexMaterialPreset(
+        key="sic",
+        display_name="SiC (4H-SiC)",
+        n_const=2.56,
+        k_const=0.0,
+        n2_m2_per_w=5.0e-18,
+        reference_wavelength_um=1.55,
+        source="user-specified n2=5e-18 m^2/W; linear n,k from sic.csv ellipsometry fit",
+    ),
 }
 
 
@@ -64,6 +75,10 @@ def canonical_high_index_material(name: str | None) -> str:
         "tio2": "tio2",
         "titaniumdioxide": "tio2",
         "titania": "tio2",
+        "sic": "sic",
+        "4hsic": "sic",
+        "siliconcarbide": "sic",
+        "carborundum": "sic",
     }
     canonical = aliases.get(key, key)
     if canonical not in HIGH_INDEX_PRESETS:

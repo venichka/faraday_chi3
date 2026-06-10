@@ -1,0 +1,11 @@
+{
+  "intensity_overlap_probe_pump1": 0.14281302094034726,
+  "intensity_overlap_probe_pump2": 0.1546889490053423,
+  "intensity_overlap_pump1_pump2": 0.15559116341501214,
+  "fwm_triple_overlap_norm": 0.34578939118615803,
+  "field_peak_in_cavity": {
+    "probe": 0.54213957277299,
+    "pump1": 0.5229046188688706,
+    "pump2": 0.5240064213362474
+  }
+}

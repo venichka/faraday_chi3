@@ -455,12 +455,15 @@ def load_params(
             params["pad_sub"] = float(pads["substrate_um"])
             params["t_cav"] = float(cav["L_um"])
 
-            # infer N_per & average layer thicknesses from mirrors
-            tH = [l["thk_um"] for l in mirL if l["mat"] == "SiN"]
-            tL = [l["thk_um"] for l in mirL if l["mat"] == "SiO2"]
+            # infer N_per & average layer thicknesses from mirrors.
+            # High-index layers are those matching the cavity material (e.g. SiN
+            # or SiC); the remaining layers are treated as the low-index (SiO2).
+            high_mat = cav.get("mat", "SiN")
+            tH = [l["thk_um"] for l in mirL if l["mat"] == high_mat]
+            tL = [l["thk_um"] for l in mirL if l["mat"] != high_mat]
             if not tH or not tL:
-                tH = [l["thk_um"] for l in mirR if l["mat"] == "SiN"]
-                tL = [l["thk_um"] for l in mirR if l["mat"] == "SiO2"]
+                tH = [l["thk_um"] for l in mirR if l["mat"] == high_mat]
+                tL = [l["thk_um"] for l in mirR if l["mat"] != high_mat]
             if tH:
                 params["t_SiN"] = float(
                     np.mean(tH)) if np else float(sum(tH)/len(tH))

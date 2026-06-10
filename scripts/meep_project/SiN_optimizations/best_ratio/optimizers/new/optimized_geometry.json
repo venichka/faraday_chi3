@@ -1,0 +1,54 @@
+{
+  "materials": {
+    "SiN": {
+      "type": "Medium",
+      "params": {
+        "index": 2.06687952693004
+      }
+    },
+    "SiO2": {
+      "type": "Medium",
+      "params": {
+        "index": 1.456812738340945
+      }
+    }
+  },
+  "pads": {
+    "pml_um": 1.0,
+    "air_um": 0.8,
+    "substrate_um": 0.8
+  },
+  "spacers": {
+    "left_um": 0.0,
+    "right_um": 0.0
+  },
+  "cavity": {
+    "mat": "SiN",
+    "L_um": 1.9177
+  },
+  "mirrors": {
+    "left": [
+      { "mat": "SiN",  "thk_um": 0.170985 },
+      { "mat": "SiO2", "thk_um": 0.242570 },
+      { "mat": "SiN",  "thk_um": 0.170985 },
+      { "mat": "SiO2", "thk_um": 0.242570 },
+      { "mat": "SiN",  "thk_um": 0.170985 },
+      { "mat": "SiO2", "thk_um": 0.242570 }
+    ],
+    "right": [
+      { "mat": "SiO2", "thk_um": 0.242570 },
+      { "mat": "SiN",  "thk_um": 0.170985 },
+      { "mat": "SiO2", "thk_um": 0.242570 },
+      { "mat": "SiN",  "thk_um": 0.170985 },
+      { "mat": "SiO2", "thk_um": 0.242570 },
+      { "mat": "SiN",  "thk_um": 0.170985 }
+    ]
+  },
+  "meta": {
+    "generated_on": "2026-03-24",
+    "generator": "reconstructed from optimization log (pipeline_cluster_20260323_104832)",
+    "objective": "best rotation per unit cavity length",
+    "high_index_material": "sin",
+    "note": "Layer thicknesses are quarter-wave estimates at pump center wavelength (1.414 um). Exact Sobol-optimized values were not preserved after eval cache cleanup. Re-optimization or reflectance verification recommended before 3D simulation."
+  }
+}

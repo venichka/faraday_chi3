@@ -1,0 +1,722 @@
+{
+  "input_files": {
+    "geometry_file": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/geometry.json",
+    "modes_file": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/cavity_modes.json"
+  },
+  "output_json": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/tcmt_derivation_analysis/tcmt_extracted_params_derivation.json",
+  "material_constants": {
+    "materials_model": "fit",
+    "high_index_material": "sic",
+    "nH": 2.56,
+    "kH": 0.0,
+    "nL": 1.45,
+    "kappa_ref_lambda_um": 1.55,
+    "n2_m2_per_w": 5e-18,
+    "n_linear_probe": 2.663764959546439,
+    "chi3_si": 1.2556539794578742e-19,
+    "chi3_meep": 0.01782096065329962,
+    "chi_iso_meep": 0.00594032021776654,
+    "sin_fit": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/sic.csv",
+    "sio2_fit": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/sio2.csv",
+    "fit_window_nm": [
+      600,
+      2000
+    ],
+    "fit_poles": 3
+  },
+  "pulse_settings": {
+    "pump_intensity_w_cm2": 1000000000000.0,
+    "probe_intensity_w_cm2": 100000000.0,
+    "pulse_fwhm_intensity_fs": 100.0
+  },
+  "targets": {
+    "frequencies_inv_um": {
+      "pump1": 0.6036712557363373,
+      "pump2": 0.5803087192323739,
+      "probe": 1.213338942106731,
+      "sb_plus": 1.2367014786106945,
+      "sb_minus": 1.1899764056027677
+    },
+    "wavelengths_um": {
+      "pump1": 1.6565307532826532,
+      "pump2": 1.7232207045291155,
+      "probe": 0.8241720143455473,
+      "sb_plus": 0.8086025749103138,
+      "sb_minus": 0.8403527963173879
+    }
+  },
+  "analysis_frequencies": {
+    "pump1": {
+      "freq_inv_um": 0.6045585916520677,
+      "source": "loaded_linewidth",
+      "target_freq_inv_um": 0.6036712557363373
+    },
+    "pump2": {
+      "freq_inv_um": 0.5808330122922254,
+      "source": "loaded_linewidth",
+      "target_freq_inv_um": 0.5803087192323739
+    },
+    "probe": {
+      "freq_inv_um": 1.2124878936609813,
+      "source": "loaded_harminv",
+      "target_freq_inv_um": 1.213338942106731
+    },
+    "sb_plus": {
+      "freq_inv_um": 1.2359825332515086,
+      "source": "loaded_linewidth",
+      "target_freq_inv_um": 1.2367014786106945
+    },
+    "sb_minus": {
+      "freq_inv_um": 1.1900693813519208,
+      "source": "loaded_harminv",
+      "target_freq_inv_um": 1.1899764056027677
+    }
+  },
+  "resonance_fit_loaded_lossy_linewidth": {
+    "pump1": {
+      "lam": 1.6540993938524897,
+      "R": 0.001294752918620902,
+      "Q": 43.426522883284285,
+      "width_um": 0.038089611694174685,
+      "depth": 0.12742219640865582,
+      "detune_um": 0.002431359430163482
+    },
+    "pump2": {
+      "lam": 1.7216652270737078,
+      "R": 0.0003929273645386056,
+      "Q": 81.59779453136811,
+      "width_um": 0.021099408837721212,
+      "depth": 0.12832402196273812,
+      "detune_um": 0.0015554774554076278
+    },
+    "probe": {
+      "lam": 0.825274707254366,
+      "R": 0.04857020029041009,
+      "Q": 212.2512624079472,
+      "width_um": 0.0038881969317486886,
+      "depth": 0.4593463131637188,
+      "detune_um": 0.0011026929088187032
+    },
+    "sb_plus": {
+      "lam": 0.8090729222275435,
+      "R": 0.9457160264253972,
+      "Q": 1301.1367462320452,
+      "width_um": 0.0006218200543259833,
+      "depth": 0.0025561618222714744,
+      "detune_um": 0.00047034731722961354
+    },
+    "sb_minus": {
+      "lam": 0.8417563990300598,
+      "R": 0.0872075086530609,
+      "Q": 244.06037788366362,
+      "width_um": 0.003448967859220886,
+      "depth": 0.03900767630319185,
+      "detune_um": 0.0014036027126719253
+    }
+  },
+  "resonance_fit_lossless_linewidth": {
+    "pump1": {
+      "lam": 1.6540993938524897,
+      "R": 0.001294752918620902,
+      "Q": 43.426522883284285,
+      "width_um": 0.038089611694174685,
+      "depth": 0.12742219640865582,
+      "detune_um": 0.002431359430163482
+    },
+    "pump2": {
+      "lam": 1.7216652270737078,
+      "R": 0.0003929273645386056,
+      "Q": 81.59779453136811,
+      "width_um": 0.021099408837721212,
+      "depth": 0.12832402196273812,
+      "detune_um": 0.0015554774554076278
+    },
+    "probe": {
+      "lam": 0.825274707254366,
+      "R": 0.04857020029041009,
+      "Q": 212.2512624079472,
+      "width_um": 0.0038881969317486886,
+      "depth": 0.4593463131637188,
+      "detune_um": 0.0011026929088187032
+    },
+    "sb_plus": {
+      "lam": 0.8090729222275435,
+      "R": 0.9457160264253972,
+      "Q": 1301.1367462320452,
+      "width_um": 0.0006218200543259833,
+      "depth": 0.0025561618222714744,
+      "detune_um": 0.00047034731722961354
+    },
+    "sb_minus": {
+      "lam": 0.8417563990300598,
+      "R": 0.0872075086530609,
+      "Q": 244.06037788366362,
+      "width_um": 0.003448967859220886,
+      "depth": 0.03900767630319185,
+      "detune_um": 0.0014036027126719253
+    }
+  },
+  "resonance_fit_loaded_lossy_harminv": {
+    "pump1": {
+      "freq": NaN,
+      "lam": NaN,
+      "Q": NaN,
+      "error": NaN,
+      "decay": NaN,
+      "detune_inv_um": NaN,
+      "selection_note": "no_harminv_mode_within_detune_window"
+    },
+    "pump2": {
+      "freq": 0.5371278485680824,
+      "lam": 1.861754147854889,
+      "Q": 135.0837204526557,
+      "error": NaN,
+      "decay": -0.0019881294606345088,
+      "detune_inv_um": -0.04318087066429155,
+      "selection_note": "nearest_mode_in_detune_window"
+    },
+    "probe": {
+      "freq": 1.2124878936609813,
+      "lam": 0.8247505028529429,
+      "Q": 140.82497187179638,
+      "error": NaN,
+      "decay": -0.00430494633709141,
+      "detune_inv_um": -0.0008510484457497913,
+      "selection_note": "nearest_mode_in_detune_window"
+    },
+    "sb_plus": {
+      "freq": 1.2469866151424243,
+      "lam": 0.8019332267538295,
+      "Q": 414.96783165564074,
+      "error": NaN,
+      "decay": -0.0015025099779026132,
+      "detune_inv_um": 0.0102851365317298,
+      "selection_note": "nearest_mode_in_detune_window"
+    },
+    "sb_minus": {
+      "freq": 1.1900693813519208,
+      "lam": 0.8402871426403714,
+      "Q": 65.56835347245608,
+      "error": NaN,
+      "decay": -0.009075028716801959,
+      "detune_inv_um": 9.297574915301254e-05,
+      "selection_note": "nearest_mode_in_detune_window"
+    }
+  },
+  "resonance_fit_lossless_harminv": {
+    "pump1": {
+      "freq": NaN,
+      "lam": NaN,
+      "Q": NaN,
+      "error": NaN,
+      "decay": NaN,
+      "detune_inv_um": NaN,
+      "selection_note": "no_harminv_mode_within_detune_window"
+    },
+    "pump2": {
+      "freq": 0.5371278485680824,
+      "lam": 1.861754147854889,
+      "Q": 135.0837204526557,
+      "error": NaN,
+      "decay": -0.0019881294606345088,
+      "detune_inv_um": -0.04318087066429155,
+      "selection_note": "nearest_mode_in_detune_window"
+    },
+    "probe": {
+      "freq": 1.2124878936609813,
+      "lam": 0.8247505028529429,
+      "Q": 140.82497187179638,
+      "error": NaN,
+      "decay": -0.00430494633709141,
+      "detune_inv_um": -0.0008510484457497913,
+      "selection_note": "nearest_mode_in_detune_window"
+    },
+    "sb_plus": {
+      "freq": 1.2469866151424243,
+      "lam": 0.8019332267538295,
+      "Q": 414.96783165564074,
+      "error": NaN,
+      "decay": -0.0015025099779026132,
+      "detune_inv_um": 0.0102851365317298,
+      "selection_note": "nearest_mode_in_detune_window"
+    },
+    "sb_minus": {
+      "freq": 1.1900693813519208,
+      "lam": 0.8402871426403714,
+      "Q": 65.56835347245608,
+      "error": NaN,
+      "decay": -0.009075028716801959,
+      "detune_inv_um": 9.297574915301254e-05,
+      "selection_note": "nearest_mode_in_detune_window"
+    }
+  },
+  "rates_harminv_primary": {
+    "pump1": {
+      "mode": "pump1",
+      "freq_target_inv_um": 0.6036712557363373,
+      "freq_loaded_inv_um": 0.6045585916520677,
+      "freq_lossless_inv_um": 0.6045585916520677,
+      "detune_loaded_inv_um": 0.000887335915730425,
+      "detune_loaded_omega": 0.00557529598825015,
+      "Q_loaded": 43.426522883284285,
+      "Q_ext_lossless": 43.426522883284285,
+      "Q_int_absorption": Infinity,
+      "kappa_loaded": 0.08747082216567682,
+      "kappa_ext": 0.08747082216567682,
+      "kappa_int": 0.0,
+      "kappa_ext_left": 0.0445091126641854,
+      "kappa_ext_right": 0.04296170950149142,
+      "port_split": {
+        "left_flux_raw": -201.5916799733448,
+        "right_flux_raw": 194.58314656318421,
+        "left_flux_mag": 201.5916799733448,
+        "right_flux_mag": 194.58314656318421,
+        "frac_left": 0.5088452533335234,
+        "frac_right": 0.4911547466664765
+      }
+    },
+    "pump2": {
+      "mode": "pump2",
+      "freq_target_inv_um": 0.5803087192323739,
+      "freq_loaded_inv_um": 0.5808330122922254,
+      "freq_lossless_inv_um": 0.5808330122922254,
+      "detune_loaded_inv_um": 0.0005242930598514661,
+      "detune_loaded_omega": 0.0032942304503149594,
+      "Q_loaded": 81.59779453136811,
+      "Q_ext_lossless": 81.59779453136811,
+      "Q_int_absorption": Infinity,
+      "kappa_loaded": 0.04472524618733934,
+      "kappa_ext": 0.04472524618733934,
+      "kappa_int": 0.0,
+      "kappa_ext_left": 0.021996299713174353,
+      "kappa_ext_right": 0.022728946474164992,
+      "port_split": {
+        "left_flux_raw": -259.9039281268993,
+        "right_flux_raw": 268.5607373899986,
+        "left_flux_mag": 259.9039281268993,
+        "right_flux_mag": 268.5607373899986,
+        "frac_left": 0.4918094720158519,
+        "frac_right": 0.5081905279841482
+      }
+    },
+    "probe": {
+      "mode": "probe",
+      "freq_target_inv_um": 1.213338942106731,
+      "freq_loaded_inv_um": 1.2124878936609813,
+      "freq_lossless_inv_um": 1.2124878936609813,
+      "detune_loaded_inv_um": -0.0008510484457497913,
+      "detune_loaded_omega": -0.005347295090033112,
+      "Q_loaded": 140.82497187179638,
+      "Q_ext_lossless": 140.82497187179638,
+      "Q_int_absorption": Infinity,
+      "kappa_loaded": 0.054097551146818655,
+      "kappa_ext": 0.054097551146818655,
+      "kappa_int": 0.0,
+      "kappa_ext_left": 0.026973183562057,
+      "kappa_ext_right": 0.027124367584761656,
+      "port_split": {
+        "left_flux_raw": -98.44318296093095,
+        "right_flux_raw": 98.99495455191291,
+        "left_flux_mag": 98.44318296093095,
+        "right_flux_mag": 98.99495455191291,
+        "frac_left": 0.4986026722143637,
+        "frac_right": 0.5013973277856363
+      }
+    },
+    "sb_plus": {
+      "mode": "sb_plus",
+      "freq_target_inv_um": 1.2367014786106945,
+      "freq_loaded_inv_um": 1.2359825332515086,
+      "freq_lossless_inv_um": 1.2359825332515086,
+      "detune_loaded_inv_um": -0.0007189453591858186,
+      "detune_loaded_omega": -0.004517266917501286,
+      "Q_loaded": 1301.1367462320452,
+      "Q_ext_lossless": 1301.1367462320452,
+      "Q_int_absorption": Infinity,
+      "kappa_loaded": 0.0059685558150177,
+      "kappa_ext": 0.0059685558150177,
+      "kappa_int": 0.0,
+      "kappa_ext_left": 0.004421316319439615,
+      "kappa_ext_right": 0.0015472394955780852,
+      "port_split": {
+        "left_flux_raw": -27.08514085557961,
+        "right_flux_raw": 9.478444120994256,
+        "left_flux_mag": 27.08514085557961,
+        "right_flux_mag": 9.478444120994256,
+        "frac_left": 0.7407681952667646,
+        "frac_right": 0.2592318047332354
+      }
+    },
+    "sb_minus": {
+      "mode": "sb_minus",
+      "freq_target_inv_um": 1.1899764056027677,
+      "freq_loaded_inv_um": 1.1900693813519208,
+      "freq_lossless_inv_um": 1.1900693813519208,
+      "detune_loaded_inv_um": 9.297574915301254e-05,
+      "detune_loaded_omega": 0.0005841838610022232,
+      "Q_loaded": 65.56835347245608,
+      "Q_ext_lossless": 65.56835347245608,
+      "Q_int_absorption": Infinity,
+      "kappa_loaded": 0.11404017419128576,
+      "kappa_ext": 0.11404017419128576,
+      "kappa_int": 0.0,
+      "kappa_ext_left": 0.04089872602913922,
+      "kappa_ext_right": 0.07314144816214653,
+      "port_split": {
+        "left_flux_raw": -57.49123558175229,
+        "right_flux_raw": 102.81474841256785,
+        "left_flux_mag": 57.49123558175229,
+        "right_flux_mag": 102.81474841256785,
+        "frac_left": 0.3586343700294387,
+        "frac_right": 0.6413656299705612
+      }
+    }
+  },
+  "rates_normalized_to_probe_kappa": {
+    "pump1": {
+      "kappa_loaded_norm_to_probe_kappa": 1.616909089438899,
+      "kappa_ext_norm_to_probe_kappa": 1.616909089438899,
+      "kappa_int_norm_to_probe_kappa": 0.0,
+      "kappa_ext_left_norm_to_probe_kappa": 0.8227565152328132,
+      "kappa_ext_right_norm_to_probe_kappa": 0.7941525742060856,
+      "detune_loaded_omega_norm_to_probe_kappa": 0.10306004375538207
+    },
+    "pump2": {
+      "kappa_loaded_norm_to_probe_kappa": 0.82675177044441,
+      "kappa_ext_norm_to_probe_kappa": 0.82675177044441,
+      "kappa_int_norm_to_probe_kappa": 0.0,
+      "kappa_ext_left_norm_to_probe_kappa": 0.406604351710436,
+      "kappa_ext_right_norm_to_probe_kappa": 0.420147418733974,
+      "detune_loaded_omega_norm_to_probe_kappa": 0.06089426194865172
+    },
+    "probe": {
+      "kappa_loaded_norm_to_probe_kappa": 1.0,
+      "kappa_ext_norm_to_probe_kappa": 1.0,
+      "kappa_int_norm_to_probe_kappa": 0.0,
+      "kappa_ext_left_norm_to_probe_kappa": 0.4986026722143637,
+      "kappa_ext_right_norm_to_probe_kappa": 0.5013973277856363,
+      "detune_loaded_omega_norm_to_probe_kappa": -0.09884541863125672
+    },
+    "sb_plus": {
+      "kappa_loaded_norm_to_probe_kappa": 0.11032950084596753,
+      "kappa_ext_norm_to_probe_kappa": 0.11032950084596753,
+      "kappa_int_norm_to_probe_kappa": 0.0,
+      "kappa_ext_left_norm_to_probe_kappa": 0.08172858522635035,
+      "kappa_ext_right_norm_to_probe_kappa": 0.028600915619617185,
+      "detune_loaded_omega_norm_to_probe_kappa": -0.08350224403396003
+    },
+    "sb_minus": {
+      "kappa_loaded_norm_to_probe_kappa": 2.10804688518682,
+      "kappa_ext_norm_to_probe_kappa": 2.10804688518682,
+      "kappa_int_norm_to_probe_kappa": 0.0,
+      "kappa_ext_left_norm_to_probe_kappa": 0.7560180666614957,
+      "kappa_ext_right_norm_to_probe_kappa": 1.3520288185253244,
+      "detune_loaded_omega_norm_to_probe_kappa": 0.010798711746059834
+    }
+  },
+  "port_splits": {
+    "pump1": {
+      "left_flux_raw": -201.5916799733448,
+      "right_flux_raw": 194.58314656318421,
+      "left_flux_mag": 201.5916799733448,
+      "right_flux_mag": 194.58314656318421,
+      "frac_left": 0.5088452533335234,
+      "frac_right": 0.4911547466664765
+    },
+    "pump2": {
+      "left_flux_raw": -259.9039281268993,
+      "right_flux_raw": 268.5607373899986,
+      "left_flux_mag": 259.9039281268993,
+      "right_flux_mag": 268.5607373899986,
+      "frac_left": 0.4918094720158519,
+      "frac_right": 0.5081905279841482
+    },
+    "probe": {
+      "left_flux_raw": -98.44318296093095,
+      "right_flux_raw": 98.99495455191291,
+      "left_flux_mag": 98.44318296093095,
+      "right_flux_mag": 98.99495455191291,
+      "frac_left": 0.4986026722143637,
+      "frac_right": 0.5013973277856363
+    },
+    "sb_plus": {
+      "left_flux_raw": -27.08514085557961,
+      "right_flux_raw": 9.478444120994256,
+      "left_flux_mag": 27.08514085557961,
+      "right_flux_mag": 9.478444120994256,
+      "frac_left": 0.7407681952667646,
+      "frac_right": 0.2592318047332354
+    },
+    "sb_minus": {
+      "left_flux_raw": -57.49123558175229,
+      "right_flux_raw": 102.81474841256785,
+      "left_flux_mag": 57.49123558175229,
+      "right_flux_mag": 102.81474841256785,
+      "frac_left": 0.3586343700294387,
+      "frac_right": 0.6413656299705612
+    }
+  },
+  "legacy_proxy_norms": {
+    "eta_s_u1_us_proxy": 0.3153432261170405,
+    "eta_s_u2_us_proxy": 0.31323132144975685,
+    "eta_Omega_p_proxy": 0.3026197824991673,
+    "eta_Omega_m_proxy": 0.3026197824991673,
+    "eta_sb_probe_p_proxy": 0.2655026486778573,
+    "eta_sb_probe_m_proxy": 0.30119347486004433
+  },
+  "derived_coefficients": {
+    "counter": {
+      "alpha1_plus_raw": {
+        "re": 8.852000387198316e-05,
+        "im": 0.0
+      },
+      "alpha2_plus_raw": {
+        "re": 9.022574522033821e-05,
+        "im": 0.0
+      },
+      "alpha1_minus_raw": {
+        "re": 8.852000387198316e-05,
+        "im": 0.0
+      },
+      "alpha2_minus_raw": {
+        "re": 9.022574522033821e-05,
+        "im": 0.0
+      },
+      "zeta_plus_raw": {
+        "re": 3.519940232529829e-05,
+        "im": 1.2310484334233007e-06
+      },
+      "zeta_minus_raw": {
+        "re": 7.780162618795652e-05,
+        "im": 6.178797535688673e-06
+      },
+      "eta_plus_raw": {
+        "re": 3.4530301226224285e-05,
+        "im": -1.2076475855280836e-06
+      },
+      "eta_minus_raw": {
+        "re": 7.926725226126851e-05,
+        "im": -6.295193647360474e-06
+      },
+      "alpha1_plus_norm": {
+        "re": 0.0016363033445218863,
+        "im": 0.0
+      },
+      "alpha2_plus_norm": {
+        "re": 0.0016678341867170483,
+        "im": 0.0
+      },
+      "alpha1_minus_norm": {
+        "re": 0.0016363033445218863,
+        "im": 0.0
+      },
+      "alpha2_minus_norm": {
+        "re": 0.0016678341867170483,
+        "im": 0.0
+      },
+      "zeta_plus_norm": {
+        "re": 0.0006506653550688178,
+        "im": 2.275608428341392e-05
+      },
+      "zeta_minus_norm": {
+        "re": 0.0014381727922730906,
+        "im": 0.00011421584535166214
+      },
+      "eta_plus_norm": {
+        "re": 0.000638296937554722,
+        "im": -2.2323516682863794e-05
+      },
+      "eta_minus_norm": {
+        "re": 0.0014652650735731136,
+        "im": -0.00011636744203588002
+      }
+    },
+    "coro": {
+      "alpha1_plus_raw": {
+        "re": 8.852000387198316e-05,
+        "im": 0.0
+      },
+      "alpha2_plus_raw": {
+        "re": 9.022574522033821e-05,
+        "im": 0.0
+      },
+      "alpha1_minus_raw": {
+        "re": 8.852000387198316e-05,
+        "im": 0.0
+      },
+      "alpha2_minus_raw": {
+        "re": 9.022574522033821e-05,
+        "im": 0.0
+      },
+      "zeta_pp_raw": {
+        "re": 3.519940232529829e-05,
+        "im": 1.2310484334233007e-06
+      },
+      "zeta_pm_raw": {
+        "re": 3.519940232529829e-05,
+        "im": 1.2310484334233007e-06
+      },
+      "zeta_mp_raw": {
+        "re": 7.780162618795652e-05,
+        "im": 6.178797535688673e-06
+      },
+      "zeta_mm_raw": {
+        "re": 7.780162618795652e-05,
+        "im": 6.178797535688673e-06
+      },
+      "eta_pp_raw": {
+        "re": 3.4530301226224285e-05,
+        "im": -1.2076475855280836e-06
+      },
+      "eta_pm_raw": {
+        "re": 3.4530301226224285e-05,
+        "im": -1.2076475855280836e-06
+      },
+      "eta_mp_raw": {
+        "re": 7.926725226126851e-05,
+        "im": -6.295193647360474e-06
+      },
+      "eta_mm_raw": {
+        "re": 7.926725226126851e-05,
+        "im": -6.295193647360474e-06
+      },
+      "Lambda_Omegap_raw": {
+        "re": 0.0,
+        "im": 0.0
+      },
+      "Lambda_Omegam_raw": {
+        "re": 0.0,
+        "im": 0.0
+      },
+      "alpha1_plus_norm": {
+        "re": 0.0016363033445218863,
+        "im": 0.0
+      },
+      "alpha2_plus_norm": {
+        "re": 0.0016678341867170483,
+        "im": 0.0
+      },
+      "alpha1_minus_norm": {
+        "re": 0.0016363033445218863,
+        "im": 0.0
+      },
+      "alpha2_minus_norm": {
+        "re": 0.0016678341867170483,
+        "im": 0.0
+      },
+      "zeta_pp_norm": {
+        "re": 0.0006506653550688178,
+        "im": 2.275608428341392e-05
+      },
+      "zeta_pm_norm": {
+        "re": 0.0006506653550688178,
+        "im": 2.275608428341392e-05
+      },
+      "zeta_mp_norm": {
+        "re": 0.0014381727922730906,
+        "im": 0.00011421584535166214
+      },
+      "zeta_mm_norm": {
+        "re": 0.0014381727922730906,
+        "im": 0.00011421584535166214
+      },
+      "eta_pp_norm": {
+        "re": 0.000638296937554722,
+        "im": -2.2323516682863794e-05
+      },
+      "eta_pm_norm": {
+        "re": 0.000638296937554722,
+        "im": -2.2323516682863794e-05
+      },
+      "eta_mp_norm": {
+        "re": 0.0014652650735731136,
+        "im": -0.00011636744203588002
+      },
+      "eta_mm_norm": {
+        "re": 0.0014652650735731136,
+        "im": -0.00011636744203588002
+      },
+      "Lambda_Omegap_norm": {
+        "re": 0.0,
+        "im": 0.0
+      },
+      "Lambda_Omegam_norm": {
+        "re": 0.0,
+        "im": 0.0
+      }
+    },
+    "normalization": {
+      "kappa_probe_loaded_meep": 0.054097551146818655,
+      "chi_iso_meep": 0.00594032021776654
+    }
+  },
+  "mode_profile_summary": {
+    "pump1": {
+      "analysis_freq_inv_um": 0.6045585916520677,
+      "analysis_lambda_um": 1.6540993938524897,
+      "energy_raw": 7739.184682001157,
+      "nonlinear_region_weight": 0.34308352063960834,
+      "peak_abs_field": 0.46151809798406346
+    },
+    "pump2": {
+      "analysis_freq_inv_um": 0.5808330122922254,
+      "analysis_lambda_um": 1.7216652270737078,
+      "energy_raw": 10443.506105310371,
+      "nonlinear_region_weight": 0.34033483747625115,
+      "peak_abs_field": 0.5079290056600307
+    },
+    "probe": {
+      "analysis_freq_inv_um": 1.2124878936609813,
+      "analysis_lambda_um": 0.8247505028529429,
+      "energy_raw": 2946.0469624618154,
+      "nonlinear_region_weight": 0.2925811761075093,
+      "peak_abs_field": 0.5141716855113371
+    },
+    "sb_plus": {
+      "analysis_freq_inv_um": 1.2359825332515086,
+      "analysis_lambda_um": 0.8090729222275435,
+      "energy_raw": 496.5719860396026,
+      "nonlinear_region_weight": 0.2294275878847372,
+      "peak_abs_field": 1.1925650209170162
+    },
+    "sb_minus": {
+      "analysis_freq_inv_um": 1.1900693813519208,
+      "analysis_lambda_um": 0.8402871426403714,
+      "energy_raw": 1834.7861181082808,
+      "nonlinear_region_weight": 0.29012193755098414,
+      "peak_abs_field": 0.5102645508871119
+    }
+  },
+  "reflectance_validation": {
+    "wl_range_um": [
+      0.6,
+      2.0
+    ],
+    "nfreq": 1001,
+    "R_min": 5.54267359150522e-06,
+    "R_max": 0.9968902901020507,
+    "T_min": 0.0013117644771457075,
+    "T_max": 0.9766243311641227,
+    "RT_sum_min": 0.5372864357965004,
+    "RT_sum_max": 0.9999775023244483,
+    "RT_sum_mean": 0.9215204171376783,
+    "RT_sum_p99": 0.9984415883213668,
+    "count_rt_gt_1p01": 0,
+    "count_rt_gt_1p05": 0,
+    "R_old_vs_new_abs_diff_rms": 0.0003355464540903411,
+    "R_old_vs_new_abs_diff_max": 0.004067970297736312
+  },
+  "plots": {
+    "reflectance": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/tcmt_derivation_analysis/reflectance_marked.png",
+    "mode_amplitude": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/tcmt_derivation_analysis/mode_amplitudes.png",
+    "mode_phase": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/tcmt_derivation_analysis/mode_phases.png"
+  },
+  "notes": [
+    "Loaded-mode analysis frequencies prefer Harminv frequencies, then linewidth-refined resonances, then the target frequencies.",
+    "Mode profiles are extracted as complex DFT fields from separate narrowband simulations.",
+    "Mode energies are normalized over the physical cell excluding PMLs with U = 1/4 integral(eps|E|^2 + |H|^2) dz.",
+    "Nonlinear overlap integrals are restricted to SiN regions, where chi3 is non-zero.",
+    "Legacy proxy norms are retained for side-by-side comparison with the original FaradayJL implementation.",
+    "Derived coefficients are normalized to the loaded probe kappa, matching the Julia time normalization tau = kappa_s * t."
+  ]
+}

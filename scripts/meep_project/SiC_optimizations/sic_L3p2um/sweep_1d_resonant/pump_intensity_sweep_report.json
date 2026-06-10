@@ -1,0 +1,702 @@
+{
+  "dims": [
+    1
+  ],
+  "mode": "full",
+  "materials": "fit",
+  "high_index_material": "sic",
+  "high_index_n": null,
+  "high_index_k": null,
+  "high_index_n2_m2_per_w": null,
+  "kappa_ref_lambda_um": 1.55,
+  "geometry_file": "SiC_optimizations/sic_L3p2um/geometry.json",
+  "cavity_modes_file": "SiC_optimizations/sic_L3p2um/cavity_modes_resonant.json",
+  "range_scale": "log",
+  "workers_requested": 20,
+  "workers_effective": 20,
+  "intensities_requested_w_cm2": [
+    100000000.0,
+    143844988.82876602,
+    206913808.111479,
+    297635144.1631313,
+    428133239.87193954,
+    615848211.0660255,
+    885866790.4100832,
+    1274274985.7031322,
+    1832980710.8324375,
+    2636650898.7303553,
+    3792690190.7322536,
+    5455594781.168514,
+    7847599703.514623,
+    11288378916.846884,
+    16237767391.887177,
+    23357214690.901215,
+    33598182862.83788,
+    48329302385.71752,
+    69519279617.7559,
+    100000000000.0
+  ],
+  "intensity_min_w_cm2": 100000000.0,
+  "intensity_max_w_cm2": 100000000000.0,
+  "num_points": 20,
+  "dimension_reports": {
+    "1": {
+      "intensities_w_cm2": [
+        100000000.0,
+        143844988.82876602,
+        206913808.111479,
+        297635144.1631313,
+        428133239.87193954,
+        615848211.0660255,
+        885866790.4100832,
+        1274274985.7031322,
+        1832980710.8324375,
+        2636650898.7303553,
+        3792690190.7322536,
+        5455594781.168514,
+        7847599703.514623,
+        11288378916.846884,
+        16237767391.887177,
+        23357214690.901215,
+        33598182862.83788,
+        48329302385.71752,
+        69519279617.7559,
+        100000000000.0
+      ],
+      "rotation_final_deg": [
+        0.00036684039343981567,
+        0.00044618657254602567,
+        0.0005459680749169138,
+        0.0006679038413608396,
+        0.0008219675214462541,
+        0.0010180729194075866,
+        0.0012623844980623744,
+        0.0015786209831389897,
+        0.001981309186874114,
+        0.0025045950815894003,
+        0.0031897839231476155,
+        0.004097021893528563,
+        0.005298628221098056,
+        0.006918657892612146,
+        0.009114200233767633,
+        0.012106296939606409,
+        0.01624874159023193,
+        0.022018874058503002,
+        0.030144611352540096,
+        0.04176191340766877
+      ],
+      "rotation_min_deg": [
+        -0.7654771487343197,
+        -0.9183137571633893,
+        -1.101708701691038,
+        -1.3222696031049281,
+        -1.5882125599052017,
+        -1.9081434521871614,
+        -2.2932080164130184,
+        -2.7569088161650797,
+        -3.315608200799744,
+        -3.9891252156916437,
+        -4.801425619479147,
+        -5.781382132985414,
+        -6.8016216972009005,
+        -8.147137940587442,
+        -9.747642035017407,
+        -11.656693822648094,
+        -14.056456416468876,
+        -17.52861333611358,
+        -20.92927295580415,
+        -24.837240966391235
+      ],
+      "rotation_max_deg": [
+        0.7570977981651765,
+        0.9076236182311845,
+        1.0879676085945391,
+        1.3039821094749016,
+        1.5626395215610671,
+        1.8722307509618048,
+        2.24258930876033,
+        2.685338107779671,
+        3.214150691714906,
+        3.845009646986142,
+        4.596430363590741,
+        5.511507838641734,
+        6.56195644088848,
+        7.9554568325852415,
+        9.465761166866272,
+        11.231549584993047,
+        13.39558936747315,
+        15.926239759903552,
+        18.980061905209197,
+        22.650540746117485
+      ],
+      "rotation_variance_deg2": [
+        4.180000385342947e-11,
+        4.9963504059793695e-11,
+        6.326694532913703e-11,
+        7.793236708429023e-11,
+        9.722701807310098e-11,
+        1.2838287317463698e-10,
+        1.6506214875101242e-10,
+        2.1736393021492165e-10,
+        3.0416205691515216e-10,
+        3.954634053387106e-10,
+        5.385249025544169e-10,
+        7.566279577175169e-10,
+        1.060816578061309e-09,
+        1.4975870024526907e-09,
+        2.083178813934766e-09,
+        2.8865758851194204e-09,
+        3.984715292836118e-09,
+        5.6574620055224594e-09,
+        8.135932007909409e-09,
+        1.2048638576506754e-08
+      ],
+      "rotation_abs_final_deg": [
+        0.00036684039343981567,
+        0.00044618657254602567,
+        0.0005459680749169138,
+        0.0006679038413608396,
+        0.0008219675214462541,
+        0.0010180729194075866,
+        0.0012623844980623744,
+        0.0015786209831389897,
+        0.001981309186874114,
+        0.0025045950815894003,
+        0.0031897839231476155,
+        0.004097021893528563,
+        0.005298628221098056,
+        0.006918657892612146,
+        0.009114200233767633,
+        0.012106296939606409,
+        0.01624874159023193,
+        0.022018874058503002,
+        0.030144611352540096,
+        0.04176191340766877
+      ],
+      "fit_models": {
+        "linear_vs_log_intensity": {
+          "model": "theta = a*log10(I) + b",
+          "a": 0.009896395882673967,
+          "b": -0.08591113195612834,
+          "r2": 0.6661370443196384,
+          "n_points": 20
+        },
+        "power_law_abs_rotation": {
+          "model": "|theta| = A*I^p",
+          "A": 1.134764952911599e-09,
+          "p": 0.678801573975221,
+          "r2_log": 0.9943148950902992,
+          "min_abs_theta_used_deg": 1e-09,
+          "n_points": 20
+        }
+      },
+      "best_point": {
+        "pump_intensity_w_cm2": 100000000000.0,
+        "final_relative_deg": 0.04176191340766877,
+        "abs_final_relative_deg": 0.04176191340766877,
+        "min_relative_deg": -24.837240966391235,
+        "max_relative_deg": 22.650540746117485,
+        "summary_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_19_1.00e11/faraday_summary.json"
+      },
+      "aggregate_metrics": {
+        "max_abs_final_relative_deg": 0.04176191340766877,
+        "mean_abs_final_relative_deg": 0.008104628929274327,
+        "mean_relative_deg": 0.008104628929274327,
+        "std_relative_deg": 0.011039737466236594
+      },
+      "plot_paths": {
+        "rotation_vs_intensity": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/rotation_vs_intensity.png",
+        "dft_traces": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/dft_traces_vs_intensity.png",
+        "time_domain_traces": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/time_domain_traces_vs_intensity.png"
+      },
+      "points_csv_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/rotation_vs_intensity_points.csv",
+      "run_summary_paths": [
+        "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_00_1.00e8/faraday_summary.json",
+        "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_01_1.44e8/faraday_summary.json",
+        "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_02_2.07e8/faraday_summary.json",
+        "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_03_2.98e8/faraday_summary.json",
+        "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_04_4.28e8/faraday_summary.json",
+        "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_05_6.16e8/faraday_summary.json",
+        "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_06_8.86e8/faraday_summary.json",
+        "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_07_1.27e9/faraday_summary.json",
+        "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_08_1.83e9/faraday_summary.json",
+        "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_09_2.64e9/faraday_summary.json",
+        "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_10_3.79e9/faraday_summary.json",
+        "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_11_5.46e9/faraday_summary.json",
+        "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_12_7.85e9/faraday_summary.json",
+        "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_13_1.13e10/faraday_summary.json",
+        "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_14_1.62e10/faraday_summary.json",
+        "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_15_2.34e10/faraday_summary.json",
+        "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_16_3.36e10/faraday_summary.json",
+        "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_17_4.83e10/faraday_summary.json",
+        "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_18_6.95e10/faraday_summary.json",
+        "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_19_1.00e11/faraday_summary.json"
+      ],
+      "theta_deg_rel_I": [
+        {
+          "pump_intensity_w_cm2": 100000000.0,
+          "final_relative_deg": 0.00036684039343981567,
+          "summary_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_00_1.00e8/faraday_summary.json"
+        },
+        {
+          "pump_intensity_w_cm2": 143844988.82876602,
+          "final_relative_deg": 0.00044618657254602567,
+          "summary_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_01_1.44e8/faraday_summary.json"
+        },
+        {
+          "pump_intensity_w_cm2": 206913808.111479,
+          "final_relative_deg": 0.0005459680749169138,
+          "summary_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_02_2.07e8/faraday_summary.json"
+        },
+        {
+          "pump_intensity_w_cm2": 297635144.1631313,
+          "final_relative_deg": 0.0006679038413608396,
+          "summary_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_03_2.98e8/faraday_summary.json"
+        },
+        {
+          "pump_intensity_w_cm2": 428133239.87193954,
+          "final_relative_deg": 0.0008219675214462541,
+          "summary_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_04_4.28e8/faraday_summary.json"
+        },
+        {
+          "pump_intensity_w_cm2": 615848211.0660255,
+          "final_relative_deg": 0.0010180729194075866,
+          "summary_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_05_6.16e8/faraday_summary.json"
+        },
+        {
+          "pump_intensity_w_cm2": 885866790.4100832,
+          "final_relative_deg": 0.0012623844980623744,
+          "summary_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_06_8.86e8/faraday_summary.json"
+        },
+        {
+          "pump_intensity_w_cm2": 1274274985.7031322,
+          "final_relative_deg": 0.0015786209831389897,
+          "summary_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_07_1.27e9/faraday_summary.json"
+        },
+        {
+          "pump_intensity_w_cm2": 1832980710.8324375,
+          "final_relative_deg": 0.001981309186874114,
+          "summary_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_08_1.83e9/faraday_summary.json"
+        },
+        {
+          "pump_intensity_w_cm2": 2636650898.7303553,
+          "final_relative_deg": 0.0025045950815894003,
+          "summary_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_09_2.64e9/faraday_summary.json"
+        },
+        {
+          "pump_intensity_w_cm2": 3792690190.7322536,
+          "final_relative_deg": 0.0031897839231476155,
+          "summary_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_10_3.79e9/faraday_summary.json"
+        },
+        {
+          "pump_intensity_w_cm2": 5455594781.168514,
+          "final_relative_deg": 0.004097021893528563,
+          "summary_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_11_5.46e9/faraday_summary.json"
+        },
+        {
+          "pump_intensity_w_cm2": 7847599703.514623,
+          "final_relative_deg": 0.005298628221098056,
+          "summary_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_12_7.85e9/faraday_summary.json"
+        },
+        {
+          "pump_intensity_w_cm2": 11288378916.846884,
+          "final_relative_deg": 0.006918657892612146,
+          "summary_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_13_1.13e10/faraday_summary.json"
+        },
+        {
+          "pump_intensity_w_cm2": 16237767391.887177,
+          "final_relative_deg": 0.009114200233767633,
+          "summary_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_14_1.62e10/faraday_summary.json"
+        },
+        {
+          "pump_intensity_w_cm2": 23357214690.901215,
+          "final_relative_deg": 0.012106296939606409,
+          "summary_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_15_2.34e10/faraday_summary.json"
+        },
+        {
+          "pump_intensity_w_cm2": 33598182862.83788,
+          "final_relative_deg": 0.01624874159023193,
+          "summary_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_16_3.36e10/faraday_summary.json"
+        },
+        {
+          "pump_intensity_w_cm2": 48329302385.71752,
+          "final_relative_deg": 0.022018874058503002,
+          "summary_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_17_4.83e10/faraday_summary.json"
+        },
+        {
+          "pump_intensity_w_cm2": 69519279617.7559,
+          "final_relative_deg": 0.030144611352540096,
+          "summary_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_18_6.95e10/faraday_summary.json"
+        },
+        {
+          "pump_intensity_w_cm2": 100000000000.0,
+          "final_relative_deg": 0.04176191340766877,
+          "summary_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_19_1.00e11/faraday_summary.json"
+        }
+      ],
+      "wavelengths_um": {
+        "pump1": 1.8691588785046729,
+        "pump2": 1.9545107175595198,
+        "probe": 0.8241720143455473
+      },
+      "frequencies_inv_um": {
+        "pump1": 0.535,
+        "pump2": 0.511637,
+        "probe": 1.213338942106731,
+        "sb_minus": 1.189975942106731,
+        "sb_plus": 1.2367019421067311,
+        "pump1_cold": 0.535,
+        "pump2_cold": 0.511637
+      },
+      "run_params": {
+        "name": "full",
+        "resolution": 100,
+        "span_xy": 3.0,
+        "dpml_xy": 1.0,
+        "dpml_z": 1.0,
+        "src_buffer": 0.5,
+        "runtime_factor": 6.0,
+        "pulse_duration_fs": 100.0,
+        "pump_band_nm": 30.0,
+        "probe_band_nm": 10.0,
+        "pump_intensity_w_cm2": 100000000.0,
+        "probe_intensity_w_cm2": 50000000.0,
+        "nonlinear_scale": 1.0,
+        "sample_dt": 0.05,
+        "lp_tau": 0.8,
+        "capture_fields": true,
+        "pump_cutoff": 4.0
+      },
+      "report_json_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/pump_intensity_sweep_report.json",
+      "markdown_summary_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/pump_intensity_sweep_summary.md"
+    }
+  },
+  "plot_paths": {
+    "rotation_vs_intensity": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/rotation_vs_intensity.png",
+    "dft_traces": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/dft_traces_vs_intensity.png",
+    "time_domain_traces": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/time_domain_traces_vs_intensity.png"
+  },
+  "intensities_w_cm2": [
+    100000000.0,
+    143844988.82876602,
+    206913808.111479,
+    297635144.1631313,
+    428133239.87193954,
+    615848211.0660255,
+    885866790.4100832,
+    1274274985.7031322,
+    1832980710.8324375,
+    2636650898.7303553,
+    3792690190.7322536,
+    5455594781.168514,
+    7847599703.514623,
+    11288378916.846884,
+    16237767391.887177,
+    23357214690.901215,
+    33598182862.83788,
+    48329302385.71752,
+    69519279617.7559,
+    100000000000.0
+  ],
+  "rotation_final_deg": [
+    0.00036684039343981567,
+    0.00044618657254602567,
+    0.0005459680749169138,
+    0.0006679038413608396,
+    0.0008219675214462541,
+    0.0010180729194075866,
+    0.0012623844980623744,
+    0.0015786209831389897,
+    0.001981309186874114,
+    0.0025045950815894003,
+    0.0031897839231476155,
+    0.004097021893528563,
+    0.005298628221098056,
+    0.006918657892612146,
+    0.009114200233767633,
+    0.012106296939606409,
+    0.01624874159023193,
+    0.022018874058503002,
+    0.030144611352540096,
+    0.04176191340766877
+  ],
+  "rotation_min_deg": [
+    -0.7654771487343197,
+    -0.9183137571633893,
+    -1.101708701691038,
+    -1.3222696031049281,
+    -1.5882125599052017,
+    -1.9081434521871614,
+    -2.2932080164130184,
+    -2.7569088161650797,
+    -3.315608200799744,
+    -3.9891252156916437,
+    -4.801425619479147,
+    -5.781382132985414,
+    -6.8016216972009005,
+    -8.147137940587442,
+    -9.747642035017407,
+    -11.656693822648094,
+    -14.056456416468876,
+    -17.52861333611358,
+    -20.92927295580415,
+    -24.837240966391235
+  ],
+  "rotation_max_deg": [
+    0.7570977981651765,
+    0.9076236182311845,
+    1.0879676085945391,
+    1.3039821094749016,
+    1.5626395215610671,
+    1.8722307509618048,
+    2.24258930876033,
+    2.685338107779671,
+    3.214150691714906,
+    3.845009646986142,
+    4.596430363590741,
+    5.511507838641734,
+    6.56195644088848,
+    7.9554568325852415,
+    9.465761166866272,
+    11.231549584993047,
+    13.39558936747315,
+    15.926239759903552,
+    18.980061905209197,
+    22.650540746117485
+  ],
+  "rotation_variance_deg2": [
+    4.180000385342947e-11,
+    4.9963504059793695e-11,
+    6.326694532913703e-11,
+    7.793236708429023e-11,
+    9.722701807310098e-11,
+    1.2838287317463698e-10,
+    1.6506214875101242e-10,
+    2.1736393021492165e-10,
+    3.0416205691515216e-10,
+    3.954634053387106e-10,
+    5.385249025544169e-10,
+    7.566279577175169e-10,
+    1.060816578061309e-09,
+    1.4975870024526907e-09,
+    2.083178813934766e-09,
+    2.8865758851194204e-09,
+    3.984715292836118e-09,
+    5.6574620055224594e-09,
+    8.135932007909409e-09,
+    1.2048638576506754e-08
+  ],
+  "rotation_abs_final_deg": [
+    0.00036684039343981567,
+    0.00044618657254602567,
+    0.0005459680749169138,
+    0.0006679038413608396,
+    0.0008219675214462541,
+    0.0010180729194075866,
+    0.0012623844980623744,
+    0.0015786209831389897,
+    0.001981309186874114,
+    0.0025045950815894003,
+    0.0031897839231476155,
+    0.004097021893528563,
+    0.005298628221098056,
+    0.006918657892612146,
+    0.009114200233767633,
+    0.012106296939606409,
+    0.01624874159023193,
+    0.022018874058503002,
+    0.030144611352540096,
+    0.04176191340766877
+  ],
+  "fit_models": {
+    "linear_vs_log_intensity": {
+      "model": "theta = a*log10(I) + b",
+      "a": 0.009896395882673967,
+      "b": -0.08591113195612834,
+      "r2": 0.6661370443196384,
+      "n_points": 20
+    },
+    "power_law_abs_rotation": {
+      "model": "|theta| = A*I^p",
+      "A": 1.134764952911599e-09,
+      "p": 0.678801573975221,
+      "r2_log": 0.9943148950902992,
+      "min_abs_theta_used_deg": 1e-09,
+      "n_points": 20
+    }
+  },
+  "best_point": {
+    "pump_intensity_w_cm2": 100000000000.0,
+    "final_relative_deg": 0.04176191340766877,
+    "abs_final_relative_deg": 0.04176191340766877,
+    "min_relative_deg": -24.837240966391235,
+    "max_relative_deg": 22.650540746117485,
+    "summary_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_19_1.00e11/faraday_summary.json"
+  },
+  "aggregate_metrics": {
+    "max_abs_final_relative_deg": 0.04176191340766877,
+    "mean_abs_final_relative_deg": 0.008104628929274327,
+    "mean_relative_deg": 0.008104628929274327,
+    "std_relative_deg": 0.011039737466236594
+  },
+  "points_csv_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/rotation_vs_intensity_points.csv",
+  "run_summary_paths": [
+    "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_00_1.00e8/faraday_summary.json",
+    "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_01_1.44e8/faraday_summary.json",
+    "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_02_2.07e8/faraday_summary.json",
+    "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_03_2.98e8/faraday_summary.json",
+    "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_04_4.28e8/faraday_summary.json",
+    "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_05_6.16e8/faraday_summary.json",
+    "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_06_8.86e8/faraday_summary.json",
+    "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_07_1.27e9/faraday_summary.json",
+    "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_08_1.83e9/faraday_summary.json",
+    "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_09_2.64e9/faraday_summary.json",
+    "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_10_3.79e9/faraday_summary.json",
+    "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_11_5.46e9/faraday_summary.json",
+    "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_12_7.85e9/faraday_summary.json",
+    "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_13_1.13e10/faraday_summary.json",
+    "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_14_1.62e10/faraday_summary.json",
+    "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_15_2.34e10/faraday_summary.json",
+    "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_16_3.36e10/faraday_summary.json",
+    "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_17_4.83e10/faraday_summary.json",
+    "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_18_6.95e10/faraday_summary.json",
+    "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_19_1.00e11/faraday_summary.json"
+  ],
+  "theta_deg_rel_I": [
+    {
+      "pump_intensity_w_cm2": 100000000.0,
+      "final_relative_deg": 0.00036684039343981567,
+      "summary_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_00_1.00e8/faraday_summary.json"
+    },
+    {
+      "pump_intensity_w_cm2": 143844988.82876602,
+      "final_relative_deg": 0.00044618657254602567,
+      "summary_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_01_1.44e8/faraday_summary.json"
+    },
+    {
+      "pump_intensity_w_cm2": 206913808.111479,
+      "final_relative_deg": 0.0005459680749169138,
+      "summary_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_02_2.07e8/faraday_summary.json"
+    },
+    {
+      "pump_intensity_w_cm2": 297635144.1631313,
+      "final_relative_deg": 0.0006679038413608396,
+      "summary_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_03_2.98e8/faraday_summary.json"
+    },
+    {
+      "pump_intensity_w_cm2": 428133239.87193954,
+      "final_relative_deg": 0.0008219675214462541,
+      "summary_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_04_4.28e8/faraday_summary.json"
+    },
+    {
+      "pump_intensity_w_cm2": 615848211.0660255,
+      "final_relative_deg": 0.0010180729194075866,
+      "summary_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_05_6.16e8/faraday_summary.json"
+    },
+    {
+      "pump_intensity_w_cm2": 885866790.4100832,
+      "final_relative_deg": 0.0012623844980623744,
+      "summary_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_06_8.86e8/faraday_summary.json"
+    },
+    {
+      "pump_intensity_w_cm2": 1274274985.7031322,
+      "final_relative_deg": 0.0015786209831389897,
+      "summary_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_07_1.27e9/faraday_summary.json"
+    },
+    {
+      "pump_intensity_w_cm2": 1832980710.8324375,
+      "final_relative_deg": 0.001981309186874114,
+      "summary_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_08_1.83e9/faraday_summary.json"
+    },
+    {
+      "pump_intensity_w_cm2": 2636650898.7303553,
+      "final_relative_deg": 0.0025045950815894003,
+      "summary_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_09_2.64e9/faraday_summary.json"
+    },
+    {
+      "pump_intensity_w_cm2": 3792690190.7322536,
+      "final_relative_deg": 0.0031897839231476155,
+      "summary_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_10_3.79e9/faraday_summary.json"
+    },
+    {
+      "pump_intensity_w_cm2": 5455594781.168514,
+      "final_relative_deg": 0.004097021893528563,
+      "summary_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_11_5.46e9/faraday_summary.json"
+    },
+    {
+      "pump_intensity_w_cm2": 7847599703.514623,
+      "final_relative_deg": 0.005298628221098056,
+      "summary_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_12_7.85e9/faraday_summary.json"
+    },
+    {
+      "pump_intensity_w_cm2": 11288378916.846884,
+      "final_relative_deg": 0.006918657892612146,
+      "summary_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_13_1.13e10/faraday_summary.json"
+    },
+    {
+      "pump_intensity_w_cm2": 16237767391.887177,
+      "final_relative_deg": 0.009114200233767633,
+      "summary_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_14_1.62e10/faraday_summary.json"
+    },
+    {
+      "pump_intensity_w_cm2": 23357214690.901215,
+      "final_relative_deg": 0.012106296939606409,
+      "summary_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_15_2.34e10/faraday_summary.json"
+    },
+    {
+      "pump_intensity_w_cm2": 33598182862.83788,
+      "final_relative_deg": 0.01624874159023193,
+      "summary_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_16_3.36e10/faraday_summary.json"
+    },
+    {
+      "pump_intensity_w_cm2": 48329302385.71752,
+      "final_relative_deg": 0.022018874058503002,
+      "summary_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_17_4.83e10/faraday_summary.json"
+    },
+    {
+      "pump_intensity_w_cm2": 69519279617.7559,
+      "final_relative_deg": 0.030144611352540096,
+      "summary_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_18_6.95e10/faraday_summary.json"
+    },
+    {
+      "pump_intensity_w_cm2": 100000000000.0,
+      "final_relative_deg": 0.04176191340766877,
+      "summary_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/dim1/I_19_1.00e11/faraday_summary.json"
+    }
+  ],
+  "wavelengths_um": {
+    "pump1": 1.8691588785046729,
+    "pump2": 1.9545107175595198,
+    "probe": 0.8241720143455473
+  },
+  "frequencies_inv_um": {
+    "pump1": 0.535,
+    "pump2": 0.511637,
+    "probe": 1.213338942106731,
+    "sb_minus": 1.189975942106731,
+    "sb_plus": 1.2367019421067311,
+    "pump1_cold": 0.535,
+    "pump2_cold": 0.511637
+  },
+  "run_params": {
+    "name": "full",
+    "resolution": 100,
+    "span_xy": 3.0,
+    "dpml_xy": 1.0,
+    "dpml_z": 1.0,
+    "src_buffer": 0.5,
+    "runtime_factor": 6.0,
+    "pulse_duration_fs": 100.0,
+    "pump_band_nm": 30.0,
+    "probe_band_nm": 10.0,
+    "pump_intensity_w_cm2": 100000000.0,
+    "probe_intensity_w_cm2": 50000000.0,
+    "nonlinear_scale": 1.0,
+    "sample_dt": 0.05,
+    "lp_tau": 0.8,
+    "capture_fields": true,
+    "pump_cutoff": 4.0
+  },
+  "report_json_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/pump_intensity_sweep_report.json",
+  "markdown_summary_path": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/SiC_optimizations/sic_L3p2um/sweep_1d_resonant/pump_intensity_sweep_summary.md"
+}

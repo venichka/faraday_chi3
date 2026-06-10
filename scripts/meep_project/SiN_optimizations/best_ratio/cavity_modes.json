@@ -1,0 +1,25 @@
+{
+  "probe": {
+    "frequency": 1.0778,
+    "lambda_um": 0.9278
+  },
+  "pump1": {
+    "frequency": 0.7561,
+    "lambda_um": 1.3227
+  },
+  "pump2": {
+    "frequency": 0.6646,
+    "lambda_um": 1.5047
+  },
+  "sidebands": {
+    "delta_frequency": 0.0915,
+    "frequency_plus": 1.1693,
+    "frequency_minus": 0.9863,
+    "lambda_plus_um": 0.8552,
+    "lambda_minus_um": 1.0139
+  },
+  "meta": {
+    "source": "optimization log pipeline_cluster_20260323_104832, eval=202 profile=band N=3",
+    "note": "Mode frequencies from optimizer reflectance analysis at resolution 50."
+  }
+}

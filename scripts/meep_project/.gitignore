@@ -23,6 +23,8 @@ faraday_*outputs/
 faraday_*_outputs/
 .opt_eval_tmp/
 pipeline_*/
+# Heavy sweep/scan trace bundles (keep the small summary JSONs/CSVs)
+*.npz
 
 # Fixed-geometry generated artifacts
 optimized_geometry_fixed_*.json
