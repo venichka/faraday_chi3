@@ -255,37 +255,45 @@ overlap, with Q's bandwidth-matched:
 - **D — Material split.** Linear DBR + high-χ³ defect (already implied for SiN/SiC over SiO₂) — maximizes η,
   removes mirror-FWM contamination.
 
-## 5. The new search machinery (Phase 2) — architecture
+## 5. The new search machinery — architecture (FDTD-light: TMM + TCMT)
 
-**Separate entity.** New files, no edits to existing pipeline. Proposed (names provisional):
-- `chi5_objective.py` — the proxy FoM + a thin wrapper around `faraday_meep_fp_circ.run_simulation` for the
-  full nonlinear objective. Imports `mode_targeting`, `geometry_io`.
-- `optimize_chi5.py` — the new optimizer CLI (reuses the Sobol+ARD+Kriging-Believer BO from
-  `optimize_cavity_geometry` by importing it, not copying), multi-fidelity staged like
-  `optimize_cavity_geometry_mf.py`.
-- `chi5_report.py` — the rich-output generator (§6).
+**Core principle (user, 2026-06-10): minimize FDTD.** The linear optics of a 1-D DBR+defect stack is solved
+**exactly and analytically by the transfer-matrix method (TMM)** — R/T(λ), mode frequencies, Q's, complex field
+profiles E(z), and mode volume — with **no FDTD per candidate**. The rotation is the **derived FoM / TCMT**
+evaluated from those linear quantities + the χ³ overlaps. **FDTD (`faraday_meep_fp_circ`) is used ONLY to
+validate winners**, never in the search loop. Each TMM eval is ~ms vs ~minutes for FDTD ⇒ a broad
+geometry+operating-point search becomes affordable. This is the whole point of the new strategy.
 
-**Proxy FoM (cheap, linear-optics; one linear FDTD + Harminv per candidate):**
+**Separate entity.** New package `chi5_optimization/` — no edits to the existing FDTD pipeline. Modules:
+- `tmm.py` — the analytic 1-D TMM linear engine: R/T(λ) from the layer stack + dispersive n(λ) (interpolated
+  from the ellipsometry CSVs, no Meep); resonance finder (mode f₀ + Q from the transmission-peak Lorentzian /
+  group delay); complex field profile E(z) per mode; mode volume V_mode. **Validated against the committed FDTD
+  modes (best_absolute, SiC) before anything is built on it.** This is the keystone — it replaces FDTD in-loop.
+- `objective.py` — from the TMM modes/fields: the 4-mode overlaps η, ζ (∫ over the χ³ region), the pump buildup
+  B_i = min(Q_i, Q_cap), and the **derived FoM (§1)** and/or a direct **TCMT rotation** (assemble the
+  FaradayJL-style coupled-mode coefficients analytically and integrate the fixed counter-rotating ODE).
+- `optimize.py` — the search (reuse the Sobol+ARD+Kriging-Believer BO from `optimize_cavity_geometry` by import).
+- `report.py` — the rich §6 output.
+
+**Proxy FoM (fully analytic, per candidate, no FDTD):**
 
 ```
- FoM_proxy = B1·B2 · Qs^w2 · (QΩ+·QΩ−)^w3 · (1/Vmode)^w4 · η4
-             · exp[-(comb_mismatch/σ1)²]        # M1/M2: triplet & doublet on a Δ-comb
-             · exp[-(log10(Q1/Q2)/σ2)²]         # M3: balance
-             · ℒ(ΔΩ/κΩ)                          # M5: sideband on its mode
-   with  Bi = min(Qi, Q_cap)                     # §0: pump buildup SATURATES at the 100 fs bandwidth cap
+ FoM = B1·B2 · Qs · QΩ·ℒ(ΔΩ/κΩ) · (1/Vmode) · |η·ζ| · R_sym
+       · exp[-(comb_mismatch/σ1)²]   · exp[-(log10(Q1/Q2)/σ2)²]      Bi = min(Qi, Q_cap)
 ```
-Q's come from Harminv on a linear run; **B_i clamps the pump buildup at Q_cap** (so the optimizer cannot win
-by chasing unphysical pump Q — it must align, not over-Q); 1/V_mode rewards field concentration (lever #2);
-η4 = 4-mode overlap ∫ u_s* u₁ u₂* u_s in the χ³ region from the mode profiles; the penalties enforce
-M1/M2/M3; M4 is implicit in the Q's being finite. Validate the weights against best_absolute before trusting.
+All terms come from TMM (Q's, f's, E(z), V_mode) + the CSV n(λ). **B_i clamps the pump buildup at Q_cap** (§0:
+the optimizer must align, not over-Q). **R_sym is the symmetry-break factor** (§1 refinement: net rotation needs
+the ω_s±Δ sidebands inequivalent) — computed from the two sideband Green functions G(ω_s±Δ); a symmetric, real
+cavity scores ≈0, steering the search toward asymmetric mode placement. Penalties enforce M1/M2/M3; M4 is
+implicit in finite Q's. **Validate the weights against best_absolute (known |θ|) before trusting.**
 
 **Search space:** geometry (r = optical-thickness ratio, N, defect L, material placement, optional dual-band
 split for Strategy B) **plus the operating point** (probe window {≈800}∪[850, 950] nm, pump frequencies/Δ under
-the matching — §2b). Multi-fidelity: proxy as stage A/B; full nonlinear |θ| (three-θ readout) on the top-k as
-stage C; 3D on the winner.
+the matching — §2b). Δ targeted small ≈ Γ_s.
 
-**Why a proxy:** the master FoM (§1) is computable from linear quantities, far cheaper than the nonlinear
-FDTD, and it directly targets the five resonances — which a raw |θ| objective only sees indirectly.
+**Validation gate:** every candidate that tops the TMM proxy is re-checked by **(i) TCMT** (FaradayJL, fixed)
+and **(ii) full FDTD** (`faraday_meep_fp_circ`, three-θ) — both must agree before a design is trusted. (This is
+exactly the Phase-1 acceptance test the user asked for.)
 
 ## 6. Output per optimized design (rich, by request)
 
@@ -304,16 +312,19 @@ Every reported candidate should emit, into a self-contained dir:
 
 ## 7. Execution roadmap
 
-- **Phase 0 — this doc.** ✅
-- **Phase 1 — quick refinement (existing pipeline, no new code):**
-  - 1a. **SiC**: re-optimize the detuned-mirror design over SiO₂ with `optimize_cavity_geometry(_mf).py`,
-    bounded near the best_absolute regime, reading the new three-θ outputs. Goal: a better SiC baseline fast.
-  - 1b. **SiN**: same, refining best_absolute.
-- **Phase 2 — build the new machinery (material-agnostic; built once):** `chi5_objective.py`,
-  `optimize_chi5.py`, `chi5_report.py` + the proxy FoM and rich outputs (§5–6). Validate on a known design
-  (best_absolute should score well).
-- **Phase 3 — run the new search:** **SiC first**, then **SiN**. Stage A/B proxy → stage C nonlinear → 3D winner.
-- **Phase 4 — report & compare:** SiC vs SiN best designs, TCMT cross-checks, recommended geometry.
+> **Reframed 2026-06-10 (user):** the new optimizer is a *physics-based, FDTD-light* strategy (TMM + TCMT, §5),
+> built first and used for BOTH phases. Phase 1 refines the existing DBRs (bounds close to them); Phase 2 is an
+> unconstrained redesign. FDTD only validates winners.
+
+- **Phase 0 — this doc + re-derived FoM (§1) + fixed TCMT (FaradayJL).** ✅
+- **Build the FDTD-light machinery (§5), material-agnostic, once:** `tmm.py` (validate vs committed modes) →
+  `objective.py` (overlaps + derived FoM + TCMT rotation) → `optimize.py` → `report.py`.
+- **Phase 1 — refine the EXISTING SiN + SiC DBRs**, bounds **close to** best_absolute / SiC-L3.2µm. Search with
+  the TMM+TCMT proxy; **validate the top refinements with BOTH TCMT and FDTD** (the acceptance gate). Goal: a
+  better rotation near the known designs, fast. **Both materials in parallel.**
+- **Phase 2 — complete new search**, bounds **unconstrained** (not tied to the existing geometry): SiC and SiN,
+  TMM+TCMT proxy → FDTD-validate winners → 3D check.
+- **Phase 3 — report & compare:** SiC vs SiN, TCMT-vs-FDTD agreement, recommended geometry.
 
 ## 8. Decisions
 
@@ -322,13 +333,17 @@ Every reported candidate should emit, into a self-contained dir:
 - **Operating point — RESOLVED as constrained search variables (Scope):** probe λ_s ∈ {≈800 nm} ∪ [850, 950] nm;
   pump frequencies **tuned** in the IR under the matching (f₁+f₂ ≈ f_s, working assumption — confirm the exact
   FWM relation per design); Δ = f₁−f₂ searched, targeted **small ≈ Γ_s (cavity linewidth)** — §2b.
-- **Q_cap value** — compute from the actual 100 fs Meep source bandwidth per band (≈ λ/Δλ_source); set it once.
-- **Fabrication limits** — max DBR pairs, layer-thickness tolerance (matters for the detuning ratio r), min/max defect length.
-- **1D-vs-3D in the loop** — proxy + stage-C in 1D, 3D only on winners (assumed), or 3D earlier? (Mode volume
-  lever #2 is partly a 3D effect, so a 3D check on finalists matters.)
-- **Strategy scope** — start with A (detuned single defect) only, or include B (dual-band) in the search space?
-- **Proxy weights/targets** — w2,w3,w4 and the σ penalties; validate against best_absolute before trusting.
-- **TCMT in the loop** — cross-check only on winners (assumed), or as an additional cheap proxy?
+- **FDTD usage — RESOLVED (user, 2026-06-10): FDTD-light.** Search loop is **TMM (linear) + TCMT (rotation)**,
+  analytic; FDTD only validates winners (§5). Build the TMM engine first; validate it vs the committed modes.
+- **Fabrication bounds — RESOLVED (user):** **Phase 1 = close to the existing designs** (small perturbations of
+  best_absolute / SiC-L3.2µm); **Phase 2 = unconstrained** (any pairs/L/ratio). Still set: layer-thickness
+  tolerance (robustness of the detuning ratio r) and min/max defect length for the Phase-2 search box.
+- **TCMT in the loop — RESOLVED (user): yes.** TCMT is both an in-loop rotation evaluator (cheap) AND part of
+  the Phase-1 acceptance gate (TCMT *and* FDTD must agree).
+- **Q_cap value** — compute from the actual 100 fs source bandwidth per band (≈ λ/Δλ_source); set it once.
+- **Strategy scope** — Phase 1 is A (detuned single defect, by construction = refining existing); Phase 2 may
+  open B (dual-band) / C (photonic molecule) in the search space.
+- **Proxy weights/targets** — w's and σ penalties; validate against best_absolute (known |θ|) before trusting.
 
 ---
 
