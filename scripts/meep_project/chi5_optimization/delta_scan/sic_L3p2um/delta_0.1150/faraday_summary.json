@@ -1,0 +1,313 @@
+{
+  "run_mode": "full",
+  "dimension": 1,
+  "modeling_dimensions": {
+    "requested_dimension": 1,
+    "meep_solver_dimensions": 3,
+    "quasi_1d_collapsed_transverse_cell": true
+  },
+  "run_params": {
+    "name": "full",
+    "resolution": 100,
+    "span_xy": 3.0,
+    "dpml_xy": 1.0,
+    "dpml_z": 1.0,
+    "src_buffer": 0.5,
+    "runtime_factor": 6.0,
+    "pulse_duration_fs": 100.0,
+    "pump_band_nm": 30.0,
+    "probe_band_nm": 10.0,
+    "pump_intensity_w_cm2": 200000000000.0,
+    "probe_intensity_w_cm2": 50000000.0,
+    "nonlinear_scale": 1.0,
+    "sample_dt": 0.05,
+    "lp_tau": 0.8,
+    "capture_fields": true,
+    "pump_cutoff": 4.0
+  },
+  "geometry_file": "SiC_optimizations/sic_L3p2um/geometry.json",
+  "materials_model": "fit",
+  "high_index_material": {
+    "key": "sic",
+    "display_name": "SiC (4H-SiC)",
+    "source": "user-specified n2=5e-18 m^2/W; linear n,k from sic.csv ellipsometry fit",
+    "slot_in_geometry": "SiC",
+    "n_constant_used": 2.56,
+    "k_constant_used": 0.0,
+    "kappa_ref_lambda_um": 1.55,
+    "n2_m2_per_w_used": 5e-18,
+    "n_linear_probe": 2.663764959546439,
+    "chi3_si": 1.2556539794578742e-19,
+    "E_chi3_diag_meep": 0.01782096065329962
+  },
+  "cell_size_um": {
+    "x": 0.0,
+    "y": 0.0,
+    "z": 10.69023209851949
+  },
+  "cavity_center_um": -0.20000000000000084,
+  "frequencies_inv_um": {
+    "pump1": 0.649489987,
+    "pump2": 0.534489987,
+    "probe": 1.213338942106731,
+    "sb_minus": 1.098338942106731,
+    "sb_plus": 1.328338942106731,
+    "pump1_cold": 0.6036712557363373,
+    "pump2_cold": 0.5803087192323739
+  },
+  "wavelengths_um": {
+    "pump1": 1.539669617724222,
+    "pump2": 1.8709424391892302,
+    "probe": 0.8241720143455473
+  },
+  "intensities_w_cm2": {
+    "pump": 200000000000.0,
+    "probe": 50000000.0
+  },
+  "source_amplitudes_meep": {
+    "pump1": 3.2584773924347443,
+    "pump2": 3.2584773924347443,
+    "probe": 0.051521051321300526
+  },
+  "source_calibration": {
+    "enabled": false,
+    "monitor_area_um2": 1.0,
+    "calibration_decay_threshold": null,
+    "per_source": {}
+  },
+  "probe_band_frequencies_inv_um": [
+    1.1902180408944683,
+    1.1935210267819343,
+    1.1968240126694005,
+    1.2001269985568666,
+    1.2034299844443328,
+    1.2067329703317988,
+    1.210035956219265,
+    1.213338942106731,
+    1.2166419279941971,
+    1.2199449138816634,
+    1.2232478997691294,
+    1.2265508856565956,
+    1.2298538715440617,
+    1.233156857431528,
+    1.236459843318994
+  ],
+  "monitor_plane_z_um": 3.945116049259745,
+  "monitor_medium_index_probe": 1.4580417460248938,
+  "plot_time_units": {
+    "unit": "fs",
+    "fs_per_meep_time": 3.3356409519815204
+  },
+  "probe_rotation_deg": {
+    "initial_deg": 45.0,
+    "final_relative_deg": 0.010971492386460113,
+    "final_relative_deg_window_mean": 0.010971492751861312,
+    "max_relative_deg": 89.77265094572238,
+    "min_relative_deg": -89.7912789405902,
+    "mean_relative_deg": 0.00929205239768687,
+    "final_relative_unwrapped_deg": -1799.9890285072483,
+    "final_relative_unwrapped_deg_window_mean": -1799.9890285072483,
+    "final_window_policy": "mean_over_last_m_valid_points",
+    "final_window_points_requested": 64,
+    "final_window_points_effective": 64,
+    "final_window_points_used": 64,
+    "final_window_fs_requested": null,
+    "final_window_time_fs": [
+      2460.2019841339707,
+      2470.7092531327125
+    ],
+    "wrapped_final_relative_deg": 0.009599394673045936,
+    "raw_final_relative_deg": 0.009599394673053041,
+    "method": "dft_probe_center_forward_jones_coherent_final_window",
+    "forward_decomposition": {
+      "using_fields": [
+        "Ex",
+        "Ey",
+        "Hx",
+        "Hy"
+      ],
+      "n_medium": 1.4580417460248938,
+      "forward_relation": "Hy=n*Ex and Hx=-n*Ey"
+    },
+    "coherent_window_estimate": {
+      "theta_relative_deg": 0.010971492386460113,
+      "theta_relative_std_deg": 0.0011789519741889837,
+      "chi_deg": -0.010264734894367047,
+      "dolp": 0.9999999358081046,
+      "docp": -0.00035830683383531625,
+      "S0": 0.14391471887616997,
+      "Ex_forward_mean_real": 0.07773202956001453,
+      "Ex_forward_mean_imag": 0.2566856696106605,
+      "Ey_forward_mean_real": 0.0778538073400542,
+      "Ey_forward_mean_imag": 0.2567561141547277,
+      "signal_power": 0.14391471887616997,
+      "noise_power": 2.2920907369352444e-10,
+      "snr_linear": 627875312.9494271,
+      "snr_db": 87.97873407631354,
+      "coherence_factor": 0.9999999984073269,
+      "weights": "S0"
+    },
+    "validity_policy": "strength_threshold_and_finite",
+    "strength_validity_enabled": true,
+    "intensity_threshold_rel": 0.01,
+    "intensity_threshold_abs": 0.001455172060478358,
+    "time_domain_reference": {
+      "final_relative_deg": -71.18384015133222,
+      "max_relative_deg": 89.97788134221292,
+      "min_relative_deg": -89.98554514974549,
+      "mean_relative_deg": -44.78435290446746,
+      "final_relative_unwrapped_deg": -7693.674569651636,
+      "final_window_policy": "mean_over_last_m_valid_points",
+      "final_window_points_requested": 64,
+      "final_window_points_effective": 64,
+      "final_window_points_used": 64,
+      "final_window_fs_requested": null,
+      "final_window_time_fs": [
+        810.3939692839105,
+        820.9012382826521
+      ],
+      "wrapped_final_relative_deg": 15.541602371216527,
+      "raw_final_relative_deg": 15.541602371216527,
+      "method": "time_domain_probe_envelope_at_output_principal_linear_angle_final_window_mean",
+      "validity_policy": "strength_threshold_and_finite",
+      "strength_validity_enabled": true,
+      "intensity_threshold_rel": 0.01,
+      "intensity_threshold_abs": 0.0002713168635387988
+    }
+  },
+  "probe_stokes_dft": {
+    "final": {
+      "theta_relative_deg": 0.009599394673045936,
+      "chi_deg": -0.010983045763895595,
+      "dolp": 0.9999999265096507,
+      "docp": -0.0003833806115627958,
+      "S0": 0.14391829454963156,
+      "S0_backward": 0.004978191343482199,
+      "forward_fraction": 0.966566092452606,
+      "S1": -4.8224437974753176e-05,
+      "S2": 0.1439182758934531,
+      "S3": -5.517548377951233e-05
+    },
+    "tail_weighted": {
+      "theta_relative_deg": 0.010971492751861312,
+      "theta_relative_std_deg": 0.0011789519695605845,
+      "chi_deg": -0.01026473750378658,
+      "dolp": 0.999999935067565,
+      "docp": -0.00035830692465596526,
+      "S0": 0.14391471888674676,
+      "S0_rel_max": 0.9889876447973976,
+      "window_policy": "mean_over_last_m_points",
+      "window_points_requested": 64,
+      "window_points_effective": 64,
+      "window_points_used": 64,
+      "window_fs_requested": null,
+      "weights": "S0"
+    }
+  },
+  "probe_stokes_total": {
+    "description": "Total-field Stokes angle at the probe monitor (raw Ex,Ey, no forward/backward split). Naive-detector reading; compare against probe_stokes_dft (forward, incoherent) and probe_rotation_deg.final_relative_deg (forward, coherent).",
+    "final": {
+      "theta_relative_deg": 0.00960197675428276,
+      "dolp": 0.9999999264264356
+    },
+    "tail_weighted": {
+      "theta_relative_deg": 0.010971466255731775,
+      "theta_relative_std_deg": 0.0011792509070331855,
+      "dolp": 0.9999999350605888,
+      "S0": 0.2024246783459665,
+      "window_points_requested": 64,
+      "weights": "S0"
+    }
+  },
+  "nonlinear_diagnostics": {
+    "enabled": false
+  },
+  "pump_monitor_metrics": {
+    "definition": {
+      "pump1_dominant_component": "|e-| at f_p1",
+      "pump1_orthogonal_component": "|e+| at f_p1",
+      "pump2_dominant_component": "|e+| at f_p2",
+      "pump2_orthogonal_component": "|e-| at f_p2",
+      "ratio_reported_as": "pump2_dominant / pump1_dominant"
+    },
+    "coherent_reference": {
+      "final_abs": {
+        "pump1_dominant": 28.276969278276617,
+        "pump2_dominant": 21.076883767761412,
+        "pump1_orthogonal": 0.0004848409768903016,
+        "pump2_orthogonal": 0.00010553838821731087
+      },
+      "tail_weighted_abs": {
+        "pump1_dominant": 28.276969374116597,
+        "pump2_dominant": 21.077461943633907,
+        "pump1_orthogonal": 0.0005085684049535161,
+        "pump2_orthogonal": 0.00010559423600631665,
+        "tail_fraction": 0.2,
+        "weights": "pump1_dominant + pump2_dominant"
+      },
+      "ratio_p2_over_p1": {
+        "final": 0.7453728000459169,
+        "tail_weighted": 0.7453932444021819
+      },
+      "dominant_purity": {
+        "pump1_final": 0.9999999997060098,
+        "pump2_final": 0.9999999999749268,
+        "pump1_tail_weighted": 0.9999999996765306,
+        "pump2_tail_weighted": 0.9999999999749017
+      }
+    },
+    "rms_integrated": {
+      "final_abs": {
+        "pump1_dominant": 28.276969278276617,
+        "pump2_dominant": 21.076883767761412,
+        "pump1_orthogonal": 0.0004848409768903016,
+        "pump2_orthogonal": 0.00010553838821731087
+      },
+      "tail_weighted_abs": {
+        "pump1_dominant": 28.276969374116597,
+        "pump2_dominant": 21.077461943633907,
+        "pump1_orthogonal": 0.0005085684049535161,
+        "pump2_orthogonal": 0.00010559423600631665,
+        "tail_fraction": 0.2,
+        "weights": "pump1_dominant + pump2_dominant"
+      },
+      "ratio_p2_over_p1": {
+        "final": 0.7453728000459169,
+        "tail_weighted": 0.7453932444021819
+      },
+      "dominant_purity": {
+        "pump1_final": 0.9999999997060098,
+        "pump2_final": 0.9999999999749268,
+        "pump1_tail_weighted": 0.9999999996765306,
+        "pump2_tail_weighted": 0.9999999999749017
+      }
+    }
+  },
+  "plot_paths": {
+    "pumps_dft_coherent": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/chi5_optimization/delta_scan/sic_L3p2um/delta_0.1150/pumps_dft_coherent.png",
+    "pumps_dft": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/chi5_optimization/delta_scan/sic_L3p2um/delta_0.1150/pumps_dft.png",
+    "pumps_td": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/chi5_optimization/delta_scan/sic_L3p2um/delta_0.1150/pumps_td.png",
+    "probe_dft_coherent": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/chi5_optimization/delta_scan/sic_L3p2um/delta_0.1150/probe_dft_coherent.png",
+    "probe_dft": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/chi5_optimization/delta_scan/sic_L3p2um/delta_0.1150/probe_dft.png",
+    "probe_td": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/chi5_optimization/delta_scan/sic_L3p2um/delta_0.1150/probe_td.png",
+    "probe_band_heatmap_coherent": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/chi5_optimization/delta_scan/sic_L3p2um/delta_0.1150/probe_band_heatmap_coherent.png",
+    "probe_band_heatmap": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/chi5_optimization/delta_scan/sic_L3p2um/delta_0.1150/probe_band_heatmap.png",
+    "probe_rotation": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/chi5_optimization/delta_scan/sic_L3p2um/delta_0.1150/probe_polarization.png",
+    "probe_rotation_zoom": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/chi5_optimization/delta_scan/sic_L3p2um/delta_0.1150/probe_polarization_zoom.png",
+    "probe_rotation_td": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/chi5_optimization/delta_scan/sic_L3p2um/delta_0.1150/probe_polarization_td.png",
+    "probe_rotation_td_zoom": "/Users/phi/nikita/code/faraday_chi3/scripts/meep_project/chi5_optimization/delta_scan/sic_L3p2um/delta_0.1150/probe_polarization_td_zoom.png"
+  },
+  "theta_deg_rel_I": {
+    "pump_intensity_w_cm2": 200000000000.0,
+    "final_relative_deg": 0.010971492386460113,
+    "forward_incoherent_final_relative_deg": 0.010971492751861312,
+    "total_field_final_relative_deg": 0.010971466255731775
+  },
+  "objective_quality": {
+    "abs_rotation_deg": 0.010971492386460113,
+    "probe_dolp_tail": 0.999999935067565,
+    "probe_theta_tail_std_deg": 0.0011789519695605845,
+    "probe_s0_tail": 0.14391471888674676,
+    "probe_s0_tail_rel_max": 0.9889876447973976
+  }
+}

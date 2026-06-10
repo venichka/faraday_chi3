@@ -1,12 +1,27 @@
 # χ⁽⁵⁾ Faraday-rotation design optimization — plan
 
 Master plan for finding cavity geometries that **maximize the all-optical (effective χ⁽⁵⁾) probe
-rotation**. Grounded in the repo theory: `../../chi3_sideband_patch.tex` (bulk sideband-dressed
-susceptibility) and `../FaradayJL/src/FaradayJL.jl` (cavity TCMT). Companion to the project goal — the
-cascaded χ³·G·χ³ sideband effect under balanced σ⁺σ⁻ pumps, **not** the χ³ carrier term.
+rotation**. Grounded in the trustworthy derivations `../../isotropic_derivation.tex` §1 +
+`../../very_general_derivation.tex` (§1 FoM, re-derived) and `../FaradayJL/src/FaradayJL.jl` (cavity TCMT).
+Companion to the project goal — the cascaded χ³·G·χ³ sideband effect under balanced σ⁺σ⁻ pumps, **not** the
+χ³ carrier term.
 
 > Status: **planning doc only** (2026-06-09, pedantically revised). No new pipeline built yet. Execution is
 > staged below. Key constraint: **pumps fixed at ~100 fs** (§0) — this caps pump Q and reorders the levers (§3).
+
+> ✅ **Theory grounding (re-derived 2026-06-09).** §1 and the §2b lineshape were **re-derived from the
+> trustworthy docs** `../../isotropic_derivation.tex` (§1, counter-rotating σ⁺σ⁻ — exactly our config) and
+> `../../very_general_derivation.tex` (basis-free tensor confirmation), replacing the earlier reliance on the
+> possibly-erroneous `chi3_sideband_patch.tex`. **The FoM scaling survives:** the cascade is genuinely
+> ∝ |E₁|²|E₂|² (χ⁵) with pump phases cancelling exactly, and the Q-buildup/sideband-Lorentzian structure holds.
+> The patch's *formula* was consistent on these points; its loose *prose* ("dispersive, max at |Δ|~Γ_s") was the
+> unreliable part. Two refinements the trusted derivation adds: (a) the pump factor is |E₁|²|E₂|² with **no**
+> residual 2·arg phase (the old "(p₂p₁*)²" note was wrong); (b) **net rotation needs the ω_s±Δ sideband symmetry
+> broken** — a perfectly symmetric, non-dispersive cavity gives pure ellipticity, not rotation (a new design
+> lever, §1/§2b). **FaradayJL cross-check DONE (2026-06-10):** found & fixed a bug — the counter-rotating
+> back-mixing used the un-conjugated pump dyad → cascade ∝ (p₂p₁*)² instead of |p₁|²|p₂|²; numerically it
+> inflated rotation ~1.9× and mis-split rotation/ellipticity (demo `FaradayJL/examples/bug_demo_counter_backmix.jl`).
+> The measured Δ-scan + intensity-scan remain the primary, derivation-independent evidence.
 
 ## Scope (agreed)
 
@@ -18,9 +33,9 @@ cascaded χ³·G·χ³ sideband effect under balanced σ⁺σ⁻ pumps, **not** 
     **λ_s ∈ [850, 950] nm**. Pick to land the probe on a good cavity mode within these windows.
   - **Pump wavelengths are free and must be tuned** (IR, ~1.5–1.8 µm region for the prior designs; user calls
     it mid-IR), subject to the FWM matching (working assumption f₁+f₂ ≈ f_s, near-octave; confirm per design).
-  - **Δ = |f₁−f₂| follows from the tuned pumps** — a real search direction; its optimum is analyzed in §2b
-    (≈ source bandwidth). Pulse *durations* are separately fixed at ~100 fs (§0) — distinct from the
-    wavelength freedom here.
+  - **Δ = |f₁−f₂| follows from the tuned pumps** — a real search direction; **measured optimum is small,
+    ≈ Γ_s ≈ the cavity linewidth (§2b), NOT the source bandwidth.** Pulse *durations* are separately fixed at
+    ~100 fs (§0) — distinct from the wavelength freedom here.
 - **Per material, two steps:** (a) a **quick refinement** with the *existing* pipeline, then
   (b) run the **new χ⁵-targeted search machinery**.
 - **Hard restriction — the existing pipeline stays fully functional and ideally untouched.** The new
@@ -62,38 +77,59 @@ pump-mode quality factor**:
   bandwidth buys nothing). ⇒ The **only** intensity/coupling levers are (i) **alignment** (get all modes
   resonant at bandwidth-matched Q), (ii) **mode volume / field concentration**, (iii) **4-mode overlap**, and
   (iv) **material χ³**. **Q-chasing is spent.** Δ and the operating frequencies remain genuine **search
-  variables** (Scope), but Δ's *optimum* is pinned ≈ the source bandwidth (§2b) — set it once, don't expect
-  further gain from sweeping it.
+  variables** (Scope); the Δ-scan (§2b) shows **Δ_opt is small ≈ Γ_s (the cavity linewidth)** — drive Δ toward
+  it (sidebands on the probe mode), *not* toward the source bandwidth.
 
 ## 1. Figure of merit, derived
 
-**Bulk** (`chi3_sideband_patch.tex`, Eq. θF-final): for balanced σ⁺σ⁻ the DC χ³ term cancels, leaving
+**Source (re-derived):** `isotropic_derivation.tex` §1 (isotropic χ³, **counter-rotating σ⁺σ⁻** — exactly the
+project configuration) gives the probe polarization in closed form; `very_general_derivation.tex` confirms the
+same structure basis-free (no isotropy/Kleinman). Both are the trustworthy docs (top caveat). FaradayJL
+`rhs_counter_derived!` is the same loop in cavity-TCMT form.
 
-  θ_F = (k₀L/4) · Re Σ_± [ δχ^(±)_++ − δχ^(±)_-- ],   δχ^(±) ∝ |E₁|²|E₂)|² / (Γ_s ∓ iΔ).
+**Step 1 — the direct χ³ carrier cancels.** The direct SPM/XPM response is diagonal in the circular basis with
+(isotropic_derivation, Eq. for χ₊₊−χ₋₋)
 
-**Cavity** (FaradayJL `rhs_counter_derived!`): eliminate the sidebands in steady state. From dy[6],
-b₋ = i ζ₋ (p₂p₁*) a₊ / (½κ_Ω − iΔ_Ω); substituting into dy[3] gives a sideband-loop self-energy on a₊:
+  χ₊₊ − χ₋₋ = |E₁|²(B_s⁽¹⁾ − C_s⁽¹⁾) − |E₂|²(B_s⁽²⁾ − C_s⁽²⁾).
 
-  Σ₊ = − η₋ ζ₋ (p₂ p₁*)² / ( ½κ_Ω − i Δ_Ω ),   and analogously Σ₋.
+For **balanced pumps |E₁| = |E₂|** (or B=C) this vanishes → **no χ³ Faraday rotation.** That is the whole
+purpose of σ⁺σ⁻ balance: null the carrier, leaving only the cascade.
 
-Two pedantic points: (i) the loop carries (p₂p₁*)² — its **magnitude** is |p₁|²|p₂|² (consistent with the
-bulk δχ ∝ |E₁|²|E₂|²); the residual phase 2·arg(p₂p₁*) is a rotating-frame convention and the **dispersive**
-character — what makes it rotation rather than loss — is the Re{1/D} of the bulk result, D = Γ_s ∓ iΔ →
-(½κ_Ω − iΔ_Ω) in the cavity. (ii) The on-resonance pump buildup |p_i|² = 4|S_i|²/κ_i is the **CW / narrowband-
-drive limit**; for the fixed 100 fs pumps it is bandwidth-capped (§0) and the FaradayJL Gaussian drives capture
-the reduced, pulsed value.
+**Step 2 — the cascaded χ⁵ term.** Probe sidebands at Ω_± = ω_s±Δ are generated (∝ E₁E₂*·E∓), propagate via
+the linear cavity Green function G(Ω_±), and back-mix with the *opposite* pump pair to return to ω_s. The
+result (isotropic_derivation, boxed `P^casc`) is a **diagonal** circular correction:
 
-The rotation is the differential **real** frequency pull between a₊ and a₋; with κ = ω/Q this gives the
-master scaling (CW limit; read with the §0 bandwidth caveat):
+  δχ₊₊ ∝ |E₁|²|E₂|² · Π₋(Ω₋),   δχ₋₋ ∝ |E₁|²|E₂|² · Π₊(Ω₊),
+  Π_±(Ω_±) = (B_±^mx + C_±^mx)(B_±^sb + C_±^sb) · G_{±±}(Ω_±).
+
+**Key:** the pump amplitudes enter as (E₂E₁*)(E₁E₂*) = **|E₁|²|E₂|²** — the phases cancel **exactly** (no
+residual 2·arg phase; the earlier "(p₂p₁*)²" note was wrong — isotropic_derivation note (i): "all residual
+phase sensitivity resides in G"). This is the χ⁵ / I_pump² scaling, manifest. `very_general` Eq. (Θ⁽⁵⁾)
+reproduces it basis-free (its pump dyads M⁽ᵐⁿ⁾M⁽ᵐⁿ⁾ = |E₁|²|E₂|²).
+
+**Step 3 — rotation.** The probe rotation is the real circular-birefringence (ellipticity = the imaginary part):
+
+  θ_F = (k₀L/4) · Re[ χ₊₊ − χ₋₋ ] = (k₀L/4)·(¾ε₀)²·|E₁|²|E₂|² · Re[ Π₋(Ω₋) − Π₊(Ω₊) ].
+
+The cavity enters via **G_{±±}(Ω_±) ∝ 1/(½κ_Ω − iΔ_Ω)** (a mode Lorentzian at the sideband), the pump buildup
+**|E_i|²(intracavity) ∝ Q_i|S_i|²** (energy ∝ Q×input; on resonance |p_i|²=4|S_i|²/κ_i, the CW limit —
+bandwidth-capped for 100 fs pumps, §0), and the probe interaction length **L_int ∝ Q_s**. With κ=ω/Q this gives
+the master scaling (read with the §0 bandwidth caveat):
 
 ```
  θ_F  ∝   k0·Lint  ·  |S1|²|S2|²  ·  Q1·Q2  ·  Qs  ·  QΩ·ℒ(ΔΩ/κΩ)  ·  η·ζ
           └ k0L ┘     └ input ┘    └buildup*┘ └probe┘ └ sideband ┘   └overlap┘
-   (*Q1·Q2 capped at ~Q_cap² by the fixed pump bandwidth — see §0)
+   (*Q1·Q2 capped at ~Q_cap² by the fixed pump bandwidth — see §0;  η·ζ = the B,C overlap products in Π_±)
 ```
 
-k0 = ω_s/c favors the higher probe frequency (another minor reason to place the probe in the octave).
-Everything below is a way to push one of these factors up **within the §0 constraint**.
+**Refinement the trusted derivation adds (new design lever).** With *real, non-dispersive* χ³ coefficients and
+a *±Δ-symmetric* cavity (G₊₊ at ω_s+Δ the mirror image of G₋₋ at ω_s−Δ), Π₋(Ω₋)−Π₊(Ω₊) is **purely imaginary**
+→ Re=0 → **pure ellipticity, zero net rotation.** Net rotation **requires breaking the ω_s±Δ symmetry**:
+(i) cavity asymmetry — place the probe mode so the two sidebands see *different* G (different detuning/Q),
+(ii) χ³ dispersion across the two arms, or (iii) a probe-carrier detuning. So a good design *deliberately* makes
+the upper/lower sidebands inequivalent. (The empirical absorptive Δ-shape — |θ| max at Δ→0, §2b — means the SiC
+cavity's asymmetry is **structural**, surviving Δ→0; smooth χ³ dispersion alone would vanish at Δ=0.)
+k0 = ω_s/c also mildly favors the higher probe frequency. Everything below pushes one factor up **within §0**.
 
 ## 2. Resonance conditions (must hold simultaneously)
 
@@ -144,26 +180,47 @@ the **new pipeline must make the operating point a first-class search:** probe i
 **pumps tuned** in the IR under the matching, and **Δ a real search direction** — plus the overlap and
 mode-volume terms.
 
-**Is there an optimal Δ in the *real* system (beyond CMT)?** Yes — and it is set by the **fixed 100 fs source
-bandwidth, not the cavity linewidth:**
-- *Naive CMT:* rotation ∝ dispersive Δ/(Γ²+Δ²), peaked at Δ = Γ. If Γ were the cavity linewidth κ_s/2 ≈
-  0.004 /µm (Q_s~150), the optimum would be a *tiny* Δ ≈ 0.004 /µm.
-- *Real system:* the sideband at f_s±Δ is **generated by the E₁E₂*E_s product**, whose bandwidth is ~(2–3)×
-  the source bandwidth. With 100 fs sources the source bandwidth (~0.015 /µm transform-limited; ~0.046 /µm for
-  the Meep cutoff-Gaussian) **dominates the cavity linewidth (~0.004–0.008 /µm)**, so **Γ_eff ≈ source
-  bandwidth** and the dispersive optimum moves to **Δ_opt ≈ 0.03–0.05 /µm (~60–100 nm separation).**
-- *Hard lower bound:* Δ must exceed the source bandwidth or the sidebands **merge into the carrier** (the
-  "rotation" degenerates into carrier self-phase modulation). So Δ ≳ source bandwidth.
-- *Upper bound:* the dispersive 1/Δ falloff for Δ ≫ Γ_eff, group-velocity walk-off, and the need for all five
-  modes to fit the stopbands ⇒ Δ ≲ ~0.1 /µm.
-- **Conclusion:** Δ_opt ≈ the 100 fs source bandwidth ≈ **0.03–0.05 /µm (~60–100 nm)** — where the hardwired
-  100 nm guess already sits. The CMT small-Δ optimum is **inaccessible** (broadband sources floor Γ_eff), so
-  **Δ is bounded, not free to push:** tune the pumps so Δ ≈ source bandwidth and stop. best_absolute (52 nm)
-  sits at the lower edge (sidebands marginally resolved); best_ratio (182 nm) is past the dispersive peak.
-- **Verification experiment (proposed):** a 1D **Δ-scan** — fix the probe and the pump *mean* frequency, vary
-  Δ = f₁−f₂ symmetrically at moderate *balanced* intensity, read the three-θ — to map θ(Δ) and confirm the
-  peak ≈ source bandwidth. (The earlier SiC "pump-frequency scan" varied the *common* pump frequency, not Δ,
-  so it did not measure this.)
+**Is there an optimal Δ in the *real* system? — MEASURED (1D Δ-scans, `chi5_optimization/delta_scan/`,
+2026-06-09). Δ_opt is SMALL ≈ Γ_s ≈ the probe cavity linewidth (~0.004–0.01 /µm, ~10–20 nm), NOT the source
+bandwidth.** Two hypotheses I floated here were both wrong and are recorded so we don't repeat them:
+
+> ⚠️ **Corrected twice.** (1) A "source-bandwidth Δ_opt ≈ 0.03–0.05 /µm" claim — **refuted** (|θ| at Δ=0.046 is
+> ~30× below Δ=0.006). (2) A "the small-Δ rise is a run-length/DFT-leakage artifact" claim (the first scans
+> stopped at T≈300 regardless of Δ, so at small Δ <1 beat was captured) — **tested and refuted**: a
+> beat-resolved re-scan (T = 18/Δ, ≥18 beats/point; driver `--beats`) reproduces the rise *slightly larger*.
+> The rise is **real**.
+
+Measured on SiC L=3.2 µm (fix probe + pump-mean, balanced σ⁺σ⁻ at I=2×10¹¹, vary Δ; resolved scan, three-θ):
+- **|θ| rises monotonically as Δ → 0** with pumps perfectly balanced (p2/p1=1.00 for Δ≤0.023): θ = 2.22°
+  (Δ=0.004) → 1.53° (0.010) → 0.43° (0.0234), sign-flips ~0.033, small/negative beyond (where p2/p1 also
+  degrades to 0.5–0.8 as the pumps separate — a second penalty on large Δ).
+- **Theory-consistent (re-derived from `isotropic_derivation` §1 — see §1).** θ_F ∝ Re[Π₋(ω_s−Δ) − Π₊(ω_s+Δ)],
+  the Π_± carrying the sideband Green function G(ω_s±Δ) ∝ 1/(½κ_s ∓ iΔ) (sidebands inside the probe mode, M5).
+  The **magnitude** peaks at Δ→0 with half-width Γ_s=½κ_s; the data fit θ=Re{A/(Γ_s−iΔ)} gives **Γ_s≈0.011/µm**
+  (a few × the probe ½-linewidth), sensible. The fact that the measured shape is **absorptive (max at Δ=0)**,
+  not dispersive, means the cavity's upper/lower-sideband asymmetry is **structural** (survives Δ→0); a
+  perfectly symmetric, non-dispersive cavity would instead give pure ellipticity (§1 refinement). This now rests
+  on the trustworthy docs, **not** the patch — whose formula agreed but whose prose ("max at |Δ|~Γ_s") was wrong.
+- **Physical picture:** for Δ ≲ κ_s the sidebands at f_s±Δ fall *inside the probe mode* → the cascade is
+  resonantly enhanced (the **M5 lever**). Balanced pumps zero the DC χ³, so this is the χ⁵ loop.
+- **Caveats / open:** DoLP sags to ~0.97 at small Δ (the dichroism/ellipticity Im δχ that accompanies the
+  resonant cascade, plus sidebands merging into the carrier) → **clean window Δ ≈ 0.01–0.023** (θ ~0.4–1.5°,
+  DoLP 0.984–0.999).
+- **χ⁵ origin CONFIRMED by intensity scaling** (`chi5_optimization/intensity_scaling/sic_L3p2um/`, 2026-06-09;
+  balanced σ⁺σ⁻, beat-resolved T=18/Δ, res 60, I=5e10…8e11). It is a **χ³→χ⁵ crossover, not a single power
+  law:** the local log-log slope climbs monotonically with intensity at *both* Δ. **Native Δ=0.0234 is the
+  cleanest χ⁵ signature** — slope 1.21→1.42→1.72→**2.14** while **DoLP stays ≥0.99** the whole sweep (reaches
+  the χ⁵ regime with no depolarization). **Small Δ=0.006 gives 3.3–5.5× larger |θ|** (M5 enhancement, matches
+  the Δ-scan ratio) **but its χ⁵ regime is entangled** — slope only 1.14→1.26→1.51→1.87 *and* DoLP collapses
+  0.998→**0.80**, plus a residual-χ³ floor at low I (slope→1.1 from the tiny p2/p1≈0.999 imbalance). Global
+  single-power fits (p=1.43 small, 1.61 native) **average the crossover and understate the high-I χ⁵ slope** —
+  read the *local* slope, as the SiC study warned. **Two regimes:** max raw |θ| → small Δ + moderate I
+  (~2e11, DoLP 0.976); cleanest χ⁵ *proof* → native Δ + high I (slope 2.14 @ DoLP 0.99).
+- **Design takeaway:** drive Δ **down toward Γ_s** (sidebands on the probe mode), bounded below by the DoLP/
+  resolvability floor — Δ_opt scales with κ_s (∝1/Q_s). The hardwired 100 nm and best_ratio (182 nm) are far
+  past optimum; best_absolute (52 nm) is closer but still high. **Methodology rule for any Δ-scan:** set run
+  length to resolve the beat (T ≫ 1/Δ; `--beats` ≳ 18). Plots/CSVs:
+  `chi5_optimization/delta_scan/{sic_L3p2um, sic_L3p2um_resolved}/`.
 
 ## 3. Design levers, ranked **for fixed 100 fs pumps + probe** (§0)
 
@@ -261,10 +318,10 @@ Every reported candidate should emit, into a self-contained dir:
 ## 8. Decisions
 
 - **Pump + probe pulse durations — RESOLVED: both fixed at ~100 fs.** ⇒ every Q bandwidth-capped (§0); the §3
-  ranking, the §5 B_i = min(Q, Q_cap) clamp, and the §2b Δ_opt ≈ source-bandwidth result all follow.
+  ranking and the §5 B_i = min(Q, Q_cap) clamp follow. (Δ_opt ≈ Γ_s is set by the cavity Q, not the duration — §2b.)
 - **Operating point — RESOLVED as constrained search variables (Scope):** probe λ_s ∈ {≈800 nm} ∪ [850, 950] nm;
   pump frequencies **tuned** in the IR under the matching (f₁+f₂ ≈ f_s, working assumption — confirm the exact
-  FWM relation per design); Δ = f₁−f₂ searched, targeted near the source bandwidth (§2b).
+  FWM relation per design); Δ = f₁−f₂ searched, targeted **small ≈ Γ_s (cavity linewidth)** — §2b.
 - **Q_cap value** — compute from the actual 100 fs Meep source bandwidth per band (≈ λ/Δλ_source); set it once.
 - **Fabrication limits** — max DBR pairs, layer-thickness tolerance (matters for the detuning ratio r), min/max defect length.
 - **1D-vs-3D in the loop** — proxy + stage-C in 1D, 3D only on winners (assumed), or 3D earlier? (Mode volume
