@@ -71,7 +71,12 @@ def _build_materials(args: argparse.Namespace) -> Dict[str, mp.Medium]:
         lam_max=int(args.fit_window[1]),
         fit_poles=int(args.fit_poles),
     )
-    return {"SiN": mat_high, "SiO2": mat_low}
+    # Key the high-index medium as "SiN" (used throughout this module) and also under
+    # the geometry's display label, so specs that label layers "SiC"/"TiO2" resolve too.
+    high_label = {"sin": "SiN", "sic": "SiC", "tio2": "TiO2"}.get(
+        canonical_high_index_material(args.high_index_material), "SiN"
+    )
+    return {"SiN": mat_high, "SiO2": mat_low, high_label: mat_high}
 
 
 def _jl_float(value: float) -> str:

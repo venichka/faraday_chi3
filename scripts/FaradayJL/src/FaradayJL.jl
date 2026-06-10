@@ -188,9 +188,10 @@ function rhs_counter!(dy, y, p, t)
     dy[1] = (im*rates.Δ1 - rates.κ1/2)*p1 + sqrt(rates.κ1)*S1
     dy[2] = (im*rates.Δ2 - rates.κ2/2)*p2 + sqrt(rates.κ2)*S2
 
-    # Probe
-    dy[3] = (im*rates.Δs - rates.κs/2)*a₊ + im*σ₊*a₊ + im*coup.m_minus*(p2*conj(p1))*b₋ + sqrt(rates.κs)*splus
-    dy[4] = (im*rates.Δs - rates.κs/2)*a₋ + im*σ₋*a₋ + im*coup.m_plus*(p1*conj(p2))*b₊ + sqrt(rates.κs)*sminus
+    # Probe — back-mixing carries the CONJUGATE of the generation pump dyad,
+    # so the cascade loop ∝ |p1|²|p2|² (DC), not (p2 p1*)² (isotropic_derivation §1).
+    dy[3] = (im*rates.Δs - rates.κs/2)*a₊ + im*σ₊*a₊ + im*coup.m_minus*(p1*conj(p2))*b₋ + sqrt(rates.κs)*splus
+    dy[4] = (im*rates.Δs - rates.κs/2)*a₋ + im*σ₋*a₋ + im*coup.m_plus*(p2*conj(p1))*b₊ + sqrt(rates.κs)*sminus
 
     # Sidebands
     dy[5] = (im*rates.ΔΩp - rates.κΩp/2)*b₊ + im*coup.g_plus*(p1*conj(p2))*a₋
@@ -223,10 +224,12 @@ function rhs_counter_derived!(dy, y, p, t)
     dy[1] = (im * rates.Δ1 - rates.κ1 / 2) * p1 + sqrt(rates.κ1) * S1
     dy[2] = (im * rates.Δ2 - rates.κ2 / 2) * p2 + sqrt(rates.κ2) * S2
 
+    # back-mixing carries the CONJUGATE of the generation pump dyad, so the
+    # cascade loop ∝ |p1|²|p2|² (DC), not (p2 p1*)² (isotropic_derivation §1).
     dy[3] = (im * rates.Δs - rates.κs / 2) * a₊ + im * Φ₊ * a₊ +
-        im * coeff.η_minus * (p2 * conj(p1)) * b₋ + sqrt(rates.κs) * splus
+        im * coeff.η_minus * (p1 * conj(p2)) * b₋ + sqrt(rates.κs) * splus
     dy[4] = (im * rates.Δs - rates.κs / 2) * a₋ + im * Φ₋ * a₋ +
-        im * coeff.η_plus * (p1 * conj(p2)) * b₊ + sqrt(rates.κs) * sminus
+        im * coeff.η_plus * (p2 * conj(p1)) * b₊ + sqrt(rates.κs) * sminus
 
     dy[5] = (im * rates.ΔΩp - rates.κΩp / 2) * b₊ +
         im * coeff.ζ_plus * (p1 * conj(p2)) * a₋
