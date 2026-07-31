@@ -190,6 +190,22 @@ def mode_volume(z, E, eps):
     return float(np.trapezoid(w, z) / np.max(w))
 
 
+def cav_field(layers, idx, f, zc, sub_label="SiO2", n_inc=1.0):
+    """Complex intracavity E(z) per unit INCIDENT amplitude, resampled to grid zc.
+
+    Unlike field_profile (normalized to unit *transmitted* wave), this divides out the
+    incident amplitude E_inc = (E_air + H_air/n_inc)/2, so |cav_field|^2 is the physical
+    intracavity field-intensity ENHANCEMENT and the COMPLEX value carries the true cavity
+    dispersion/phase at f. This is the keystone for both the 100fs buildup and the
+    symmetry-break: it is the actual (generally asymmetric) cavity response, not a snapped
+    single-mode Lorentzian. For a symmetric Lorentzian cav_field(w0-d)=cav_field(w0+d)^*,
+    so Re[cav_field(w0-d)-cav_field(w0+d)]=0 -> no rotation (the symmetric-cavity null)."""
+    z, E, H, eps = field_profile(layers, idx, f, sub_label=sub_label)
+    e_inc = 0.5 * (E[0] + H[0] / n_inc)        # air face: E_air = E_inc+E_refl, H_air = n(E_inc-E_refl)
+    u = E / e_inc
+    return np.interp(zc, z, u.real) + 1j * np.interp(zc, z, u.imag)
+
+
 # --------------------------------- validation -------------------------------- #
 def _validate(geom_path, modes_path, label, sub_label="SiO2"):
     geom = json.load(open(geom_path))
