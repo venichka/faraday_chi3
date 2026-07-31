@@ -50,3 +50,8 @@ analyze_mode_spectra_compare.py
 analyze_nonlinear_diagnostics_compare.py
 analyze_reflectance_meep_vs_tmm.py
 analyze_reflectance_tmm.py
+
+# chi5_optimization heavy run outputs (same convention as pipeline_*/): study dirs are
+# regenerable simulation output; curated keepers belong in chi5_optimization/results/
+chi5_optimization/*/
+!chi5_optimization/results/
