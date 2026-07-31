@@ -350,11 +350,19 @@ def circular_sources(
     src_center: mp.Vector3,
     src_span: float,
     include_ey: bool = True,
+    start_time: float = 0.0,
 ) -> List[mp.Source]:
-    """Return (Ex, Ey) sources for circular polarization."""
+    """Return (Ex, Ey) sources for circular polarization.
+
+    ``start_time`` (Meep time units) turns the pulse on later; the Gaussian peak sits at
+    ``start_time + cutoff/fwidth``, so a shift of the start time shifts the peak by the
+    same amount. Used for pump-probe delay scans.
+    """
     phase = 1.0j if handedness == "plus" else -1.0j
     amp = amplitude / np.sqrt(2.0)
-    base = mp.GaussianSource(frequency=frequency, fwidth=fwidth, cutoff=cutoff)
+    base = mp.GaussianSource(
+        frequency=frequency, fwidth=fwidth, cutoff=cutoff, start_time=float(start_time)
+    )
     size = mp.Vector3() if src_span <= 0 else mp.Vector3(src_span, src_span, 0)
     if not include_ey:
         return [mp.Source(src=base, component=mp.Ex, center=src_center, size=size, amplitude=amp)]
@@ -370,6 +378,20 @@ def circular_sources(
     ]
 
 
+def probe_jones_vector(azimuth_deg: float, ellipticity_deg: float) -> Tuple[complex, complex]:
+    """Unit-norm Jones vector (Ex, Ey) for an ellipse of azimuth psi and ellipticity chi.
+
+    E = R(psi) . (cos chi, i sin chi), so |Ex|^2 + |Ey|^2 = 1 and, in the Stokes
+    convention used by ``stokes_metrics``, the launched state has theta = psi and
+    chi = chi. ``(45, 0)`` reproduces the historical 45-degree linear probe exactly.
+    """
+    psi = np.radians(float(azimuth_deg))
+    chi = np.radians(float(ellipticity_deg))
+    ex = np.cos(psi) * np.cos(chi) - 1.0j * np.sin(psi) * np.sin(chi)
+    ey = np.sin(psi) * np.cos(chi) + 1.0j * np.cos(psi) * np.sin(chi)
+    return complex(ex), complex(ey)
+
+
 def linear_sources_45deg(
     frequency: float,
     fwidth: float,
@@ -378,15 +400,33 @@ def linear_sources_45deg(
     src_center: mp.Vector3,
     src_span: float,
     include_ey: bool = True,
+    start_time: float = 0.0,
+    azimuth_deg: float = INIT_PROBE_POLARIZATION_DEG,
+    ellipticity_deg: float = 0.0,
 ) -> List[mp.Source]:
-    amp = amplitude / np.sqrt(2.0)
-    base = mp.GaussianSource(frequency=frequency, fwidth=fwidth, cutoff=cutoff)
+    """Probe sources. Defaults give the 45-degree linear probe used historically;
+    ``azimuth_deg``/``ellipticity_deg`` launch a general elliptical state instead."""
+    jx, jy = probe_jones_vector(azimuth_deg, ellipticity_deg)
+    base = mp.GaussianSource(
+        frequency=frequency, fwidth=fwidth, cutoff=cutoff, start_time=float(start_time)
+    )
     size = mp.Vector3() if src_span <= 0 else mp.Vector3(src_span, src_span, 0)
     if not include_ey:
-        return [mp.Source(src=base, component=mp.Ex, center=src_center, size=size, amplitude=amp)]
+        return [
+            mp.Source(
+                src=base, component=mp.Ex, center=src_center, size=size,
+                amplitude=amplitude * jx,
+            )
+        ]
     return [
-        mp.Source(src=base, component=mp.Ex, center=src_center, size=size, amplitude=amp),
-        mp.Source(src=base, component=mp.Ey, center=src_center, size=size, amplitude=amp),
+        mp.Source(
+            src=base, component=mp.Ex, center=src_center, size=size,
+            amplitude=amplitude * jx,
+        ),
+        mp.Source(
+            src=base, component=mp.Ey, center=src_center, size=size,
+            amplitude=amplitude * jy,
+        ),
     ]
 
 
@@ -575,6 +615,20 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
         run.pump_intensity_w_cm2 = args.pump_intensity
     if getattr(args, "probe_intensity", None) is not None:
         run.probe_intensity_w_cm2 = float(args.probe_intensity)
+    # Probe polarization state and pump-probe delay (all default to the historical setup:
+    # 45-degree linear probe, all three pulses coincident, balanced pumps).
+    init_pol_deg = float(getattr(args, "probe_azimuth_deg", INIT_PROBE_POLARIZATION_DEG))
+    probe_ellipticity_deg = float(getattr(args, "probe_ellipticity_deg", 0.0) or 0.0)
+    pump_imbalance = float(getattr(args, "pump_imbalance", 1.0) or 1.0)
+
+    # Delay of pump1 relative to (pump2, probe), which stay locked together. Both branches
+    # are shifted to keep every source causal (start_time >= 0) while preserving tau.
+    fs_to_meep = C0 / 1e9  # 1 fs of light travel, in Meep time units (a = 1 um)
+    pump1_delay_fs = float(getattr(args, "pump1_delay_fs", 0.0) or 0.0)
+    tau_meep = pump1_delay_fs * fs_to_meep
+    t_start_pump1 = max(0.0, tau_meep)
+    t_start_rest = max(0.0, -tau_meep)
+
     pump_amp1 = intensity_to_meep_amplitude(run.pump_intensity_w_cm2, n_source_medium)
     pump_amp2 = intensity_to_meep_amplitude(run.pump_intensity_w_cm2, n_source_medium)
     probe_amp = intensity_to_meep_amplitude(run.probe_intensity_w_cm2, n_source_medium)
@@ -653,19 +707,20 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
     def build_pump1_sources(amp: float) -> List[mp.Source]:
         return circular_sources(
             freq_p1, df_pump1, run.pump_cutoff, amp, "plus", src_center, src_span,
-            include_ey=track_ey,
+            include_ey=track_ey, start_time=t_start_pump1,
         )
 
     def build_pump2_sources(amp: float) -> List[mp.Source]:
         return circular_sources(
             freq_p2, df_pump2, run.pump_cutoff, amp, "minus", src_center, src_span,
-            include_ey=track_ey,
+            include_ey=track_ey, start_time=t_start_rest,
         )
 
     def build_probe_sources(amp: float) -> List[mp.Source]:
         return linear_sources_45deg(
             freq_probe, df_probe, run.pump_cutoff, amp, src_center, src_span,
-            include_ey=track_ey,
+            include_ey=track_ey, start_time=t_start_rest,
+            azimuth_deg=init_pol_deg, ellipticity_deg=probe_ellipticity_deg,
         )
 
     source_calibration: Dict[str, Dict[str, float]] = {}
@@ -709,6 +764,10 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
             build_sources=build_probe_sources,
             decay_threshold=float(args.calibration_decay_threshold),
         )
+
+    # Deliberate pump imbalance (intensity ratio P2/P1). 1.0 keeps the balanced sigma+/sigma-
+    # configuration that nulls the direct chi3 carrier term.
+    pump_amp2 *= float(np.sqrt(max(pump_imbalance, 0.0)))
 
     sources: List[mp.Source] = []
     sources += build_pump1_sources(pump_amp1)
@@ -1131,6 +1190,41 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
         )
 
     # ------------------------------------------------------------------ #
+    # Pulse-energy-integrated probe Stokes vector.
+    #
+    # The run-accumulated DFT over the probe band is, by Parseval, the time integral of the
+    # transmitted probe over the whole pulse -- i.e. what a balanced detector that integrates
+    # the pulse actually reports (S_V - S_H = -S1). This is the correct observable for a
+    # pump-probe delay scan; the tail/final-window estimators below are settled-state
+    # measures and are not comparable across delays.
+    # ------------------------------------------------------------------ #
+    def pulse_integrated_probe_stokes() -> Dict[str, float]:
+        ex_parts: List[np.ndarray] = []
+        ey_parts: List[np.ndarray] = []
+        for k in range(nfreq_probe):
+            ex_k = np.asarray(simulation.get_dft_array(trans_monitor, mp.Ex, k))
+            ey_k = np.asarray(simulation.get_dft_array(trans_monitor, mp.Ey, k))
+            hx_k = np.asarray(simulation.get_dft_array(trans_monitor, mp.Hx, k))
+            hy_k = np.asarray(simulation.get_dft_array(trans_monitor, mp.Hy, k))
+            ex_f, ey_f, _, _ = forward_transverse_fields(
+                ex_k, ey_k, hx_k, hy_k, n_monitor_medium
+            )
+            ex_parts.append(np.ravel(np.atleast_1d(ex_f)))
+            ey_parts.append(np.ravel(np.atleast_1d(ey_f)))
+        st = stokes_metrics(np.concatenate(ex_parts), np.concatenate(ey_parts))
+        s0 = max(float(st["S0"]), 1e-30)
+        st["rotation_deg"] = float(
+            wrap_linear_polarization_deg(float(st["theta_deg"]) - init_pol_deg)
+        )
+        # Balanced-detector signal for a probe launched along the +45 deg diagonal.
+        st["balanced_V_minus_H"] = -float(st["S1"])
+        st["balanced_V_minus_H_norm"] = -float(st["S1"]) / s0
+        st["ellipticity_change_deg"] = float(st["chi_deg"]) - probe_ellipticity_deg
+        return {k: float(v) for k, v in st.items()}
+
+    probe_pulse_integrated = pulse_integrated_probe_stokes()
+
+    # ------------------------------------------------------------------ #
     # Post-processing
     # ------------------------------------------------------------------ #
     t_arr = np.array(time_trace["t"])
@@ -1159,9 +1253,9 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
     probe_eminus_rms = np.vstack(time_trace["probe_band"]["Eminus_rms"])
     theta_deg_wrapped = np.array(time_trace["probe_pol"]["theta_deg"])
     theta_deg_unwrapped = unwrap_linear_polarization_deg(theta_deg_wrapped)
-    theta_deg_rel_unwrapped = theta_deg_unwrapped - INIT_PROBE_POLARIZATION_DEG
+    theta_deg_rel_unwrapped = theta_deg_unwrapped - init_pol_deg
     theta_deg_rel = wrap_linear_polarization_deg(
-        theta_deg_wrapped - INIT_PROBE_POLARIZATION_DEG
+        theta_deg_wrapped - init_pol_deg
     )
     probe_ex_fwd_mean = np.array(time_trace["probe_pol"]["Ex_fwd_mean"], dtype=complex)
     probe_ey_fwd_mean = np.array(time_trace["probe_pol"]["Ey_fwd_mean"], dtype=complex)
@@ -1179,7 +1273,7 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
     # Total-field (no forward/backward split) angle trace, relative to the input.
     theta_total_deg_wrapped = np.array(time_trace["probe_pol"]["theta_total_deg"])
     theta_total_deg_rel = wrap_linear_polarization_deg(
-        theta_total_deg_wrapped - INIT_PROBE_POLARIZATION_DEG
+        theta_total_deg_wrapped - init_pol_deg
     )
     probe_s0_total = np.array(time_trace["probe_pol"]["S0_total"])
     probe_dolp_total = np.array(time_trace["probe_pol"]["dolp_total"])
@@ -1189,9 +1283,9 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
     emi_td = np.vstack(td_env["Eminus"])
     theta_deg_t_wrapped = np.array(td_env["theta_deg_t"])
     theta_deg_t_unwrapped = unwrap_linear_polarization_deg(theta_deg_t_wrapped)
-    theta_deg_t_rel_unwrapped = theta_deg_t_unwrapped - INIT_PROBE_POLARIZATION_DEG
+    theta_deg_t_rel_unwrapped = theta_deg_t_unwrapped - init_pol_deg
     theta_deg_t_rel = wrap_linear_polarization_deg(
-        theta_deg_t_wrapped - INIT_PROBE_POLARIZATION_DEG
+        theta_deg_t_wrapped - init_pol_deg
     )
 
     epl_dft = (fixed_ex + 1j * fixed_ey) / np.sqrt(2.0)
@@ -1479,7 +1573,7 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
             )
             coherent_theta_rel = float(
                 wrap_linear_polarization_deg(
-                    stokes_coherent["theta_deg"] - INIT_PROBE_POLARIZATION_DEG
+                    stokes_coherent["theta_deg"] - init_pol_deg
                 )
             )
             coherent_chi_deg = float(stokes_coherent["chi_deg"])
@@ -2445,8 +2539,17 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
             "unit": "fs",
             "fs_per_meep_time": float(FS_PER_MEEP),
         },
+        "probe_source_state": {
+            "azimuth_deg": float(init_pol_deg),
+            "ellipticity_deg": float(probe_ellipticity_deg),
+            "pump1_delay_fs": float(pump1_delay_fs),
+            "pump1_start_time_meep": float(t_start_pump1),
+            "pump2_probe_start_time_meep": float(t_start_rest),
+            "pump_imbalance_intensity_ratio": float(pump_imbalance),
+        },
+        "probe_pulse_integrated": probe_pulse_integrated,
         "probe_rotation_deg": {
-            "initial_deg": INIT_PROBE_POLARIZATION_DEG,
+            "initial_deg": init_pol_deg,
             "final_relative_deg": probe_rotation_final_rel,
             "final_relative_deg_window_mean": probe_rotation_final_rel_window_mean,
             "max_relative_deg": probe_rotation_max_rel,
@@ -2475,7 +2578,7 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
                 else float("nan")
             ),
             "raw_final_relative_deg": (
-                float(theta_deg_wrapped[-1] - INIT_PROBE_POLARIZATION_DEG)
+                float(theta_deg_wrapped[-1] - init_pol_deg)
                 if theta_deg_wrapped.size
                 else float("nan")
             ),
@@ -2534,7 +2637,7 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
                     else float("nan")
                 ),
                 "raw_final_relative_deg": (
-                    float(theta_deg_t_wrapped[-1] - INIT_PROBE_POLARIZATION_DEG)
+                    float(theta_deg_t_wrapped[-1] - init_pol_deg)
                     if theta_deg_t_wrapped.size
                     else float("nan")
                 ),
@@ -2932,6 +3035,44 @@ def parse_args() -> argparse.Namespace:
         help=(
             "For 3D runs, fraction of the transverse simulation span included in the "
             "cavity diagnostic monitor."
+        ),
+    )
+    parser.add_argument(
+        "--pump1-delay-fs",
+        type=float,
+        default=0.0,
+        help=(
+            "Delay of pump1 relative to pump2 and the probe, in fs (pump2 and probe stay "
+            "locked together). Positive = pump1 arrives later. 0 reproduces the coincident "
+            "three-pulse setup."
+        ),
+    )
+    parser.add_argument(
+        "--probe-azimuth-deg",
+        type=float,
+        default=INIT_PROBE_POLARIZATION_DEG,
+        help=(
+            "Azimuth of the launched probe polarization ellipse, in degrees. Rotation is "
+            "reported relative to this. Default 45 (the historical diagonal probe); offsets "
+            "model analyzer/waveplate misalignment in balanced detection."
+        ),
+    )
+    parser.add_argument(
+        "--probe-ellipticity-deg",
+        type=float,
+        default=0.0,
+        help=(
+            "Ellipticity angle chi of the launched probe, in degrees (0 = pure linear, "
+            "45 = circular). Models the residual ellipticity of a real probe beam."
+        ),
+    )
+    parser.add_argument(
+        "--pump-imbalance",
+        type=float,
+        default=1.0,
+        help=(
+            "Pump intensity ratio P2/P1. 1.0 keeps the balanced sigma+/sigma- configuration "
+            "that nulls the direct chi3 carrier term; values off 1 reintroduce it."
         ),
     )
     return parser.parse_args()
