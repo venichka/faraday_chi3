@@ -619,15 +619,36 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
     # 45-degree linear probe, all three pulses coincident, balanced pumps).
     init_pol_deg = float(getattr(args, "probe_azimuth_deg", INIT_PROBE_POLARIZATION_DEG))
     probe_ellipticity_deg = float(getattr(args, "probe_ellipticity_deg", 0.0) or 0.0)
-    pump_imbalance = float(getattr(args, "pump_imbalance", 1.0) or 1.0)
+    # NB: not `... or 1.0` -- 0.0 is falsy, and 0.0 is a legitimate value here (it switches
+    # pump2 off, which is exactly the single-pump control needed to test whether the balanced
+    # sigma+/sigma- pair really cancels the direct chi3 term).
+    _pump_imbalance = getattr(args, "pump_imbalance", None)
+    pump_imbalance = 1.0 if _pump_imbalance is None else float(_pump_imbalance)
 
     # Delay of pump1 relative to (pump2, probe), which stay locked together. Both branches
     # are shifted to keep every source causal (start_time >= 0) while preserving tau.
     fs_to_meep = C0 / 1e9  # 1 fs of light travel, in Meep time units (a = 1 um)
     pump1_delay_fs = float(getattr(args, "pump1_delay_fs", 0.0) or 0.0)
     tau_meep = pump1_delay_fs * fs_to_meep
-    t_start_pump1 = max(0.0, tau_meep)
-    t_start_rest = max(0.0, -tau_meep)
+    delay_pad_fs = getattr(args, "delay_pad_fs", None)
+    if delay_pad_fs is None:
+        # Legacy fallback: absorb a negative delay by shifting pump2+probe instead. This
+        # preserves the relative TIMING but not the relative optical PHASE (pump2/probe pick
+        # up exp(i w2 |tau|), exp(i ws |tau|) instead of pump1 picking up exp(-i w1 |tau|)),
+        # so tau<0 is not the same experiment as tau>0. Kept only for reproducibility of
+        # earlier scans; pass --delay-pad-fs for a physically consistent scan.
+        t_start_pump1 = max(0.0, tau_meep)
+        t_start_rest = max(0.0, -tau_meep)
+    else:
+        pad_meep = float(delay_pad_fs) * fs_to_meep
+        t_start_pump1 = pad_meep + tau_meep
+        t_start_rest = pad_meep
+        if t_start_pump1 < 0.0:
+            raise SystemExit(
+                "--delay-pad-fs {:.3f} is too small for --pump1-delay-fs {:.3f}: pump1 would "
+                "start before t=0. Use a pad >= the largest |negative delay| in the scan, and "
+                "keep it FIXED across the scan.".format(float(delay_pad_fs), pump1_delay_fs)
+            )
 
     pump_amp1 = intensity_to_meep_amplitude(run.pump_intensity_w_cm2, n_source_medium)
     pump_amp2 = intensity_to_meep_amplitude(run.pump_intensity_w_cm2, n_source_medium)
@@ -2545,6 +2566,8 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
             "pump1_delay_fs": float(pump1_delay_fs),
             "pump1_start_time_meep": float(t_start_pump1),
             "pump2_probe_start_time_meep": float(t_start_rest),
+            "delay_pad_fs": (float(delay_pad_fs) if delay_pad_fs is not None else None),
+            "delay_convention": ("common_pad" if delay_pad_fs is not None else "legacy_split"),
             "pump_imbalance_intensity_ratio": float(pump_imbalance),
         },
         "probe_pulse_integrated": probe_pulse_integrated,
@@ -3045,6 +3068,21 @@ def parse_args() -> argparse.Namespace:
             "Delay of pump1 relative to pump2 and the probe, in fs (pump2 and probe stay "
             "locked together). Positive = pump1 arrives later. 0 reproduces the coincident "
             "three-pulse setup."
+        ),
+    )
+    parser.add_argument(
+        "--delay-pad-fs",
+        type=float,
+        default=None,
+        help=(
+            "Common start-time offset (fs) applied to ALL sources, so that pump1 is the only "
+            "source whose timing changes with --pump1-delay-fs. Required for negative delays: "
+            "pass a pad >= |most negative tau| in the scan, held FIXED across the scan. "
+            "Without it the code falls back to shifting pump2+probe for tau<0, which keeps the "
+            "relative timing but NOT the relative optical phase, so the two halves of a delay "
+            "scan are then different experiments. A common offset is physically harmless: it "
+            "shifts every field in time, and the Stokes parameters (built from same-frequency "
+            "products) are invariant under a global phase."
         ),
     )
     parser.add_argument(

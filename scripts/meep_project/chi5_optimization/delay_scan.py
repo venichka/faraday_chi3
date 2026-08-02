@@ -163,21 +163,40 @@ def summarize(recs, tag):
     # peak = value at the tau closest to 0.
     edge = np.abs(tau) >= 0.8 * np.max(np.abs(tau))
     pedestal = float(np.mean(sig[edge])) if edge.any() else float("nan")
+    # Same decomposition on the rotation ANGLE. theta and (V-H) carry the same information
+    # -- (V-H)/S0 = cos(2chi) sin(2theta), so theta ~ (V-H)/2 in rad for small angles -- but
+    # theta is the physical quantity to quote, so both are reported everywhere.
+    ped_rot = float(np.mean(rot[edge])) if edge.any() else float("nan")
     i0 = int(np.argmin(np.abs(tau)))
+    scatter = float(np.std(sig[edge])) if edge.any() else float("nan")
+    scatter_rot = float(np.std(rot[edge])) if edge.any() else float("nan")
     out = {"tau_fs": tau.tolist(), "vmh_norm": sig.tolist(), "rotation_deg": rot.tolist(),
            "dolp": [r["dolp"] for r in recs], "chi_deg": [r["chi_deg"] for r in recs],
            "legacy_final_rel_deg": [r["legacy_final_rel_deg"] for r in recs],
            "pedestal_vmh_norm": pedestal, "peak_vmh_norm": float(sig[i0]),
-           "peak_rotation_deg": float(rot[i0])}
+           "peak_rotation_deg": float(rot[i0]), "pedestal_rotation_deg": ped_rot,
+           "edge_scatter_vmh_norm": scatter, "edge_scatter_rotation_deg": scatter_rot}
     contrast = sig[i0] - pedestal
     out["peak_minus_pedestal"] = float(contrast)
-    print("  {:<10s} n={:3d}  theta(tau=0)={:+.4f} deg  V-H(0)={:+.5e}  "
-          "pedestal={:+.5e}  peak-pedestal={:+.5e}".format(
-              tag, len(recs), rot[i0], sig[i0], pedestal, contrast))
+    out["peak_minus_pedestal_rotation_deg"] = float(rot[i0] - ped_rot)
+    print("  {:<10s} n={:3d}  V-H:   peak(tau=0)={:+.5e}  pedestal={:+.5e}  "
+          "peak-ped={:+.5e}".format(tag, len(recs), sig[i0], pedestal, contrast))
+    print("  {:<10s}          theta: peak(tau=0)={:+.5f} deg  pedestal={:+.5f} deg  "
+          "peak-ped={:+.5f} deg".format("", rot[i0], ped_rot, rot[i0] - ped_rot))
+    # The pedestal is only meaningful if it stands above the point-to-point scatter of the
+    # very points it averages; otherwise the peak/pedestal ratio below is not a measurement.
+    if np.isfinite(scatter) and int(edge.sum()) > 1:
+        err = scatter / np.sqrt(int(edge.sum()))
+        print("  {:<10s}          pedestal = {:+.3e} +/- {:.3e} ({:.1f} sigma, n={:d} edge pts;"
+              " per-point scatter {:.3e})".format(
+                  "", pedestal, err, abs(pedestal) / err if err > 0 else float("nan"),
+                  int(edge.sum()), scatter))
+        out["pedestal_vmh_norm_stderr"] = float(err)
     if abs(pedestal) > 1e-30:
         ratio = abs(contrast / pedestal)
         out["chi5_over_chi3_ratio"] = float(ratio)
-        print("  {:<10s} chi5(peak-pedestal) / chi3(pedestal) = {:.2f}".format("", ratio))
+        print("  {:<10s} chi5(peak-pedestal) / chi3(pedestal) = {:.2f}"
+              "  [meaningful only if the pedestal is many sigma above 0]".format("", ratio))
     return out
 
 
