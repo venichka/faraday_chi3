@@ -55,3 +55,25 @@ analyze_reflectance_tmm.py
 # regenerable simulation output; curated keepers belong in chi5_optimization/results/
 chi5_optimization/*/
 !chi5_optimization/results/
+
+# chi5_dbr_design: per-sim run dirs are regenerable simulation output and are excluded, but
+# the docs/ figures and the aggregated *_result.json files ARE the campaign's deliverable
+# (the global *.png rule above would otherwise swallow every figure).
+chi5_dbr_design/runs/*/*/
+!chi5_dbr_design/docs/
+!chi5_dbr_design/docs/*.png
+!chi5_dbr_design/runs/*/*_result.json
+chi5_dbr_design/runs/*/*.npz
+
+# chi5_sic_samples: same policy as chi5_dbr_design -- per-sim run dirs are regenerable
+# simulation output, but the small aggregated JSONs, the docs and the figures are kept.
+# Excluding runs/*/*/ wholesale would bury the s1 scan maps at runs/s1_scan/<sample>/result.json,
+# and git cannot re-include a file whose parent directory is excluded -- so exclude everything
+# under runs/ and whitelist the aggregates level by level instead.
+chi5_sic_samples/runs/**
+!chi5_sic_samples/runs/*/
+!chi5_sic_samples/runs/*/*.json
+!chi5_sic_samples/runs/*/*/
+!chi5_sic_samples/runs/*/*/result.json
+!chi5_sic_samples/docs/
+!chi5_sic_samples/docs/*.png
