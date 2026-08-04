@@ -521,6 +521,8 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
     run = quick_params() if args.mode == "quick" else full_params()
     if args.resolution is not None:
         run.resolution = int(args.resolution)
+    if getattr(args, "pulse_duration_fs", None) is not None:
+        run.pulse_duration_fs = float(args.pulse_duration_fs)
     dimension = int(getattr(args, "dim", 1))
     if dimension not in (1, 3):
         raise ValueError("--dim must be either 1 or 3.")
@@ -550,7 +552,19 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
     high_index_material = canonical_high_index_material(
         getattr(args, "high_index_material", "sin")
     )
-    high_slot = str(spec.get("cavity", {}).get("mat", "SiN"))
+    # The cavity slot and the mirror high-index slot are the same label for every geometry that
+    # predates the 2026-08 SiC samples. They differ when the cavity is a distinct material
+    # (SiC cavity inside SiN/SiO2 mirrors), so resolve them separately: the mirror high-index
+    # layers are the mirror layers that are not the low-index (SiO2) material.
+    cav_slot = str(spec.get("cavity", {}).get("mat", "SiN"))
+    _mirror_mats = {
+        str(layer["mat"])
+        for side in ("left", "right")
+        for layer in (spec.get("mirrors", {}) or {}).get(side, []) or []
+    }
+    _mirror_high = sorted(m for m in _mirror_mats if m != "SiO2")
+    mirror_high_slot = _mirror_high[0] if len(_mirror_high) == 1 else cav_slot
+    high_slot = mirror_high_slot
     default_high = float(getattr(materials.get(high_slot), "index", np.nan))
     if (not np.isfinite(default_high)) or default_high <= 0.0:
         default_high = resolve_high_index_index(None, high_index_material)
@@ -575,10 +589,41 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
         lam_max=args.fit_window[1],
         fit_poles=args.fit_poles,
     )
+    # Cavity medium: the same object as the mirrors unless --cavity-material asks otherwise.
+    cavity_material_arg = getattr(args, "cavity_material", None)
+    if cavity_material_arg is None:
+        cavity_material = high_index_material
+        mat_cav = mat_sin
+        n2_cav = n2_high
+    else:
+        cavity_material = canonical_high_index_material(cavity_material_arg)
+        default_cav = float(getattr(materials.get(cav_slot), "index", np.nan))
+        if (not np.isfinite(default_cav)) or default_cav <= 0.0:
+            default_cav = resolve_high_index_index(None, cavity_material)
+        if cavity_material != "sin" and getattr(args, "n_cav", None) is None:
+            default_cav = resolve_high_index_index(None, cavity_material)
+        n_cav = resolve_high_index_index(getattr(args, "n_cav", None), cavity_material)
+        k_cav = resolve_high_index_kappa(getattr(args, "k_cav", None), cavity_material)
+        n2_cav = resolve_high_index_n2(getattr(args, "cavity_n2", None), cavity_material)
+        mat_cav, _ = get_cavity_materials(
+            model=args.materials,
+            index_high=n_cav if getattr(args, "n_cav", None) is not None else default_cav,
+            kappa_high=k_cav,
+            index_low=n_low,
+            high_index_material=cavity_material,
+            kappa_ref_wavelength_um=float(args.kappa_ref_lambda),
+            sin_csv=(getattr(args, "cavity_fit", None) or args.sin_fit),
+            sio2_csv=args.sio2_fit,
+            lam_min=args.fit_window[0],
+            lam_max=args.fit_window[1],
+            fit_poles=args.fit_poles,
+        )
     if "SiN" in materials:
         materials["SiN"] = mat_sin
     materials[high_slot] = mat_sin
     materials["SiO2"] = mat_sio2
+    # Written last so a distinct cavity material wins; a no-op when cav_slot == high_slot.
+    materials[cav_slot] = mat_cav
     geometry, cell_z, cavity_center = build_geometry_from_spec(
         spec, materials, core_span, run.dpml_z, dimension=dimension
     )
@@ -606,6 +651,19 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
         chi3_si, scale_e=SCALE_E, nonlinear_scale=run.nonlinear_scale
     )
     mat_sin.E_chi3_diag = mp.Vector3(e_chi3_meep, e_chi3_meep, e_chi3_meep)
+    # A distinct cavity medium gets its OWN chi3 from its own n2. The mirror high-index layers
+    # stay nonlinear either way -- in the fabricated SiC samples the SiN mirrors still have
+    # n2 = 5e-19, they are just ~10x weaker than the SiC cavity. Mutating the Medium after
+    # build_geometry_from_spec is fine: the mp.Blocks hold references to these same objects.
+    if mat_cav is not mat_sin:
+        n_linear_cav = material_index_at_wavelength(mat_cav, lam_probe)
+        chi3_si_cav = n2_to_chi3_si(n2_cav, n_linear_cav)
+        e_chi3_cav = chi3_si_to_meep_e_chi3(
+            chi3_si_cav, scale_e=SCALE_E, nonlinear_scale=run.nonlinear_scale
+        )
+        mat_cav.E_chi3_diag = mp.Vector3(e_chi3_cav, e_chi3_cav, e_chi3_cav)
+    else:
+        n_linear_cav, chi3_si_cav, e_chi3_cav = n_linear_probe, chi3_si, e_chi3_meep
     high_preset = get_high_index_preset(high_index_material)
     n_monitor_medium = float(material_index_at_wavelength(materials["SiO2"], lam_probe))
 
@@ -2530,6 +2588,15 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
             "chi3_si": float(chi3_si),
             "E_chi3_diag_meep": float(e_chi3_meep),
         },
+        "cavity_material": {
+            "key": str(cavity_material),
+            "slot_in_geometry": str(cav_slot),
+            "distinct_from_mirrors": bool(mat_cav is not mat_sin),
+            "n2_m2_per_w_used": float(n2_cav),
+            "n_linear_probe": float(n_linear_cav),
+            "chi3_si": float(chi3_si_cav),
+            "E_chi3_diag_meep": float(e_chi3_cav),
+        },
         "cell_size_um": {"x": float(cell.x), "y": float(cell.y), "z": float(cell_z)},
         "cavity_center_um": float(cavity_center),
         "frequencies_inv_um": frequencies,
@@ -2862,6 +2929,49 @@ def parse_args() -> argparse.Namespace:
         default="sin",
         help="High-index cavity material preset (sin or tio2).",
     )
+    # --- distinct CAVITY material (3-material stacks) -------------------------------- #
+    # By default the cavity is made of the same medium as the mirror high-index layers, which
+    # is what every geometry in this repo assumed. These flags let the cavity be a DIFFERENT
+    # material (e.g. a SiC cavity inside SiN/SiO2 mirrors, as fabricated 2026-08). All default
+    # to None => behaviour is bit-for-bit unchanged.
+    parser.add_argument(
+        "--cavity-material",
+        dest="cavity_material",
+        choices=high_index_material_choices(),
+        default=None,
+        help="Material preset for the CAVITY layer when it differs from the mirror high-index "
+             "material. Default: cavity uses the same medium as the mirrors.",
+    )
+    parser.add_argument(
+        "--cavity-fit",
+        dest="cavity_fit",
+        type=str,
+        default=None,
+        help="CSV with wavelength,n,k for the cavity material when --materials fit "
+             "(defaults to --sin-fit if omitted).",
+    )
+    parser.add_argument(
+        "--n-cav",
+        dest="n_cav",
+        type=float,
+        default=None,
+        help="Override cavity refractive index for constant/library fallback.",
+    )
+    parser.add_argument(
+        "--k-cav",
+        dest="k_cav",
+        type=float,
+        default=None,
+        help="Override cavity extinction coefficient k for constant/library fallback.",
+    )
+    parser.add_argument(
+        "--cavity-n2",
+        dest="cavity_n2",
+        type=float,
+        default=None,
+        help="Override the cavity Kerr n2 (m^2/W). Default: the cavity preset's n2. The mirror "
+             "high-index layers keep their own n2 and remain nonlinear.",
+    )
     parser.add_argument(
         "--nH",
         type=float,
@@ -2983,6 +3093,20 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=None,
         help="Override default resolution (px/um) for the selected mode.",
+    )
+    parser.add_argument(
+        "--pulse-duration-fs",
+        dest="pulse_duration_fs",
+        type=float,
+        default=None,
+        help=(
+            "Override the Gaussian pulse-duration parameter (fs) for BOTH pumps and the "
+            "probe. NOTE this is the label fed to df_from_pulse_duration, which sets "
+            "width = T/(2 ln 2); the resulting INTENSITY FWHM is 1.2011 x T. So the "
+            "default 100.0 is a 120.1 fs intensity-FWHM pulse, and a true 100 fs "
+            "intensity FWHM needs T = 83.2555. This also sets the probe DFT readout "
+            "band (freq_probe +- df/2), so widening the pulse narrows that band."
+        ),
     )
     parser.add_argument(
         "--courant",
