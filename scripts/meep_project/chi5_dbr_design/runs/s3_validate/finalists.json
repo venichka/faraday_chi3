@@ -1,0 +1,10 @@
+{
+  "labels": [
+    "cand07",
+    "cand13",
+    "cand16",
+    "cand15",
+    "baseline"
+  ],
+  "note": "frozen to match the Stage-3 jobs already submitted (3D array 53849). cand15 and cand19 tie at contrast 1.32; cand15 has 1.8x the rotation."
+}
