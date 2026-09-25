@@ -167,6 +167,11 @@ as-fabricated **1521.5 / 1574.0 nm** to **1492.6 / 1525.1 nm** (Δ 0.0219 → 0.
 it is a broad optimum. This is the cheapest available experimental gain and needs only a
 retune.
 
+*Update (Stages 5–6):* the full 393-point map of this sample found a better retune:
+**probe 800.1 nm, pumps 1563.2 / 1598.2 nm**. It gives **0.099° in 3D** (1.5× the 3D baseline),
+contrast 0.32. The same map's "legible" 867.3 nm probe (1D contrast 4.10) **collapses to
+contrast 0.11 in 3D**, so do not use it. See Stage 6.
+
 ### 2. If a new sample is made — pick by what you are limited by
 
 | | **cand13** | **cand15** | **cand16** | cand07 |
@@ -614,3 +619,36 @@ cand19 tie exactly at contrast 1.32**. An unstable sort tie-break swapped a fina
 (a) breaking contrast ties by rotation — cand15 wins, same contrast with 1.8× the signal — and
 (b) freezing the selection to `finalists.json` on first use. cand15's missing draws were re-run;
 cand19's partial data is retained but unused.
+
+---
+
+## Stage 6 — 3D check of the existing sample's accessible optima ✅
+
+`s6_existing_3d.py` + `.sbatch`: 8 MPI jobs (2 operating points × 4 carrier phases, 24 ranks,
+res 30, decay 1e-3, I = 10¹² W/cm², true 100 fs pulses — the Stage 3 3D settings), all in
+parallel, 2.5–4.3 h each. Result: `runs/s6_existing_3d/s6_result.json`.
+
+**Why.** The 1D map of the fabricated sample (`s5_existing.py`, 393 carrier-averaged operating
+points) found two lab-accessible optima that share the **same pumps, 1563.2 / 1598.2 nm
+(Δ = 0.014)**, and differ only in the probe mode. At probe 867.3 nm the effect beat the fringe 4×.
+At probe 800.1 nm the rotation was largest, but the contrast was 0.11. The recommendation was to
+switch probes for legibility. But the SiC campaign had just shown a 1D contrast collapsing in 3D
+(L=3.2: 1.08 → 0.07), so the 867.3 nm contrast had to be checked in 3D.
+
+| probe | θ_χ5 1D | **θ_χ5 3D** | 3D/1D | fringe 1D → 3D | contrast 1D → **3D** | DoLP 3D |
+|---|---|---|---|---|---|---|
+| 867.3 nm | 0.00572° | 0.0507° | 8.9× | 0.0014° → 0.452° (**×324**) | 4.10 → **0.11** ❌ | 0.643 |
+| **800.1 nm** | 0.00822° | **0.0992°** | 12.1× | 0.074° → 0.312° (×4.2) | 0.11 → **0.32** | 0.675 |
+
+* ❌ **The 867.3 nm "effect beats the fringe" result is a 1D artifact.** Its fringe grows 324×
+  from 1D to 3D against 9× for the effect. The 1D fringe suppression was a delicate destructive
+  interference among the k = ±1 terms, and the transverse mode structure of the 3D cavity washes
+  it out. This is the same mechanism as SiC L=3.2, only more extreme. **Do not switch the probe to
+  867 nm.**
+* ✅ **Probe 800.1 nm with pumps 1563.2 / 1598.2 nm gives 0.099° in 3D**, 1.5× the Stage-3 3D
+  baseline (0.066°, same settings). Its contrast *rises* to 0.32. This is now the best 3D number
+  for the sample as fabricated, and **it is close to where the lab currently pumps** (1560 /
+  1620 nm, user 2026-09-23; Δ = 0.024 rather than 0.014).
+* General rule, confirmed twice now: **a high 1D contrast earned by fringe suppression does not
+  survive 3D.** The k = 0 effect is a sum of positive-definite intensity products and scales
+  robustly; the fringe's cancellation does not.
