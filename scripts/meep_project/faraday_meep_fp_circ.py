@@ -1277,6 +1277,10 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
     # pump-probe delay scan; the tail/final-window estimators below are settled-state
     # measures and are not comparable across delays.
     # ------------------------------------------------------------------ #
+    probe_pulse_integrated_bins: Dict[str, List[float]] = {
+        "freq_inv_um": [float(f) for f in probe_freqs], "S0": [], "S1": [], "S2": [], "S3": []
+    }
+
     def pulse_integrated_probe_stokes() -> Dict[str, float]:
         ex_parts: List[np.ndarray] = []
         ey_parts: List[np.ndarray] = []
@@ -1290,6 +1294,12 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
             )
             ex_parts.append(np.ravel(np.atleast_1d(ex_f)))
             ey_parts.append(np.ravel(np.atleast_1d(ey_f)))
+            # Per-bin Stokes (forward field), so a narrower detection band -- a bandpass in the
+            # probe arm -- can be evaluated in post-processing: the pulse-integrated Stokes of
+            # any subset of bins is the mean of these over that subset.
+            st_k = stokes_metrics(ex_parts[-1], ey_parts[-1])
+            for key in ("S0", "S1", "S2", "S3"):
+                probe_pulse_integrated_bins[key].append(float(st_k[key]))
         st = stokes_metrics(np.concatenate(ex_parts), np.concatenate(ey_parts))
         s0 = max(float(st["S0"]), 1e-30)
         st["rotation_deg"] = float(
@@ -2638,6 +2648,7 @@ def run_simulation(args: argparse.Namespace | None = None) -> SimulationResult:
             "pump_imbalance_intensity_ratio": float(pump_imbalance),
         },
         "probe_pulse_integrated": probe_pulse_integrated,
+        "probe_pulse_integrated_bins": probe_pulse_integrated_bins,
         "probe_rotation_deg": {
             "initial_deg": init_pol_deg,
             "final_relative_deg": probe_rotation_final_rel,
