@@ -1,0 +1,24 @@
+{
+  "calibration_deg_per_V": 4501.581580785531,
+  "feature_window_fs": null,
+  "feature_peak_fs": null,
+  "pedestal_deg": 0.30916938037919023,
+  "pedestal_V": 6.868016825438491e-05,
+  "pedestal_err_deg": 0.00815586106003048,
+  "noise_per_point_deg": 0.061078407663448485,
+  "ar1_rho": 0.28962712999145873,
+  "quadrature_Y_median_deg": 0.0202352745393886,
+  "lockin_phase_of_pedestal_deg": 3.7749160672250075,
+  "drift_deg_per_ps": -0.017000144394675013,
+  "drift_err": 0.013873601057400603,
+  "drift_dchi2": 1.5015051163592543,
+  "step_best_tau0_fs": 260.0,
+  "step_deg": -0.0492162820323428,
+  "step_err_deg": 0.02673990091236129,
+  "step_dchi2": 3.387645971834988,
+  "bic": {
+    "M0": -569.9492572863129,
+    "M1": -566.86215751736,
+    "M2": -564.1998362627202
+  }
+}

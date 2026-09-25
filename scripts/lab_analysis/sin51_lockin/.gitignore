@@ -1,0 +1,9 @@
+# Per-sim run dirs are regenerable simulation output (same policy as the meep_project
+# campaigns); only the aggregated results are tracked: sim/sim_result.json,
+# sim/runs_single/single_result.json, sim/runs_filter/filter_result.json.
+sim/runs/
+sim/runs_3d/
+sim/runs_single/*/
+sim/runs_filter/*/
+sim/slurm-*
+__pycache__/

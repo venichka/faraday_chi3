@@ -1,0 +1,12 @@
+{
+  "n": 68,
+  "step_fs": 29.856475804526355,
+  "stage_fs_per_um": 6.67023815532228,
+  "double_pass_fs_per_um": 6.671281903963042,
+  "readback_minus_setpoint_rms_fs": 0.16159149019999347,
+  "readback_minus_setpoint_max_fs": 0.6371101584813862,
+  "X_median_V": 0.0001300453815,
+  "Y_median_V": 1.396195905e-05,
+  "lockin_phase_median_deg": 5.6342,
+  "X_autocorr_lag1": 0.2997644745408648
+}

@@ -1,0 +1,18 @@
+{
+  "step_fs": 20.003838789032656,
+  "freeze_nm": [
+    1499.2499999999607
+  ],
+  "lab": {
+    "1560": {
+      "period_fs": 5.203599885091172,
+      "apparent_period_fs": 128.41970580605255,
+      "identical_trace_nm": []
+    },
+    "1620": {
+      "period_fs": 5.4037383422100635,
+      "apparent_period_fs": 67.09362078306908,
+      "identical_trace_nm": []
+    }
+  }
+}

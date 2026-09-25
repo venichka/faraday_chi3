@@ -1,0 +1,20 @@
+{
+  "lockin_phase_deg": 5.1750738751514005,
+  "window_centre_fs": -1039.3479845313236,
+  "excess_phase_deg": 0.43587291285933444,
+  "quadrature_to_inphase_ratio": 0.00760756420723453,
+  "var_X_max": 1038.70523791921,
+  "var_X_at_fs": -1079.3756759551034,
+  "var_X_p_global": 0.0,
+  "var_X_thresh95": 3.3862450573576237,
+  "var_Y_max": 2.486783895570051,
+  "var_Y_at_fs": -539.3354058292856,
+  "var_Y_p_global": 0.409,
+  "var_Y_thresh95": 3.5298530352572945,
+  "noise_budget": {
+    "sigma_X_deg": 0.05503021078430728,
+    "sigma_Y_deg": 0.045448133233894225,
+    "pedestal_proportional_deg": 0.031028878234952168,
+    "pedestal_fluctuation_frac": 0.05352196635859949
+  }
+}
