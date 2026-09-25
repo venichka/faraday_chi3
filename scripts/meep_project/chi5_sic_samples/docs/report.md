@@ -68,10 +68,24 @@ stack, unchanged. Both media are nonlinear — SiC n₂ = 5×10⁻¹⁸ m²/W, S
 L=4.8 is within 2% of the SiN sample optically, so its mode comb is nearly the same — but with
 ~10× the nonlinearity where the field is strongest.
 
-⚠️ **The SiC n₂ = 5×10⁻¹⁸ m²/W is not a measured or literature value** — it is flagged
-"user-specified" in the code. θ_χ5 scales roughly as n₂², so a factor *f* error in n₂ moves every
-rotation here by ≈ *f*². Rescale accordingly; **contrast and the choice of operating point are
-much less sensitive**, since effect and fringe both grow with n₂.
+**The SiC n₂ = 5×10⁻¹⁸ m²/W** was user-specified, and it is consistent with the literature for
+this film: its own ellipsometry (`sic.csv`: Tauc gap 1.98 eV, n(1550) = 2.557) identifies it as
+**amorphous** SiC, whose measured n₂ is 3.0–6.7×10⁻¹⁸ (crystalline 4H-SiC would be ~7× lower).
+The film-to-film spread still matters, and ⚠️ **contrast is not immune to it**: the fringe is
+first order in χ³ and the effect second order, so contrast grows with n₂. Measured by stage 4
+(`s4_n2.py`, 1D, carrier-averaged, I = 10¹¹ W/cm², mirrors unchanged):
+
+| finalist | θ ∝ n₂^… | fringe ∝ n₂^… | contrast ∝ n₂^… | contrast at n₂ = 3.04 … 6.70×10⁻¹⁸ |
+|---|---|---|---|---|
+| **L=4.8, 794.2 nm (recommended)** | 1.83 | 1.05 | **0.78** | **×0.67 … ×1.25** |
+| L=4.8, 759.4 nm | 1.83 | 1.30 | 0.54 | ×0.77 … ×1.17 |
+| L=3.2, 850.2 nm | 2.31 | 1.36 | 0.95 | ×0.46 … ×0.92 (peaks near 5×10⁻¹⁸) |
+
+For the recommended point that puts the 3D contrast of 1.59 at **~1.07–1.98** and θ at
+~0.030–0.128°, assuming 3D follows the 1D scaling (not checked). It stays above 1 across the
+whole film range, only just at the low end. **Only the product n₂·I matters**: scaling I instead
+of n₂ reproduces the contrast to ≤1.3%, so a low-n₂ film is compensated by pumping harder —
+~1.6×10¹¹ W/cm² at n₂ = 3×10⁻¹⁸, still inside the clean window of §5.
 
 ---
 
@@ -272,11 +286,11 @@ it. A 3D delay scan was not run — it would cost ~24 × 13 × 3 h.
 
 | | |
 |---|---|
-| simulations | 56 (intensity) + 1248 (scan) + 312 (delay) + 24 3D = **1640** |
+| simulations | 56 (intensity) + 1248 (scan) + 312 (delay) + 24 3D = **1640**, + 60 (n₂ sensitivity, stage 4) |
 | estimator | carrier-averaged (N=4) pulse-integrated Stokes, 15-bin probe DFT |
 | materials | 2-pole Lorentz fits of `sic.csv`, `si3n4.csv`, `sio2.csv` |
 | resolution / decay | 1D res 80, decay 1e-4 · 3D res 30, decay 1e-3 |
-| data | `runs/s0_intensity/s0_result.json`, `runs/s1_scan/{L3p2,L4p8}/result.json`, `runs/s3_finalists/` |
+| data | `runs/s0_intensity/s0_result.json`, `runs/s1_scan/{L3p2,L4p8}/result.json`, `runs/s3_finalists/`, `runs/s4_n2/n2_result.json` |
 | reproduce | see [`../README.md`](../README.md) |
 
 The simulator needed a three-material extension to express these samples (a SiC cavity inside

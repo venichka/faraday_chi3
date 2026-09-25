@@ -7,6 +7,10 @@ Two samples were fabricated (2026-08-03) and this directory answers, for each of
 3. **whether the effect is visible above the carrier fringe**, or whether the delay-dither
    procedure is still required.
 
+The lab procedure built on these numbers (and on the SIN51 data) is the run plan in
+[`scripts/lab_analysis/sic_run_plan/`](../../lab_analysis/sic_run_plan/run_plan.md)
+(one-page version: [`run_plan_short.md`](../../lab_analysis/sic_run_plan/run_plan_short.md)).
+
 ---
 
 ## 1. What the samples are
@@ -35,9 +39,10 @@ nonlinearity where the field is strongest.
 nonlinear**. Linear n,k for all three layers come from the measured ellipsometry CSVs
 (`sic.csv`, `si3n4.csv`, `sio2.csv`) as 2-pole Lorentz fits.
 
-⚠️ **The SiC n₂ is not a measured or literature value** — it is flagged "user-specified" in
-`nonlinear_materials.py`. θ_χ5 scales roughly as n₂², so a 2× error in n₂ is a 4× error in the
-predicted rotation. Every number here is reported so it can be rescaled.
+**The SiC n₂ is user-specified** (`nonlinear_materials.py`) but consistent with the literature:
+the film's own ellipsometry makes it amorphous SiC, measured at 3.0–6.7×10⁻¹⁸. Over that range
+θ_χ5 moves ×0.40–1.72 and — contrary to an earlier claim here — **contrast moves too** (×0.67–1.25
+at the recommended point; contrast ∝ n₂^0.78). Only n₂·I matters. Stage 4 and report §2.
 
 ---
 
@@ -114,6 +119,7 @@ source is also extended below 1400 nm.**
 | 1A | `s1_scan.py --phase A` | every probe mode × 3 centre offsets × 3 Δ (868 sims) |
 | 1B | `s1_scan.py --phase B` | top 2 probe modes per sample, fine grid (672 sims) |
 | 2 | `s2_analyze.py` | applies the "now" / "future" probe filters, ranks both axes |
+| 4 | `s4_n2.py` | n₂ sensitivity of effect / fringe / contrast over the a-SiC film range (60 sims) |
 
 Aggregation walks the run directory rather than the current phase's op list, so a phase-B run
 cannot truncate the phase-A map.
@@ -137,6 +143,8 @@ sbatch chi5_sic_samples/s0_intensity.sbatch                              # pick 
 sbatch --export=ALL,PHASE=A chi5_sic_samples/s1_scan.sbatch              # coarse map
 sbatch --export=ALL,PHASE=B chi5_sic_samples/s1_scan.sbatch              # refine winners
 python  chi5_sic_samples/s2_analyze.py                                   # the answer
+sbatch --export=ALL,PART=0/2 chi5_sic_samples/s4_n2.sbatch                # n2 sensitivity
+sbatch --export=ALL,PART=1/2 chi5_sic_samples/s4_n2.sbatch
 ```
 
 ⚠️ `sbatch --export` splits on commas — never put a comma inside an exported value.
